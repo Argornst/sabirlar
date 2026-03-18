@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
 import { AppRouter } from "./app/router";
 import { useAuth } from "./presentation/hooks/useAuth";
 import { authRepository } from "./infrastructure/repositories/authRepository";
 import { supabase } from "./infrastructure/supabase/client";
-import { ROUTES } from "./shared/constants/routes";
 import { ROLES } from "./shared/constants/roles";
 import { useToast } from "./presentation/hooks/useToast";
 import {
@@ -33,6 +31,27 @@ function firstDayOfMonth() {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   return `${year}-${month}-01`;
+}
+
+function getSaleFlags(status) {
+  switch (status) {
+    case "odendi":
+      return { paid: true, invoiced: false };
+    case "faturalandi":
+      return { paid: false, invoiced: true };
+    case "odendi_faturalandi":
+      return { paid: true, invoiced: true };
+    case "beklemede":
+    default:
+      return { paid: false, invoiced: false };
+  }
+}
+
+function buildSaleStatus({ paid, invoiced }) {
+  if (paid && invoiced) return "odendi_faturalandi";
+  if (paid) return "odendi";
+  if (invoiced) return "faturalandi";
+  return "beklemede";
 }
 
 export default function App() {
@@ -99,6 +118,7 @@ export default function App() {
       }
     } catch (error) {
       console.error("loadProducts error:", error);
+      toast.error("Ürünler yüklenemedi", error?.message || "Beklenmeyen hata");
     } finally {
       setLoadingProducts(false);
     }
@@ -138,6 +158,7 @@ export default function App() {
       setSales(data || []);
     } catch (error) {
       console.error("loadSales error:", error);
+      toast.error("Satışlar yüklenemedi", error?.message || "Beklenmeyen hata");
     } finally {
       setLoadingSales(false);
     }
@@ -215,6 +236,103 @@ export default function App() {
     });
   }, [sales, search, filterStartDate, filterEndDate]);
 
+  function updateSaleStatusInState(saleId, nextStatus) {
+    setSales((prev) =>
+      prev.map((sale) =>
+        sale.id === saleId
+          ? {
+              ...sale,
+              status: nextStatus,
+            }
+          : sale
+      )
+    );
+  }
+
+  async function handleTogglePaid(sale) {
+    const previousStatus = sale.status;
+    const flags = getSaleFlags(sale.status);
+    const nextStatus = buildSaleStatus({
+      paid: !flags.paid,
+      invoiced: flags.invoiced,
+    });
+
+    updateSaleStatusInState(sale.id, nextStatus);
+
+    try {
+      const { error } = await supabase
+        .from("sales")
+        .update({
+          status: nextStatus,
+          updated_by: session?.user?.id || null,
+        })
+        .eq("id", sale.id);
+
+      if (error) throw error;
+
+      toast.success("Satış güncellendi", "Ödeme durumu güncellendi.");
+    } catch (error) {
+      console.error("handleTogglePaid error:", error);
+      updateSaleStatusInState(sale.id, previousStatus);
+      toast.error("Güncelleme başarısız", error?.message || "Beklenmeyen hata");
+    }
+  }
+
+  async function handleToggleInvoiced(sale) {
+    const previousStatus = sale.status;
+    const flags = getSaleFlags(sale.status);
+    const nextStatus = buildSaleStatus({
+      paid: flags.paid,
+      invoiced: !flags.invoiced,
+    });
+
+    updateSaleStatusInState(sale.id, nextStatus);
+
+    try {
+      const { error } = await supabase
+        .from("sales")
+        .update({
+          status: nextStatus,
+          updated_by: session?.user?.id || null,
+        })
+        .eq("id", sale.id);
+
+      if (error) throw error;
+
+      toast.success("Satış güncellendi", "Fatura durumu güncellendi.");
+    } catch (error) {
+      console.error("handleToggleInvoiced error:", error);
+      updateSaleStatusInState(sale.id, previousStatus);
+      toast.error("Güncelleme başarısız", error?.message || "Beklenmeyen hata");
+    }
+  }
+
+  function handleEditSale(sale, navigate) {
+    setEditingSaleId(sale.id);
+    setSaleDate(sale.sale_date || todayForInput());
+    setCustomerName(sale.customer_name || "");
+    setSaleProductId(String(sale.product_id || ""));
+    setQuantity(Number(sale.quantity) || 1);
+    setSaleStatus(sale.status || "beklemede");
+    navigate("/new-sale");
+  }
+
+  async function handleDeleteSale(saleId) {
+    const confirmed = window.confirm("Bu satış kaydını silmek istediğine emin misin?");
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase.from("sales").delete().eq("id", saleId);
+      if (error) throw error;
+
+      setSales((prev) => prev.filter((sale) => sale.id !== saleId));
+      toast.success("Satış silindi", "Kayıt başarıyla kaldırıldı.");
+    } catch (error) {
+      console.error("handleDeleteSale error:", error);
+      toast.error("Silme başarısız", error?.message || "Beklenmeyen hata");
+    }
+  }
+
   const loginElement = (
     <LoginPage
       onLogin={handleLogin}
@@ -233,6 +351,10 @@ export default function App() {
       loadingSales={loadingSales}
       isAdmin={isAdmin}
       isOperasyon={isOperasyon}
+      onEditSale={handleEditSale}
+      onDeleteSale={handleDeleteSale}
+      onTogglePaid={handleTogglePaid}
+      onToggleInvoiced={handleToggleInvoiced}
     />
   );
 
@@ -254,6 +376,9 @@ export default function App() {
       savingSale={savingSale}
       isAdmin={isAdmin}
       editingSaleId={editingSaleId}
+      onSalesRefresh={loadSales}
+      setEditingSaleId={setEditingSaleId}
+      setSaleStatusExternal={setSaleStatus}
     />
   );
 

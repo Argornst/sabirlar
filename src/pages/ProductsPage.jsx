@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SkeletonTable from "../presentation/components/common/SkeletonTable";
 import PageHero from "../presentation/components/ui/PageHero";
 import SectionCard from "../presentation/components/ui/SectionCard";
@@ -24,6 +24,50 @@ function getProductInitials(name) {
     .toUpperCase();
 }
 
+function exportProductsCsv(rows, fileName = "urunler.csv") {
+  const headers = [
+    "ID",
+    "Ürün Adı",
+    "Birim",
+    "KDV Tipi",
+    "KDV Oranı",
+    "Birim Fiyat",
+    "Durum",
+  ];
+
+  const csvRows = rows.map((product) => [
+    product.id ?? "",
+    product.name ?? "",
+    product.unit ?? "",
+    product.vat_type ?? "",
+    product.vat_rate ?? 0,
+    product.unit_price ?? 0,
+    product.is_active ? "Aktif" : "Pasif",
+  ]);
+
+  const escapeCell = (value) => {
+    const stringValue = String(value ?? "");
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  };
+
+  const csvContent = [headers, ...csvRows]
+    .map((row) => row.map(escapeCell).join(","))
+    .join("\n");
+
+  const blob = new Blob(["\uFEFF" + csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export default function ProductsPage({
   products = [],
   loadingProducts,
@@ -35,6 +79,7 @@ export default function ProductsPage({
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name-asc");
+  const [viewMode, setViewMode] = useState("table");
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -45,7 +90,13 @@ export default function ProductsPage({
   const [deletingProduct, setDeletingProduct] = useState(false);
   const [togglingProductId, setTogglingProductId] = useState(null);
 
+  const [editingPriceId, setEditingPriceId] = useState(null);
+  const [tempPrice, setTempPrice] = useState("");
+  const [savingInlinePriceId, setSavingInlinePriceId] = useState(null);
+
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const [createForm, setCreateForm] = useState({
     name: "",
@@ -126,6 +177,115 @@ export default function ProductsPage({
   function closeDeleteModal() {
     setIsDeleteOpen(false);
     setSelectedProduct(null);
+  }
+
+  function startInlinePriceEdit(product) {
+    setEditingPriceId(product.id);
+    setTempPrice(String(product.unit_price ?? ""));
+  }
+
+  function cancelInlinePriceEdit() {
+    setEditingPriceId(null);
+    setTempPrice("");
+  }
+
+  function isSelected(productId) {
+    return selectedProductIds.includes(productId);
+  }
+
+  function toggleSelectProduct(productId) {
+    setSelectedProductIds((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  }
+
+  function toggleSelectAllVisible(filteredRows) {
+    const visibleIds = filteredRows.map((product) => product.id);
+    const allVisibleSelected =
+      visibleIds.length > 0 &&
+      visibleIds.every((id) => selectedProductIds.includes(id));
+
+    if (allVisibleSelected) {
+      setSelectedProductIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setSelectedProductIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  }
+
+  function clearSelection() {
+    setSelectedProductIds([]);
+  }
+
+  function handleExportFiltered() {
+    if (!filteredProducts.length) {
+      toast.warning("Veri yok", "Dışa aktarılacak ürün bulunamadı.");
+      return;
+    }
+
+    exportProductsCsv(filteredProducts, "filtrelenmis-urunler.csv");
+    toast.info("CSV hazırlandı", "Filtrelenmiş ürünler dışa aktarıldı.");
+  }
+
+  function handleExportSelected() {
+    const selectedProducts = filteredProducts.filter((product) =>
+      selectedProductIds.includes(product.id)
+    );
+
+    if (!selectedProducts.length) {
+      toast.warning("Seçim yok", "Dışa aktarılacak seçili ürün bulunamadı.");
+      return;
+    }
+
+    exportProductsCsv(selectedProducts, "secili-urunler.csv");
+    toast.info("CSV hazırlandı", "Seçili ürünler dışa aktarıldı.");
+  }
+
+  async function saveInlinePrice(product) {
+    const userId = auth?.session?.user?.id || null;
+    const numericPrice = Number(tempPrice);
+
+    if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+      toast.warning("Geçersiz fiyat", "Lütfen sıfırdan büyük bir fiyat gir.");
+      return;
+    }
+
+    if (Number(product.unit_price) === numericPrice) {
+      cancelInlinePriceEdit();
+      return;
+    }
+
+    try {
+      setSavingInlinePriceId(product.id);
+
+      const { error } = await supabase
+        .from("products")
+        .update({
+          unit_price: numericPrice,
+          updated_by: userId,
+        })
+        .eq("id", product.id);
+
+      if (error) throw error;
+
+      await onProductsRefresh?.();
+
+      toast.success(
+        "Fiyat güncellendi",
+        `${product.name} için yeni fiyat kaydedildi.`
+      );
+
+      cancelInlinePriceEdit();
+    } catch (error) {
+      console.error("saveInlinePrice error:", error);
+      toast.error(
+        "Fiyat güncellenemedi",
+        error?.message || "Beklenmeyen bir hata oluştu."
+      );
+    } finally {
+      setSavingInlinePriceId(null);
+    }
   }
 
   async function handleCreateProduct(e) {
@@ -292,6 +452,43 @@ export default function ProductsPage({
     }
   }
 
+  async function handleBulkStatusUpdate(nextIsActive) {
+    if (!selectedProductIds.length) return;
+
+    const userId = auth?.session?.user?.id || null;
+
+    try {
+      setBulkUpdating(true);
+
+      const { error } = await supabase
+        .from("products")
+        .update({
+          is_active: nextIsActive,
+          updated_by: userId,
+        })
+        .in("id", selectedProductIds);
+
+      if (error) throw error;
+
+      await onProductsRefresh?.();
+
+      toast.success(
+        nextIsActive ? "Ürünler aktif edildi" : "Ürünler pasife alındı",
+        `${selectedProductIds.length} ürün başarıyla güncellendi.`
+      );
+
+      clearSelection();
+    } catch (error) {
+      console.error("handleBulkStatusUpdate error:", error);
+      toast.error(
+        "Toplu işlem başarısız",
+        error?.message || "Beklenmeyen bir hata oluştu."
+      );
+    } finally {
+      setBulkUpdating(false);
+    }
+  }
+
   async function handleDeleteProduct() {
     if (!selectedProduct) return;
 
@@ -374,6 +571,10 @@ export default function ProductsPage({
     return list;
   }, [products, searchTerm, statusFilter, sortBy]);
 
+  useEffect(() => {
+    setSelectedProductIds([]);
+  }, [searchTerm, statusFilter, sortBy, viewMode]);
+
   if (loadingProducts) {
     return (
       <SkeletonTable
@@ -407,6 +608,12 @@ export default function ProductsPage({
 
           .products-toolbar-right {
             justify-content: flex-start !important;
+          }
+        }
+
+        @media (max-width: 820px) {
+          .products-table-wrap {
+            overflow-x: auto;
           }
         }
 
@@ -454,6 +661,15 @@ export default function ProductsPage({
           .product-actions {
             flex-direction: column;
           }
+
+          .view-switch {
+            width: 100%;
+          }
+
+          .bulk-bar {
+            flex-direction: column;
+            align-items: stretch !important;
+          }
         }
 
         .product-card:hover {
@@ -465,7 +681,8 @@ export default function ProductsPage({
         .toolbar-input:focus,
         .toolbar-select:focus,
         .product-form-input:focus,
-        .product-form-select:focus {
+        .product-form-select:focus,
+        .inline-price-input:focus {
           outline: none;
           border-color: #93c5fd;
           box-shadow: 0 0 0 4px rgba(59,130,246,0.10);
@@ -509,9 +726,28 @@ export default function ProductsPage({
         title="Ürün Listesi"
         subtitle="Sistemde tanımlı ürünler"
         rightContent={
-          <div style={styles.badgeWrap}>
-            <div style={styles.badgeGlow} />
-            <div style={styles.badge}>{filteredProducts.length} sonuç</div>
+          <div style={styles.headerRightWrap}>
+            <div className="view-switch" style={styles.viewSwitch}>
+              <button
+                type="button"
+                onClick={() => setViewMode("cards")}
+                style={viewMode === "cards" ? styles.viewButtonActive : styles.viewButton}
+              >
+                Kart
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                style={viewMode === "table" ? styles.viewButtonActive : styles.viewButton}
+              >
+                Tablo
+              </button>
+            </div>
+
+            <div style={styles.badgeWrap}>
+              <div style={styles.badgeGlow} />
+              <div style={styles.badge}>{filteredProducts.length} sonuç</div>
+            </div>
           </div>
         }
       >
@@ -570,6 +806,14 @@ export default function ProductsPage({
           <div className="products-toolbar-right" style={styles.toolbarRight}>
             <button
               type="button"
+              onClick={handleExportFiltered}
+              style={styles.secondaryActionButton}
+            >
+              CSV Dışa Aktar
+            </button>
+
+            <button
+              type="button"
               className="products-new-button"
               onClick={() => setIsCreateOpen(true)}
               style={styles.newButton}
@@ -579,93 +823,357 @@ export default function ProductsPage({
           </div>
         </div>
 
-        <div className="products-grid" style={styles.grid}>
-          {filteredProducts.map((product) => {
-            const isToggling = togglingProductId === product.id;
+        {viewMode === "cards" ? (
+          <div className="products-grid" style={styles.grid}>
+            {filteredProducts.map((product) => {
+              const isToggling = togglingProductId === product.id;
+              const isEditingPrice = editingPriceId === product.id;
+              const isSavingInlinePrice = savingInlinePriceId === product.id;
 
-            return (
-              <div key={product.id} className="product-card" style={styles.card}>
-                <div style={styles.cardGlow} />
+              return (
+                <div key={product.id} className="product-card" style={styles.card}>
+                  <div style={styles.cardGlow} />
 
-                <div className="products-card-top" style={styles.cardTop}>
-                  <div style={styles.identity}>
-                    <div style={styles.avatar}>{getProductInitials(product.name)}</div>
+                  <div className="products-card-top" style={styles.cardTop}>
+                    <div style={styles.identity}>
+                      <div style={styles.avatar}>{getProductInitials(product.name)}</div>
 
-                    <div>
-                      <div style={styles.name}>{product.name}</div>
-                      <div style={styles.meta}>
-                        {product.unit || "-"} • {product.vat_type || "-"} • %
-                        {product.vat_rate ?? 0}
+                      <div>
+                        <div style={styles.name}>{product.name}</div>
+                        <div style={styles.meta}>
+                          {product.unit || "-"} • {product.vat_type || "-"} • %
+                          {product.vat_rate ?? 0}
+                        </div>
                       </div>
+                    </div>
+
+                    <div style={product.is_active ? styles.activeBadge : styles.passiveBadge}>
+                      <span
+                        style={product.is_active ? styles.activeBadgeDot : styles.passiveBadgeDot}
+                      />
+                      {product.is_active ? "Aktif" : "Pasif"}
                     </div>
                   </div>
 
-                  <div style={product.is_active ? styles.activeBadge : styles.passiveBadge}>
-                    <span
-                      style={product.is_active ? styles.activeBadgeDot : styles.passiveBadgeDot}
-                    />
-                    {product.is_active ? "Aktif" : "Pasif"}
+                  <div style={styles.divider} />
+
+                  <div className="products-price-row" style={styles.priceRow}>
+                    <div>
+                      <div style={styles.priceLabel}>Birim Fiyat</div>
+
+                      {isEditingPrice ? (
+                        <input
+                          autoFocus
+                          className="inline-price-input"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={tempPrice}
+                          disabled={isSavingInlinePrice}
+                          onChange={(e) => setTempPrice(e.target.value)}
+                          onBlur={() => saveInlinePrice(product)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              saveInlinePrice(product);
+                            }
+
+                            if (e.key === "Escape") {
+                              e.preventDefault();
+                              cancelInlinePriceEdit();
+                            }
+                          }}
+                          style={styles.inlinePriceInput}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => startInlinePriceEdit(product)}
+                          style={styles.inlinePriceButton}
+                          title="Fiyatı hızlı düzenle"
+                        >
+                          {formatMoney(product.unit_price)}
+                        </button>
+                      )}
+
+                      <div style={styles.inlinePriceHint}>
+                        {isSavingInlinePrice
+                          ? "Kaydediliyor..."
+                          : isEditingPrice
+                          ? "Enter kaydet • Esc iptal"
+                          : "Tıkla ve hızlı düzenle"}
+                      </div>
+                    </div>
+
+                    <div style={styles.pricePill}>
+                      {product.vat_type || "KDV"} %{product.vat_rate ?? 0}
+                    </div>
+                  </div>
+
+                  <div className="product-actions" style={styles.cardActions}>
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(product)}
+                      style={styles.secondaryActionButton}
+                    >
+                      Düzenle
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleProductStatus(product)}
+                      disabled={isToggling}
+                      style={product.is_active ? styles.warningActionButton : styles.successActionButton}
+                    >
+                      {isToggling
+                        ? "İşleniyor..."
+                        : product.is_active
+                        ? "Pasife Al"
+                        : "Aktif Et"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openDeleteModal(product)}
+                      style={styles.dangerActionButton}
+                    >
+                      Sil
+                    </button>
                   </div>
                 </div>
+              );
+            })}
 
-                <div style={styles.divider} />
-
-                <div className="products-price-row" style={styles.priceRow}>
-                  <div>
-                    <div style={styles.priceLabel}>Birim Fiyat</div>
-                    <div style={styles.price}>{formatMoney(product.unit_price)}</div>
-                  </div>
-
-                  <div style={styles.pricePill}>
-                    {product.vat_type || "KDV"} %{product.vat_rate ?? 0}
-                  </div>
+            {filteredProducts.length === 0 && (
+              <div style={styles.empty}>
+                <div style={styles.emptyIcon}>□</div>
+                <div style={styles.emptyTitle}>Sonuç bulunamadı</div>
+                <div style={styles.emptyText}>
+                  Arama veya filtre kriterlerine uygun ürün yok. Filtreleri temizleyip tekrar
+                  deneyin.
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {selectedProductIds.length > 0 && (
+              <div className="bulk-bar" style={styles.bulkBar}>
+                <div style={styles.bulkInfo}>
+                  {selectedProductIds.length} ürün seçildi
                 </div>
 
-                <div className="product-actions" style={styles.cardActions}>
+                <div style={styles.bulkActions}>
                   <button
                     type="button"
-                    onClick={() => openEditModal(product)}
+                    onClick={handleExportSelected}
+                    disabled={bulkUpdating}
                     style={styles.secondaryActionButton}
                   >
-                    Düzenle
+                    Seçilileri CSV Aktar
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => handleToggleProductStatus(product)}
-                    disabled={isToggling}
-                    style={product.is_active ? styles.warningActionButton : styles.successActionButton}
+                    onClick={() => handleBulkStatusUpdate(true)}
+                    disabled={bulkUpdating}
+                    style={styles.successActionButton}
                   >
-                    {isToggling
-                      ? "İşleniyor..."
-                      : product.is_active
-                      ? "Pasife Al"
-                      : "Aktif Et"}
+                    {bulkUpdating ? "İşleniyor..." : "Toplu Aktif Et"}
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => openDeleteModal(product)}
-                    style={styles.dangerActionButton}
+                    onClick={() => handleBulkStatusUpdate(false)}
+                    disabled={bulkUpdating}
+                    style={styles.warningActionButton}
                   >
-                    Sil
+                    {bulkUpdating ? "İşleniyor..." : "Toplu Pasife Al"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={clearSelection}
+                    disabled={bulkUpdating}
+                    style={styles.secondaryActionButton}
+                  >
+                    Temizle
                   </button>
                 </div>
               </div>
-            );
-          })}
+            )}
 
-          {filteredProducts.length === 0 && (
-            <div style={styles.empty}>
-              <div style={styles.emptyIcon}>□</div>
-              <div style={styles.emptyTitle}>Sonuç bulunamadı</div>
-              <div style={styles.emptyText}>
-                Arama veya filtre kriterlerine uygun ürün yok. Filtreleri temizleyip tekrar
-                deneyin.
-              </div>
+            <div className="products-table-wrap" style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.thCheckbox}>
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredProducts.length > 0 &&
+                          filteredProducts.every((product) =>
+                            selectedProductIds.includes(product.id)
+                          )
+                        }
+                        onChange={() => toggleSelectAllVisible(filteredProducts)}
+                      />
+                    </th>
+                    <th style={styles.th}>Ürün</th>
+                    <th style={styles.th}>Birim</th>
+                    <th style={styles.th}>KDV</th>
+                    <th style={styles.th}>Fiyat</th>
+                    <th style={styles.th}>Durum</th>
+                    <th style={styles.th}>İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map((product) => {
+                    const isToggling = togglingProductId === product.id;
+                    const isEditingPrice = editingPriceId === product.id;
+                    const isSavingInlinePrice = savingInlinePriceId === product.id;
+
+                    return (
+                      <tr key={product.id} style={styles.tr}>
+                        <td style={styles.tdCheckbox}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected(product.id)}
+                            onChange={() => toggleSelectProduct(product.id)}
+                          />
+                        </td>
+
+                        <td style={styles.tdProduct}>
+                          <div style={styles.tableIdentity}>
+                            <div style={styles.tableAvatar}>
+                              {getProductInitials(product.name)}
+                            </div>
+                            <div>
+                              <div style={styles.tableName}>{product.name}</div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td style={styles.td}>{product.unit || "-"}</td>
+
+                        <td style={styles.td}>
+                          {product.vat_type || "-"} • %{product.vat_rate ?? 0}
+                        </td>
+
+                        <td style={styles.td}>
+                          {isEditingPrice ? (
+                            <input
+                              autoFocus
+                              className="inline-price-input"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={tempPrice}
+                              disabled={isSavingInlinePrice}
+                              onChange={(e) => setTempPrice(e.target.value)}
+                              onBlur={() => saveInlinePrice(product)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  saveInlinePrice(product);
+                                }
+
+                                if (e.key === "Escape") {
+                                  e.preventDefault();
+                                  cancelInlinePriceEdit();
+                                }
+                              }}
+                              style={styles.inlineTablePriceInput}
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => startInlinePriceEdit(product)}
+                              style={styles.inlineTablePriceButton}
+                            >
+                              {formatMoney(product.unit_price)}
+                            </button>
+                          )}
+
+                          <div style={styles.tablePriceHint}>
+                            {isSavingInlinePrice
+                              ? "Kaydediliyor..."
+                              : isEditingPrice
+                              ? "Enter / Esc"
+                              : "Hızlı düzenle"}
+                          </div>
+                        </td>
+
+                        <td style={styles.td}>
+                          <span
+                            style={product.is_active ? styles.activeBadge : styles.passiveBadge}
+                          >
+                            <span
+                              style={
+                                product.is_active
+                                  ? styles.activeBadgeDot
+                                  : styles.passiveBadgeDot
+                              }
+                            />
+                            {product.is_active ? "Aktif" : "Pasif"}
+                          </span>
+                        </td>
+
+                        <td style={styles.td}>
+                          <div style={styles.tableActions}>
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(product)}
+                              style={styles.secondaryActionButton}
+                            >
+                              Düzenle
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleProductStatus(product)}
+                              disabled={isToggling}
+                              style={
+                                product.is_active
+                                  ? styles.warningActionButton
+                                  : styles.successActionButton
+                              }
+                            >
+                              {isToggling
+                                ? "İşleniyor..."
+                                : product.is_active
+                                ? "Pasife Al"
+                                : "Aktif Et"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => openDeleteModal(product)}
+                              style={styles.dangerActionButton}
+                            >
+                              Sil
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {filteredProducts.length === 0 && (
+                <div style={styles.empty}>
+                  <div style={styles.emptyIcon}>□</div>
+                  <div style={styles.emptyTitle}>Sonuç bulunamadı</div>
+                  <div style={styles.emptyText}>
+                    Arama veya filtre kriterlerine uygun ürün yok. Filtreleri temizleyip tekrar
+                    deneyin.
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </SectionCard>
 
       {isCreateOpen && (
@@ -1012,6 +1520,48 @@ const styles = {
     lineHeight: 1.5,
   },
 
+  headerRightWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+  },
+
+  viewSwitch: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "4px",
+    borderRadius: "999px",
+    background: "rgba(248,250,252,0.95)",
+    border: "1px solid rgba(226,232,240,1)",
+    boxShadow: "0 8px 20px rgba(15,23,42,0.04)",
+  },
+
+  viewButton: {
+    height: "36px",
+    padding: "0 14px",
+    borderRadius: "999px",
+    border: "none",
+    background: "transparent",
+    color: "#64748b",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  viewButtonActive: {
+    height: "36px",
+    padding: "0 14px",
+    borderRadius: "999px",
+    border: "1px solid rgba(147,197,253,1)",
+    background:
+      "linear-gradient(180deg, rgba(239,246,255,1) 0%, rgba(219,234,254,1) 100%)",
+    color: "#1d4ed8",
+    fontWeight: 800,
+    cursor: "pointer",
+    boxShadow: "0 8px 20px rgba(59,130,246,0.10)",
+  },
+
   badgeWrap: {
     position: "relative",
     display: "inline-flex",
@@ -1062,6 +1612,8 @@ const styles = {
     display: "flex",
     justifyContent: "flex-end",
     alignItems: "center",
+    gap: "10px",
+    flexWrap: "wrap",
   },
 
   searchWrap: {
@@ -1255,12 +1807,38 @@ const styles = {
     marginBottom: "8px",
   },
 
-  price: {
+  inlinePriceButton: {
+    border: "none",
+    background: "transparent",
+    padding: 0,
     color: "#0f172a",
     fontSize: "30px",
     fontWeight: 900,
     letterSpacing: "-0.03em",
     lineHeight: 1.1,
+    cursor: "pointer",
+    textAlign: "left",
+  },
+
+  inlinePriceInput: {
+    width: "160px",
+    height: "48px",
+    padding: "0 14px",
+    borderRadius: "14px",
+    border: "1px solid #e2e8f0",
+    background: "rgba(255,255,255,0.92)",
+    color: "#0f172a",
+    fontSize: "24px",
+    fontWeight: 900,
+    letterSpacing: "-0.02em",
+    transition: "all 160ms ease",
+  },
+
+  inlinePriceHint: {
+    marginTop: "8px",
+    color: "#94a3b8",
+    fontSize: "12px",
+    fontWeight: 700,
   },
 
   pricePill: {
@@ -1278,6 +1856,176 @@ const styles = {
     display: "flex",
     gap: "10px",
     marginTop: "16px",
+  },
+
+  tableWrap: {
+    width: "100%",
+    maxHeight: "70vh",
+    overflow: "auto",
+    borderRadius: "22px",
+    border: "1px solid rgba(226,232,240,1)",
+    background: "rgba(255,255,255,0.66)",
+  },
+
+  bulkBar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "12px",
+    padding: "14px 16px",
+    marginBottom: "12px",
+    borderRadius: "18px",
+    background:
+      "linear-gradient(180deg, rgba(239,246,255,0.95) 0%, rgba(219,234,254,0.88) 100%)",
+    border: "1px solid rgba(147,197,253,0.9)",
+  },
+
+  bulkInfo: {
+    color: "#1e3a8a",
+    fontSize: "14px",
+    fontWeight: 800,
+  },
+
+  bulkActions: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+
+  table: {
+    width: "100%",
+    minWidth: "980px",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+  },
+
+  th: {
+    position: "sticky",
+    top: 0,
+    zIndex: 3,
+    textAlign: "left",
+    padding: "16px 18px",
+    fontSize: "12px",
+    fontWeight: 900,
+    color: "#64748b",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    borderBottom: "1px solid rgba(226,232,240,1)",
+    background: "rgba(248,250,252,0.98)",
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
+  },
+
+  thCheckbox: {
+    position: "sticky",
+    top: 0,
+    zIndex: 4,
+    width: "48px",
+    textAlign: "center",
+    padding: "16px 12px",
+    fontSize: "12px",
+    fontWeight: 900,
+    color: "#64748b",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    borderBottom: "1px solid rgba(226,232,240,1)",
+    background: "rgba(248,250,252,0.98)",
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
+  },
+
+  tr: {
+    background: "transparent",
+  },
+
+  td: {
+    padding: "16px 18px",
+    borderBottom: "1px solid rgba(241,245,249,1)",
+    color: "#0f172a",
+    fontSize: "14px",
+    verticalAlign: "middle",
+    background: "rgba(255,255,255,0.54)",
+  },
+
+  tdCheckbox: {
+    width: "48px",
+    textAlign: "center",
+    padding: "16px 12px",
+    borderBottom: "1px solid rgba(241,245,249,1)",
+    verticalAlign: "middle",
+    background: "rgba(255,255,255,0.54)",
+  },
+
+  tdProduct: {
+    padding: "16px 18px",
+    borderBottom: "1px solid rgba(241,245,249,1)",
+    verticalAlign: "middle",
+    minWidth: "260px",
+    background: "rgba(255,255,255,0.54)",
+  },
+
+  tableIdentity: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+  },
+
+  tableAvatar: {
+    width: "38px",
+    height: "38px",
+    minWidth: "38px",
+    borderRadius: "14px",
+    display: "grid",
+    placeItems: "center",
+    color: "#2563eb",
+    fontWeight: 900,
+    fontSize: "12px",
+    background:
+      "linear-gradient(135deg, rgba(219,234,254,1) 0%, rgba(239,246,255,0.95) 100%)",
+    border: "1px solid rgba(191,219,254,1)",
+  },
+
+  tableName: {
+    color: "#0f172a",
+    fontSize: "14px",
+    fontWeight: 900,
+    lineHeight: 1.3,
+  },
+
+  inlineTablePriceButton: {
+    border: "none",
+    background: "transparent",
+    padding: 0,
+    color: "#0f172a",
+    fontSize: "16px",
+    fontWeight: 900,
+    cursor: "pointer",
+    textAlign: "left",
+  },
+
+  inlineTablePriceInput: {
+    width: "130px",
+    height: "40px",
+    padding: "0 12px",
+    borderRadius: "12px",
+    border: "1px solid #e2e8f0",
+    background: "rgba(255,255,255,0.92)",
+    color: "#0f172a",
+    fontSize: "16px",
+    fontWeight: 800,
+  },
+
+  tablePriceHint: {
+    marginTop: "6px",
+    color: "#94a3b8",
+    fontSize: "11px",
+    fontWeight: 700,
+  },
+
+  tableActions: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
   },
 
   secondaryActionButton: {
@@ -1376,6 +2124,7 @@ const styles = {
     borderRadius: "28px",
     padding: "40px 24px",
     textAlign: "center",
+    marginTop: "12px",
   },
 
   emptyIcon: {
@@ -1385,7 +2134,8 @@ const styles = {
     borderRadius: "18px",
     display: "grid",
     placeItems: "center",
-    background: "linear-gradient(135deg, rgba(239,246,255,1) 0%, rgba(248,250,252,1) 100%)",
+    background:
+      "linear-gradient(135deg, rgba(239,246,255,1) 0%, rgba(248,250,252,1) 100%)",
     border: "1px solid rgba(219,234,254,1)",
     color: "#3b82f6",
     fontWeight: 900,

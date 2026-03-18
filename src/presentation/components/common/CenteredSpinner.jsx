@@ -1,137 +1,106 @@
-export default function CenteredSpinner({
-  label = "Yükleniyor...",
-  sublabel = "Lütfen bekleyin",
-  overlay = true,
-}) {
+export default function FullScreenLoader() {
   return (
-    <div
-      style={{
-        ...styles.wrapper,
-        ...(overlay ? styles.overlay : styles.inline),
-      }}
-    >
+    <div style={styles.overlay}>
       <style>{`
-        @keyframes spinOuter {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+        @keyframes appLoaderSpin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
 
-        @keyframes spinInner {
-          from { transform: rotate(360deg); }
-          to { transform: rotate(0deg); }
-        }
-
-        @keyframes pulseCore {
+        @keyframes appLoaderPulse {
           0%, 100% {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 0.75;
+            opacity: 0.65;
+            transform: scale(1);
           }
           50% {
-            transform: translate(-50%, -50%) scale(1.12);
             opacity: 1;
-          }
-        }
-
-        @keyframes fadeInSoft {
-          from {
-            opacity: 0;
-            transform: translateY(4px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
+            transform: scale(1.08);
           }
         }
       `}</style>
 
-      <div style={styles.loaderBox}>
-        <div style={styles.spinnerArea}>
-          <div style={styles.outerRing} />
-          <div style={styles.innerRing} />
-          <div style={styles.coreDot} />
-        </div>
+      <div style={styles.glowBlue} />
+      <div style={styles.glowGreen} />
 
-        <div style={styles.textArea}>
-          <div style={styles.label}>{label}</div>
-          <div style={styles.sublabel}>{sublabel}</div>
-        </div>
+      <div style={styles.loaderWrap}>
+        <div style={styles.loaderHalo} />
+        <div style={styles.loaderRing} />
       </div>
     </div>
   );
 }
 
 const styles = {
-  wrapper: {
-    display: "grid",
-    placeItems: "center",
-    animation: "fadeInSoft 0.2s ease-out",
-  },
   overlay: {
     position: "fixed",
     inset: 0,
-    zIndex: 999,
-    background: "rgba(248,250,252,0.20)",
-    backdropFilter: "blur(3px)",
+    zIndex: 9999,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(255,255,255,0.10)",
+    backdropFilter: "blur(16px) saturate(140%)",
+    WebkitBackdropFilter: "blur(16px) saturate(140%)",
+    overflow: "hidden",
+  },
+
+  glowBlue: {
+    position: "absolute",
+    top: "22%",
+    left: "28%",
+    width: "220px",
+    height: "220px",
+    borderRadius: "999px",
+    background: "rgba(37,99,235,0.14)",
+    filter: "blur(80px)",
     pointerEvents: "none",
   },
-  inline: {
-    minHeight: "180px",
-    width: "100%",
+
+  glowGreen: {
+    position: "absolute",
+    right: "26%",
+    bottom: "24%",
+    width: "220px",
+    height: "220px",
+    borderRadius: "999px",
+    background: "rgba(16,185,129,0.12)",
+    filter: "blur(80px)",
+    pointerEvents: "none",
   },
-  loaderBox: {
-    display: "grid",
-    justifyItems: "center",
-    gap: "14px",
-  },
-  spinnerArea: {
+
+  loaderWrap: {
     position: "relative",
-    width: "64px",
-    height: "64px",
+    width: "104px",
+    height: "104px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
-  outerRing: {
+
+  loaderHalo: {
     position: "absolute",
-    inset: 0,
+    width: "84px",
+    height: "84px",
     borderRadius: "999px",
-    border: "3px solid rgba(148,163,184,0.20)",
-    borderTopColor: "#10b981",
-    animation: "spinOuter 1s linear infinite",
-    boxShadow: "0 0 0 1px rgba(255,255,255,0.35) inset",
+    background:
+      "radial-gradient(circle, rgba(59,130,246,0.20) 0%, rgba(16,185,129,0.12) 45%, rgba(255,255,255,0) 72%)",
+    filter: "blur(12px)",
+    animation: "appLoaderPulse 2s ease-in-out infinite",
+    pointerEvents: "none",
   },
-  innerRing: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    width: "38px",
-    height: "38px",
+
+  loaderRing: {
+    width: "56px",
+    height: "56px",
     borderRadius: "999px",
-    border: "3px solid rgba(148,163,184,0.14)",
-    borderBottomColor: "#3b82f6",
-    animation: "spinInner 0.8s linear infinite",
-    transform: "translate(-50%, -50%)",
-  },
-  coreDot: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    width: "10px",
-    height: "10px",
-    borderRadius: "999px",
-    background: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
-    transform: "translate(-50%, -50%)",
-    animation: "pulseCore 1.1s ease-in-out infinite",
-  },
-  textArea: {
-    textAlign: "center",
-  },
-  label: {
-    fontSize: "14px",
-    fontWeight: 800,
-    color: "#0f172a",
-    letterSpacing: "-0.01em",
-  },
-  sublabel: {
-    marginTop: "4px",
-    fontSize: "12px",
-    color: "#64748b",
+    border: "6px solid rgba(226,232,240,0.45)",
+    borderTopColor: "#2563eb",
+    borderRightColor: "#3b82f6",
+    borderBottomColor: "#10b981",
+    borderLeftColor: "rgba(226,232,240,0.28)",
+    boxSizing: "border-box",
+    animation: "appLoaderSpin 0.95s linear infinite",
+    filter: "drop-shadow(0 10px 24px rgba(37,99,235,0.18))",
   },
 };

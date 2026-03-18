@@ -1,194 +1,106 @@
-export default function FullScreenLoader({
-  title = "Workspace hazırlanıyor",
-  subtitle = "Oturum doğrulanıyor ve kullanıcı verileri yükleniyor...",
-}) {
+export default function FullScreenLoader() {
   return (
-    <div style={styles.wrapper}>
+    <div style={styles.overlay}>
       <style>{`
-        @keyframes rotateSlow {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to { transform: translate(-50%, -50%) rotate(360deg); }
+        @keyframes appLoaderSpin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
-        @keyframes rotateReverse {
-          from { transform: translate(-50%, -50%) rotate(360deg); }
-          to { transform: translate(-50%, -50%) rotate(0deg); }
-        }
-        @keyframes pulseDot {
-          0%, 100% { transform: scale(1); opacity: 0.55; }
-          50% { transform: scale(1.12); opacity: 1; }
-        }
-        @keyframes moveBar {
-          0% { transform: translateX(-130%); }
-          100% { transform: translateX(320%); }
+
+        @keyframes appLoaderPulse {
+          0%, 100% {
+            opacity: 0.65;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.08);
+          }
         }
       `}</style>
 
-      <div style={styles.glowOne} />
-      <div style={styles.glowTwo} />
+      <div style={styles.glowBlue} />
+      <div style={styles.glowGreen} />
 
-      <div style={styles.card}>
-        <div style={styles.brandRow}>
-          <div style={styles.logo}>S</div>
-          <div>
-            <div style={styles.brandTitle}>Satış Sistemi</div>
-            <div style={styles.brandSubtitle}>Premium Workspace</div>
-          </div>
-        </div>
-
-        <div style={styles.rings}>
-          <div style={styles.outerRing} />
-          <div style={styles.innerRing} />
-          <div style={styles.centerDot} />
-        </div>
-
-        <h1 style={styles.title}>{title}</h1>
-        <p style={styles.subtitle}>{subtitle}</p>
-
-        <div style={styles.track}>
-          <div style={styles.bar} />
-        </div>
+      <div style={styles.loaderWrap}>
+        <div style={styles.loaderHalo} />
+        <div style={styles.loaderRing} />
       </div>
     </div>
   );
 }
 
 const styles = {
-  wrapper: {
-    minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
-    background: "radial-gradient(circle at top, #eef2f7 0%, #e2e8f0 45%, #dbe4ef 100%)",
-    position: "relative",
-    overflow: "hidden",
-    padding: "24px",
-  },
-  glowOne: {
-    position: "absolute",
-    top: "-30px",
-    left: "-40px",
-    width: "340px",
-    height: "340px",
-    borderRadius: "999px",
-    background: "rgba(16,185,129,0.14)",
-    filter: "blur(80px)",
-  },
-  glowTwo: {
-    position: "absolute",
-    right: "-20px",
-    bottom: "-20px",
-    width: "320px",
-    height: "320px",
-    borderRadius: "999px",
-    background: "rgba(59,130,246,0.14)",
-    filter: "blur(80px)",
-  },
-  card: {
-    width: "100%",
-    maxWidth: "520px",
-    borderRadius: "30px",
-    background: "rgba(255,255,255,0.74)",
-    backdropFilter: "blur(18px)",
-    border: "1px solid rgba(255,255,255,0.8)",
-    padding: "36px 32px",
-    boxShadow: "0 30px 70px rgba(15,23,42,0.12)",
-    textAlign: "center",
-    position: "relative",
-    zIndex: 2,
-  },
-  brandRow: {
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 9999,
     display: "flex",
-    justifyContent: "center",
     alignItems: "center",
-    gap: "14px",
-    marginBottom: "26px",
+    justifyContent: "center",
+    background: "rgba(255,255,255,0.10)",
+    backdropFilter: "blur(16px) saturate(140%)",
+    WebkitBackdropFilter: "blur(16px) saturate(140%)",
+    overflow: "hidden",
   },
-  logo: {
-    width: "54px",
-    height: "54px",
-    borderRadius: "18px",
-    display: "grid",
-    placeItems: "center",
-    color: "#fff",
-    fontWeight: 800,
-    fontSize: "20px",
-    background: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
-  },
-  brandTitle: {
-    fontSize: "18px",
-    fontWeight: 800,
-    color: "#0f172a",
-    textAlign: "left",
-  },
-  brandSubtitle: {
-    fontSize: "13px",
-    color: "#64748b",
-    marginTop: "3px",
-    textAlign: "left",
-  },
-  rings: {
-    position: "relative",
-    width: "124px",
-    height: "124px",
-    margin: "0 auto 26px auto",
-  },
-  outerRing: {
+
+  glowBlue: {
     position: "absolute",
-    top: "50%",
-    left: "50%",
-    width: "124px",
-    height: "124px",
+    top: "22%",
+    left: "28%",
+    width: "220px",
+    height: "220px",
     borderRadius: "999px",
-    border: "4px solid rgba(15,23,42,0.08)",
-    borderTopColor: "#0f172a",
-    animation: "rotateSlow 1.5s linear infinite",
+    background: "rgba(37,99,235,0.14)",
+    filter: "blur(80px)",
+    pointerEvents: "none",
   },
-  innerRing: {
+
+  glowGreen: {
     position: "absolute",
-    top: "50%",
-    left: "50%",
+    right: "26%",
+    bottom: "24%",
+    width: "220px",
+    height: "220px",
+    borderRadius: "999px",
+    background: "rgba(16,185,129,0.12)",
+    filter: "blur(80px)",
+    pointerEvents: "none",
+  },
+
+  loaderWrap: {
+    position: "relative",
+    width: "104px",
+    height: "104px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
+  loaderHalo: {
+    position: "absolute",
     width: "84px",
     height: "84px",
     borderRadius: "999px",
-    border: "4px solid rgba(16,185,129,0.10)",
+    background:
+      "radial-gradient(circle, rgba(59,130,246,0.20) 0%, rgba(16,185,129,0.12) 45%, rgba(255,255,255,0) 72%)",
+    filter: "blur(12px)",
+    animation: "appLoaderPulse 2s ease-in-out infinite",
+    pointerEvents: "none",
+  },
+
+  loaderRing: {
+    width: "56px",
+    height: "56px",
+    borderRadius: "999px",
+    border: "6px solid rgba(226,232,240,0.45)",
+    borderTopColor: "#2563eb",
+    borderRightColor: "#3b82f6",
     borderBottomColor: "#10b981",
-    animation: "rotateReverse 1.1s linear infinite",
-  },
-  centerDot: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    width: "18px",
-    height: "18px",
-    borderRadius: "999px",
-    background: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
-    animation: "pulseDot 1.3s ease-in-out infinite",
-  },
-  title: {
-    margin: "0 0 8px 0",
-    fontSize: "30px",
-    lineHeight: 1.15,
-    color: "#0f172a",
-    fontWeight: 800,
-  },
-  subtitle: {
-    margin: "0 auto",
-    maxWidth: "380px",
-    fontSize: "14px",
-    lineHeight: 1.65,
-    color: "#64748b",
-  },
-  track: {
-    marginTop: "24px",
-    height: "10px",
-    borderRadius: "999px",
-    background: "#e2e8f0",
-    overflow: "hidden",
-  },
-  bar: {
-    width: "35%",
-    height: "100%",
-    borderRadius: "999px",
-    background: "linear-gradient(90deg, #10b981 0%, #3b82f6 100%)",
-    animation: "moveBar 1.8s ease-in-out infinite",
+    borderLeftColor: "rgba(226,232,240,0.28)",
+    boxSizing: "border-box",
+    animation: "appLoaderSpin 0.95s linear infinite",
+    filter: "drop-shadow(0 10px 24px rgba(37,99,235,0.18))",
   },
 };
