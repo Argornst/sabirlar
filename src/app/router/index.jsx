@@ -9,7 +9,6 @@ import DashboardPage from "../../pages/DashboardPage";
 import SalesPage from "../../pages/SalesPage";
 import NewSalePage from "../../pages/NewSalePage";
 import ProductsPage from "../../pages/ProductsPage";
-import PriceManagementPage from "../../pages/PriceManagementPage";
 import ReportsPage from "../../pages/ReportsPage";
 
 export function AppRouter({
@@ -19,7 +18,6 @@ export function AppRouter({
   salesElement,
   newSaleElement,
   productsElement,
-  priceManagementElement,
   reportsElement,
   loginElement,
 }) {
@@ -70,10 +68,6 @@ export function AppRouter({
             <Route
               path={ROUTES.PRODUCTS}
               element={productsElement ?? <ProductsPage />}
-            />
-            <Route
-              path={ROUTES.PRICE_MANAGEMENT}
-              element={priceManagementElement ?? <PriceManagementPage />}
             />
             <Route
               path={ROUTES.REPORTS}

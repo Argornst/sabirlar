@@ -18,7 +18,6 @@ import DashboardPage from "./pages/DashboardPage";
 import SalesPage from "./pages/SalesPage";
 import NewSalePage from "./pages/NewSalePage";
 import ProductsPage from "./pages/ProductsPage";
-import PriceManagementPage from "./pages/PriceManagementPage";
 import ReportsPage from "./pages/ReportsPage";
 
 function todayForInput() {
@@ -49,10 +48,6 @@ export default function App() {
   const [sales, setSales] = useState([]);
   const [loadingSales, setLoadingSales] = useState(false);
 
-  const [priceProductId, setPriceProductId] = useState("");
-  const [newPrice, setNewPrice] = useState("");
-  const [savingPrice, setSavingPrice] = useState(false);
-
   const [editingSaleId, setEditingSaleId] = useState(null);
   const [saleDate, setSaleDate] = useState(todayForInput());
   const [customerName, setCustomerName] = useState("");
@@ -81,7 +76,6 @@ export default function App() {
 
     loadProducts();
     loadSales();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 
   async function loadProducts() {
@@ -93,7 +87,6 @@ export default function App() {
       const { data, error } = await supabase
         .from("products")
         .select("id, name, unit, unit_price, vat_type, vat_rate, is_active")
-        .eq("is_active", true)
         .order("id", { ascending: true });
 
       if (error) throw error;
@@ -102,8 +95,6 @@ export default function App() {
       setProducts(rows);
 
       if (rows.length > 0) {
-        setPriceProductId((prev) => prev || String(rows[0].id));
-        setNewPrice((prev) => prev || String(rows[0].unit_price ?? ""));
         setSaleProductId((prev) => prev || String(rows[0].id));
       }
     } catch (error) {
@@ -153,38 +144,32 @@ export default function App() {
   }
 
   async function handleLogin(email, password) {
-  try {
-    setAuthLoading(true);
-    setAuthMessage("");
+    try {
+      setAuthLoading(true);
+      setAuthMessage("");
 
-    await authRepository.signIn({ email, password });
+      await authRepository.signIn({ email, password });
 
-    setAuthMessage("Giriş başarılı.");
-    toast.success("Giriş başarılı", "Yönetim paneline yönlendiriliyorsun.");
-  } catch (error) {
-    const message = error?.message || "Giriş başarısız.";
-    setAuthMessage(message);
-    toast.error("Giriş başarısız", message);
-  } finally {
-    setAuthLoading(false);
+      setAuthMessage("Giriş başarılı.");
+      toast.success("Giriş başarılı", "Yönetim paneline yönlendiriliyorsun.");
+    } catch (error) {
+      const message = error?.message || "Giriş başarısız.";
+      setAuthMessage(message);
+      toast.error("Giriş başarısız", message);
+    } finally {
+      setAuthLoading(false);
+    }
   }
-}
 
   async function handleLogout() {
-  try {
-    await authRepository.signOut();
-    toast.info("Çıkış yapıldı", "Oturum güvenli şekilde kapatıldı.");
-  } catch (error) {
-    console.error("Logout error:", error);
-    toast.error("Çıkış yapılamadı", error?.message || "Beklenmeyen bir hata oluştu.");
+    try {
+      await authRepository.signOut();
+      toast.info("Çıkış yapıldı", "Oturum güvenli şekilde kapatıldı.");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Çıkış yapılamadı", error?.message || "Beklenmeyen bir hata oluştu.");
+    }
   }
-}
-
-  const selectedPriceProduct = useMemo(() => {
-    return (
-      products.find((p) => String(p.id) === String(priceProductId)) || null
-    );
-  }, [products, priceProductId]);
 
   const selectedSaleProduct = useMemo(() => {
     return products.find((p) => String(p.id) === String(saleProductId)) || null;
@@ -221,9 +206,7 @@ export default function App() {
       const matchesSearch =
         !q ||
         String(sale.customer_name || "").toLowerCase().includes(q) ||
-        String(productName).toLowerCase().includes(q) ||
-        String(sale.sale_date || "").toLowerCase().includes(q) ||
-        String(sale.status || "").toLowerCase().includes(q);
+        String(productName).toLowerCase().includes(q);
 
       const matchesStart = !filterStartDate || sale.sale_date >= filterStartDate;
       const matchesEnd = !filterEndDate || sale.sale_date <= filterEndDate;
@@ -231,248 +214,6 @@ export default function App() {
       return matchesSearch && matchesStart && matchesEnd;
     });
   }, [sales, search, filterStartDate, filterEndDate]);
-
-  const totalSalesAmount = useMemo(() => {
-    return filteredSales.reduce(
-      (sum, sale) => sum + Number(sale.total_amount || 0),
-      0
-    );
-  }, [filteredSales]);
-
-  const pendingCount = useMemo(() => {
-    return filteredSales.filter((sale) => sale.status === "beklemede").length;
-  }, [filteredSales]);
-
-  const invoicedCount = useMemo(() => {
-    return filteredSales.filter((sale) => sale.status === "faturalandi").length;
-  }, [filteredSales]);
-
-  function resetSaleForm() {
-    setEditingSaleId(null);
-    setSaleDate(todayForInput());
-    setCustomerName("");
-    setQuantity(1);
-    setSaleStatus("beklemede");
-
-    if (products.length > 0) {
-      setSaleProductId(String(products[0].id));
-    } else {
-      setSaleProductId("");
-    }
-  }
-
-  async function handleUpdatePrice(e) {
-  e.preventDefault();
-
-  if (!isAdmin || !session?.user?.id) return;
-
-  const numericPrice = Number(newPrice);
-  if (!numericPrice || numericPrice <= 0 || !priceProductId) {
-    toast.warning("Geçersiz fiyat", "Lütfen sıfırdan büyük bir fiyat gir.");
-    return;
-  }
-
-  try {
-    setSavingPrice(true);
-
-    const { error } = await supabase
-      .from("products")
-      .update({
-        unit_price: numericPrice,
-        updated_by: session.user.id,
-      })
-      .eq("id", priceProductId);
-
-    if (error) throw error;
-
-    await loadProducts();
-
-    toast.success(
-      "Fiyat güncellendi",
-      `${selectedPriceProduct?.name || "Ürün"} için yeni fiyat kaydedildi.`
-    );
-  } catch (error) {
-    console.error("handleUpdatePrice error:", error);
-    toast.error(
-      "Fiyat güncellenemedi",
-      error?.message || "Beklenmeyen bir hata oluştu."
-    );
-  } finally {
-    setSavingPrice(false);
-  }
-}
-
-  async function handleSaveSale(e, navigate) {
-  e.preventDefault();
-
-  if (!session?.user?.id) return;
-
-  if (!saleProductId || !customerName.trim() || !selectedSaleProduct) {
-    toast.warning(
-      "Eksik bilgi",
-      "Müşteri adı ve ürün seçimi zorunludur."
-    );
-    return;
-  }
-
-  const qty = Number(quantity);
-  if (!qty || qty <= 0) {
-    toast.warning("Geçersiz miktar", "Lütfen geçerli bir miktar gir.");
-    return;
-  }
-
-  const payload = {
-    sale_date: saleDate,
-    customer_name: customerName.trim().toUpperCase(),
-    product_id: selectedSaleProduct.id,
-    quantity: qty,
-    unit: selectedSaleProduct.unit || "kg",
-    unit_price: Number(selectedSaleProduct.unit_price || 0),
-    vat_type: selectedSaleProduct.vat_type || "DAHIL",
-    vat_rate: Number(selectedSaleProduct.vat_rate || 0),
-    subtotal: calculatedSubtotal,
-    vat_amount: calculatedVatAmount,
-    total_amount: calculatedTotal,
-    status: saleStatus,
-    note: null,
-    updated_by: session.user.id,
-  };
-
-  try {
-    setSavingSale(true);
-
-    if (editingSaleId && isAdmin) {
-      const { error } = await supabase
-        .from("sales")
-        .update(payload)
-        .eq("id", editingSaleId);
-
-      if (error) throw error;
-
-      toast.success(
-        "Satış güncellendi",
-        `${customerName.trim().toUpperCase()} için kayıt güncellendi.`
-      );
-    } else {
-      const { error } = await supabase
-        .from("sales")
-        .insert([{ ...payload, created_by: session.user.id }]);
-
-      if (error) throw error;
-
-      toast.success(
-        "Satış kaydedildi",
-        `${customerName.trim().toUpperCase()} için yeni satış oluşturuldu.`
-      );
-    }
-
-    resetSaleForm();
-    await loadSales();
-
-    if (navigate) {
-      navigate(ROUTES.SALES);
-    }
-  } catch (error) {
-    console.error("handleSaveSale error:", error);
-    toast.error(
-      editingSaleId ? "Satış güncellenemedi" : "Satış kaydedilemedi",
-      error?.message || "Beklenmeyen bir hata oluştu."
-    );
-  } finally {
-    setSavingSale(false);
-  }
-}
-
-  function handleEditSale(sale, navigate) {
-    if (!isAdmin) return;
-
-    setEditingSaleId(sale.id);
-    setSaleDate(sale.sale_date || todayForInput());
-    setCustomerName(sale.customer_name || "");
-    setSaleProductId(String(sale.product_id || ""));
-    setQuantity(Number(sale.quantity) || 1);
-    setSaleStatus(sale.status || "beklemede");
-
-    if (navigate) {
-      navigate(ROUTES.NEW_SALE);
-    }
-  }
-
-  async function handleDeleteSale(id) {
-  if (!isAdmin) return;
-
-  const ok = window.confirm("Bu satış kaydını silmek istediğine emin misin?");
-  if (!ok) return;
-
-  try {
-    const { error } = await supabase.from("sales").delete().eq("id", id);
-    if (error) throw error;
-
-    await loadSales();
-    toast.success("Satış silindi", "Seçilen satış kaydı sistemden kaldırıldı.");
-  } catch (error) {
-    console.error("handleDeleteSale error:", error);
-    toast.error(
-      "Satış silinemedi",
-      error?.message || "Beklenmeyen bir hata oluştu."
-    );
-  }
-}
-
-  async function handleStatusChange(saleId, nextStatus) {
-  if (!isAdmin || !session?.user?.id) return;
-
-  try {
-    const { error } = await supabase
-      .from("sales")
-      .update({
-        status: nextStatus,
-        updated_by: session.user.id,
-      })
-      .eq("id", saleId);
-
-    if (error) throw error;
-
-    await loadSales();
-    toast.success("Durum güncellendi", `Satış durumu "${nextStatus}" olarak güncellendi.`);
-  } catch (error) {
-    console.error("handleStatusChange error:", error);
-    toast.error(
-      "Durum güncellenemedi",
-      error?.message || "Beklenmeyen bir hata oluştu."
-    );
-  }
-}
-
-  function handleExportCsv() {
-  if (!filteredSales.length) {
-    toast.warning("Veri yok", "Dışa aktarılacak kayıt bulunamadı.");
-    return;
-  }
-
-  exportSalesCsv(filteredSales);
-  toast.info("CSV hazırlandı", "Satış kayıtları CSV olarak dışa aktarıldı.");
-}
-
-async function handleExportExcel() {
-  if (!filteredSales.length) {
-    toast.warning("Veri yok", "Dışa aktarılacak kayıt bulunamadı.");
-    return;
-  }
-
-  await exportSalesExcel(filteredSales);
-  toast.info("Excel hazırlandı", "Satış kayıtları Excel olarak dışa aktarıldı.");
-}
-
-function handleExportPdf() {
-  if (!filteredSales.length) {
-    toast.warning("Veri yok", "Dışa aktarılacak kayıt bulunamadı.");
-    return;
-  }
-
-  exportSalesPdf(filteredSales);
-  toast.info("PDF hazırlandı", "Satış kayıtları PDF olarak dışa aktarıldı.");
-}
 
   const loginElement = (
     <LoginPage
@@ -492,9 +233,6 @@ function handleExportPdf() {
       loadingSales={loadingSales}
       isAdmin={isAdmin}
       isOperasyon={isOperasyon}
-      onEditSale={handleEditSale}
-      onDeleteSale={handleDeleteSale}
-      onStatusChange={handleStatusChange}
     />
   );
 
@@ -513,7 +251,6 @@ function handleExportPdf() {
       setSaleStatus={setSaleStatus}
       selectedSaleProduct={selectedSaleProduct}
       calculatedTotal={calculatedTotal}
-      onSubmit={handleSaveSale}
       savingSale={savingSale}
       isAdmin={isAdmin}
       editingSaleId={editingSaleId}
@@ -521,22 +258,11 @@ function handleExportPdf() {
   );
 
   const productsElement = (
-    <ProductsPage products={products} loadingProducts={loadingProducts} />
-  );
-
-  const priceManagementElement = isAdmin ? (
-    <PriceManagementPage
+    <ProductsPage
       products={products}
-      priceProductId={priceProductId}
-      setPriceProductId={setPriceProductId}
-      newPrice={newPrice}
-      setNewPrice={setNewPrice}
-      selectedPriceProduct={selectedPriceProduct}
-      onSubmit={handleUpdatePrice}
-      savingPrice={savingPrice}
+      loadingProducts={loadingProducts}
+      onProductsRefresh={loadProducts}
     />
-  ) : (
-    <Navigate to={ROUTES.DASHBOARD} replace />
   );
 
   const reportsElement = (
@@ -548,12 +274,9 @@ function handleExportPdf() {
       search={search}
       setSearch={setSearch}
       filteredSales={filteredSales}
-      totalSalesAmount={totalSalesAmount}
-      pendingCount={pendingCount}
-      invoicedCount={invoicedCount}
-      onExportCsv={handleExportCsv}
-      onExportExcel={handleExportExcel}
-      onExportPdf={handleExportPdf}
+      onExportCsv={exportSalesCsv}
+      onExportExcel={exportSalesExcel}
+      onExportPdf={exportSalesPdf}
       loadingReports={loadingSales}
     />
   );
@@ -567,7 +290,6 @@ function handleExportPdf() {
       salesElement={salesElement}
       newSaleElement={newSaleElement}
       productsElement={productsElement}
-      priceManagementElement={priceManagementElement}
       reportsElement={reportsElement}
     />
   );

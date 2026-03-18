@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import SkeletonTable from "../presentation/components/common/SkeletonTable";
 import PageHero from "../presentation/components/ui/PageHero";
 import SectionCard from "../presentation/components/ui/SectionCard";
+import { supabase } from "../infrastructure/supabase/client";
+import { useToast } from "../presentation/hooks/useToast";
+import { useAuth } from "../presentation/hooks/useAuth";
 
 function formatMoney(value) {
   return new Intl.NumberFormat("tr-TR", {
@@ -21,10 +24,305 @@ function getProductInitials(name) {
     .toUpperCase();
 }
 
-export default function ProductsPage({ products, loadingProducts, onCreateProduct }) {
+export default function ProductsPage({
+  products = [],
+  loadingProducts,
+  onProductsRefresh,
+}) {
+  const toast = useToast();
+  const auth = useAuth();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name-asc");
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [updatingProduct, setUpdatingProduct] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState(false);
+  const [togglingProductId, setTogglingProductId] = useState(null);
+
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    unit: "",
+    vat_type: "DAHIL",
+    vat_rate: 1,
+    unit_price: "",
+    is_active: true,
+  });
+
+  const [editForm, setEditForm] = useState({
+    id: null,
+    name: "",
+    unit: "",
+    vat_type: "DAHIL",
+    vat_rate: 1,
+    unit_price: "",
+    is_active: true,
+  });
+
+  function resetCreateForm() {
+    setCreateForm({
+      name: "",
+      unit: "",
+      vat_type: "DAHIL",
+      vat_rate: 1,
+      unit_price: "",
+      is_active: true,
+    });
+  }
+
+  function handleCreateChange(field, value) {
+    setCreateForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
+
+  function handleEditChange(field, value) {
+    setEditForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
+
+  function openEditModal(product) {
+    setEditForm({
+      id: product.id,
+      name: product.name || "",
+      unit: product.unit || "",
+      vat_type: product.vat_type || "DAHIL",
+      vat_rate: product.vat_rate ?? 1,
+      unit_price: product.unit_price ?? "",
+      is_active: !!product.is_active,
+    });
+
+    setIsEditOpen(true);
+  }
+
+  function closeEditModal() {
+    setIsEditOpen(false);
+    setEditForm({
+      id: null,
+      name: "",
+      unit: "",
+      vat_type: "DAHIL",
+      vat_rate: 1,
+      unit_price: "",
+      is_active: true,
+    });
+  }
+
+  function openDeleteModal(product) {
+    setSelectedProduct(product);
+    setIsDeleteOpen(true);
+  }
+
+  function closeDeleteModal() {
+    setIsDeleteOpen(false);
+    setSelectedProduct(null);
+  }
+
+  async function handleCreateProduct(e) {
+    e.preventDefault();
+
+    const name = createForm.name.trim();
+    const unit = createForm.unit.trim();
+    const vatRate = Number(createForm.vat_rate);
+    const unitPrice = Number(createForm.unit_price);
+    const userId = auth?.session?.user?.id || null;
+
+    if (!name) {
+      toast.warning("Eksik bilgi", "Ürün adı zorunludur.");
+      return;
+    }
+
+    if (!unit) {
+      toast.warning("Eksik bilgi", "Birim alanı zorunludur.");
+      return;
+    }
+
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      toast.warning("Geçersiz fiyat", "Lütfen sıfırdan büyük bir fiyat gir.");
+      return;
+    }
+
+    if (!Number.isFinite(vatRate) || vatRate < 0) {
+      toast.warning("Geçersiz KDV", "Lütfen geçerli bir KDV oranı gir.");
+      return;
+    }
+
+    try {
+      setSavingProduct(true);
+
+      const { error } = await supabase.from("products").insert([
+        {
+          name,
+          unit,
+          vat_type: createForm.vat_type,
+          vat_rate: vatRate,
+          unit_price: unitPrice,
+          is_active: createForm.is_active,
+          updated_by: userId,
+        },
+      ]);
+
+      if (error) throw error;
+
+      await onProductsRefresh?.();
+
+      toast.success("Ürün oluşturuldu", `${name} başarıyla ürün listesine eklendi.`);
+
+      resetCreateForm();
+      setIsCreateOpen(false);
+    } catch (error) {
+      console.error("handleCreateProduct error:", error);
+      toast.error(
+        "Ürün oluşturulamadı",
+        error?.message || "Beklenmeyen bir hata oluştu."
+      );
+    } finally {
+      setSavingProduct(false);
+    }
+  }
+
+  async function handleUpdateProduct(e) {
+    e.preventDefault();
+
+    const name = editForm.name.trim();
+    const unit = editForm.unit.trim();
+    const vatRate = Number(editForm.vat_rate);
+    const unitPrice = Number(editForm.unit_price);
+    const userId = auth?.session?.user?.id || null;
+
+    if (!editForm.id) {
+      toast.error("Güncelleme hatası", "Düzenlenecek ürün bulunamadı.");
+      return;
+    }
+
+    if (!name) {
+      toast.warning("Eksik bilgi", "Ürün adı zorunludur.");
+      return;
+    }
+
+    if (!unit) {
+      toast.warning("Eksik bilgi", "Birim alanı zorunludur.");
+      return;
+    }
+
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      toast.warning("Geçersiz fiyat", "Lütfen sıfırdan büyük bir fiyat gir.");
+      return;
+    }
+
+    if (!Number.isFinite(vatRate) || vatRate < 0) {
+      toast.warning("Geçersiz KDV", "Lütfen geçerli bir KDV oranı gir.");
+      return;
+    }
+
+    try {
+      setUpdatingProduct(true);
+
+      const { error } = await supabase
+        .from("products")
+        .update({
+          name,
+          unit,
+          vat_type: editForm.vat_type,
+          vat_rate: vatRate,
+          unit_price: unitPrice,
+          is_active: editForm.is_active,
+          updated_by: userId,
+        })
+        .eq("id", editForm.id);
+
+      if (error) throw error;
+
+      await onProductsRefresh?.();
+
+      toast.success("Ürün güncellendi", `${name} başarıyla güncellendi.`);
+      closeEditModal();
+    } catch (error) {
+      console.error("handleUpdateProduct error:", error);
+      toast.error(
+        "Ürün güncellenemedi",
+        error?.message || "Beklenmeyen bir hata oluştu."
+      );
+    } finally {
+      setUpdatingProduct(false);
+    }
+  }
+
+  async function handleToggleProductStatus(product) {
+    const userId = auth?.session?.user?.id || null;
+    const nextIsActive = !product.is_active;
+
+    try {
+      setTogglingProductId(product.id);
+
+      const { error } = await supabase
+        .from("products")
+        .update({
+          is_active: nextIsActive,
+          updated_by: userId,
+        })
+        .eq("id", product.id);
+
+      if (error) throw error;
+
+      await onProductsRefresh?.();
+
+      toast.success(
+        nextIsActive ? "Ürün aktif edildi" : "Ürün pasife alındı",
+        `${product.name} başarıyla ${nextIsActive ? "aktif" : "pasif"} duruma getirildi.`
+      );
+    } catch (error) {
+      console.error("handleToggleProductStatus error:", error);
+      toast.error(
+        "Durum güncellenemedi",
+        error?.message || "Beklenmeyen bir hata oluştu."
+      );
+    } finally {
+      setTogglingProductId(null);
+    }
+  }
+
+  async function handleDeleteProduct() {
+    if (!selectedProduct) return;
+
+    try {
+      setDeletingProduct(true);
+
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", selectedProduct.id);
+
+      if (error) throw error;
+
+      await onProductsRefresh?.();
+
+      toast.success(
+        "Ürün silindi",
+        `${selectedProduct.name} sistemden kaldırıldı.`
+      );
+
+      closeDeleteModal();
+    } catch (error) {
+      console.error("handleDeleteProduct error:", error);
+      toast.error(
+        "Silme başarısız",
+        error?.message || "Beklenmeyen bir hata oluştu."
+      );
+    } finally {
+      setDeletingProduct(false);
+    }
+  }
 
   const filteredProducts = useMemo(() => {
     let list = [...products];
@@ -148,6 +446,14 @@ export default function ProductsPage({ products, loadingProducts, onCreateProduc
           .products-filter-chips {
             flex-wrap: wrap;
           }
+
+          .product-form-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .product-actions {
+            flex-direction: column;
+          }
         }
 
         .product-card:hover {
@@ -157,7 +463,9 @@ export default function ProductsPage({ products, loadingProducts, onCreateProduc
         }
 
         .toolbar-input:focus,
-        .toolbar-select:focus {
+        .toolbar-select:focus,
+        .product-form-input:focus,
+        .product-form-select:focus {
           outline: none;
           border-color: #93c5fd;
           box-shadow: 0 0 0 4px rgba(59,130,246,0.10);
@@ -199,7 +507,7 @@ export default function ProductsPage({ products, loadingProducts, onCreateProduc
 
       <SectionCard
         title="Ürün Listesi"
-        subtitle="Sistemde tanımlı aktif ürünler"
+        subtitle="Sistemde tanımlı ürünler"
         rightContent={
           <div style={styles.badgeWrap}>
             <div style={styles.badgeGlow} />
@@ -224,11 +532,7 @@ export default function ProductsPage({ products, loadingProducts, onCreateProduc
               <button
                 type="button"
                 onClick={() => setStatusFilter("all")}
-                style={
-                  statusFilter === "all"
-                    ? styles.filterChipActive
-                    : styles.filterChip
-                }
+                style={statusFilter === "all" ? styles.filterChipActive : styles.filterChip}
               >
                 Tümü
               </button>
@@ -236,11 +540,7 @@ export default function ProductsPage({ products, loadingProducts, onCreateProduc
               <button
                 type="button"
                 onClick={() => setStatusFilter("active")}
-                style={
-                  statusFilter === "active"
-                    ? styles.filterChipActive
-                    : styles.filterChip
-                }
+                style={statusFilter === "active" ? styles.filterChipActive : styles.filterChip}
               >
                 Aktif
               </button>
@@ -248,11 +548,7 @@ export default function ProductsPage({ products, loadingProducts, onCreateProduc
               <button
                 type="button"
                 onClick={() => setStatusFilter("passive")}
-                style={
-                  statusFilter === "passive"
-                    ? styles.filterChipActive
-                    : styles.filterChip
-                }
+                style={statusFilter === "passive" ? styles.filterChipActive : styles.filterChip}
               >
                 Pasif
               </button>
@@ -275,7 +571,7 @@ export default function ProductsPage({ products, loadingProducts, onCreateProduc
             <button
               type="button"
               className="products-new-button"
-              onClick={onCreateProduct}
+              onClick={() => setIsCreateOpen(true)}
               style={styles.newButton}
             >
               + Yeni Ürün
@@ -284,62 +580,381 @@ export default function ProductsPage({ products, loadingProducts, onCreateProduc
         </div>
 
         <div className="products-grid" style={styles.grid}>
-          {filteredProducts.map((product) => (
-            <div key={product.id} className="product-card" style={styles.card}>
-              <div style={styles.cardGlow} />
+          {filteredProducts.map((product) => {
+            const isToggling = togglingProductId === product.id;
 
-              <div className="products-card-top" style={styles.cardTop}>
-                <div style={styles.identity}>
-                  <div style={styles.avatar}>{getProductInitials(product.name)}</div>
+            return (
+              <div key={product.id} className="product-card" style={styles.card}>
+                <div style={styles.cardGlow} />
 
-                  <div>
-                    <div style={styles.name}>{product.name}</div>
-                    <div style={styles.meta}>
-                      {product.unit || "-"} • {product.vat_type || "-"} • %
-                      {product.vat_rate ?? 0}
+                <div className="products-card-top" style={styles.cardTop}>
+                  <div style={styles.identity}>
+                    <div style={styles.avatar}>{getProductInitials(product.name)}</div>
+
+                    <div>
+                      <div style={styles.name}>{product.name}</div>
+                      <div style={styles.meta}>
+                        {product.unit || "-"} • {product.vat_type || "-"} • %
+                        {product.vat_rate ?? 0}
+                      </div>
                     </div>
+                  </div>
+
+                  <div style={product.is_active ? styles.activeBadge : styles.passiveBadge}>
+                    <span
+                      style={product.is_active ? styles.activeBadgeDot : styles.passiveBadgeDot}
+                    />
+                    {product.is_active ? "Aktif" : "Pasif"}
                   </div>
                 </div>
 
-                <div
-                  style={product.is_active ? styles.activeBadge : styles.passiveBadge}
-                >
-                  <span
-                    style={
-                      product.is_active ? styles.activeBadgeDot : styles.passiveBadgeDot
-                    }
-                  />
-                  {product.is_active ? "Aktif" : "Pasif"}
+                <div style={styles.divider} />
+
+                <div className="products-price-row" style={styles.priceRow}>
+                  <div>
+                    <div style={styles.priceLabel}>Birim Fiyat</div>
+                    <div style={styles.price}>{formatMoney(product.unit_price)}</div>
+                  </div>
+
+                  <div style={styles.pricePill}>
+                    {product.vat_type || "KDV"} %{product.vat_rate ?? 0}
+                  </div>
+                </div>
+
+                <div className="product-actions" style={styles.cardActions}>
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(product)}
+                    style={styles.secondaryActionButton}
+                  >
+                    Düzenle
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleToggleProductStatus(product)}
+                    disabled={isToggling}
+                    style={product.is_active ? styles.warningActionButton : styles.successActionButton}
+                  >
+                    {isToggling
+                      ? "İşleniyor..."
+                      : product.is_active
+                      ? "Pasife Al"
+                      : "Aktif Et"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openDeleteModal(product)}
+                    style={styles.dangerActionButton}
+                  >
+                    Sil
+                  </button>
                 </div>
               </div>
-
-              <div style={styles.divider} />
-
-              <div className="products-price-row" style={styles.priceRow}>
-                <div>
-                  <div style={styles.priceLabel}>Birim Fiyat</div>
-                  <div style={styles.price}>{formatMoney(product.unit_price)}</div>
-                </div>
-
-                <div style={styles.pricePill}>
-                  {product.vat_type || "KDV"} %{product.vat_rate ?? 0}
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {filteredProducts.length === 0 && (
             <div style={styles.empty}>
               <div style={styles.emptyIcon}>□</div>
               <div style={styles.emptyTitle}>Sonuç bulunamadı</div>
               <div style={styles.emptyText}>
-                Arama veya filtre kriterlerine uygun ürün yok. Filtreleri temizleyip
-                tekrar deneyin.
+                Arama veya filtre kriterlerine uygun ürün yok. Filtreleri temizleyip tekrar
+                deneyin.
               </div>
             </div>
           )}
         </div>
       </SectionCard>
+
+      {isCreateOpen && (
+        <div style={styles.modalOverlay} onClick={() => setIsCreateOpen(false)}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={handleCreateProduct}>
+              <div style={styles.modalHeader}>
+                <div>
+                  <div style={styles.modalTitle}>Yeni Ürün</div>
+                  <div style={styles.modalSubtitle}>
+                    Yeni ürün bilgisini doldurup doğrudan kataloğa ekleyebilirsin.
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  style={styles.modalCloseButton}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={styles.modalBody}>
+                <div className="product-form-grid" style={styles.formGrid}>
+                  <div style={styles.field}>
+                    <label style={styles.label}>Ürün Adı</label>
+                    <input
+                      className="product-form-input"
+                      value={createForm.name}
+                      onChange={(e) => handleCreateChange("name", e.target.value)}
+                      placeholder="Örn. Kavrulmuş İç Fındık"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div style={styles.field}>
+                    <label style={styles.label}>Birim</label>
+                    <input
+                      className="product-form-input"
+                      value={createForm.unit}
+                      onChange={(e) => handleCreateChange("unit", e.target.value)}
+                      placeholder="Örn. kg"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div style={styles.field}>
+                    <label style={styles.label}>Birim Fiyat</label>
+                    <input
+                      className="product-form-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={createForm.unit_price}
+                      onChange={(e) => handleCreateChange("unit_price", e.target.value)}
+                      placeholder="0.00"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div style={styles.field}>
+                    <label style={styles.label}>KDV Tipi</label>
+                    <select
+                      className="product-form-select"
+                      value={createForm.vat_type}
+                      onChange={(e) => handleCreateChange("vat_type", e.target.value)}
+                      style={styles.input}
+                    >
+                      <option value="DAHIL">DAHİL</option>
+                      <option value="HARIC">HARİÇ</option>
+                    </select>
+                  </div>
+
+                  <div style={styles.field}>
+                    <label style={styles.label}>KDV Oranı</label>
+                    <input
+                      className="product-form-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={createForm.vat_rate}
+                      onChange={(e) => handleCreateChange("vat_rate", e.target.value)}
+                      placeholder="1"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div style={styles.checkboxField}>
+                    <label style={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={createForm.is_active}
+                        onChange={(e) => handleCreateChange("is_active", e.target.checked)}
+                      />
+                      <span>Ürün aktif olarak oluşturulsun</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.modalFooter}>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  style={styles.secondaryButton}
+                >
+                  İptal
+                </button>
+
+                <button type="submit" disabled={savingProduct} style={styles.primaryButton}>
+                  {savingProduct ? "Kaydediliyor..." : "Kaydet"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isEditOpen && (
+        <div style={styles.modalOverlay} onClick={closeEditModal}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={handleUpdateProduct}>
+              <div style={styles.modalHeader}>
+                <div>
+                  <div style={styles.modalTitle}>Ürünü Düzenle</div>
+                  <div style={styles.modalSubtitle}>
+                    Ürün bilgilerini, fiyatını ve aktiflik durumunu güncelleyebilirsin.
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  style={styles.modalCloseButton}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={styles.modalBody}>
+                <div className="product-form-grid" style={styles.formGrid}>
+                  <div style={styles.field}>
+                    <label style={styles.label}>Ürün Adı</label>
+                    <input
+                      className="product-form-input"
+                      value={editForm.name}
+                      onChange={(e) => handleEditChange("name", e.target.value)}
+                      placeholder="Örn. Kavrulmuş İç Fındık"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div style={styles.field}>
+                    <label style={styles.label}>Birim</label>
+                    <input
+                      className="product-form-input"
+                      value={editForm.unit}
+                      onChange={(e) => handleEditChange("unit", e.target.value)}
+                      placeholder="Örn. kg"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div style={styles.field}>
+                    <label style={styles.label}>Birim Fiyat</label>
+                    <input
+                      className="product-form-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={editForm.unit_price}
+                      onChange={(e) => handleEditChange("unit_price", e.target.value)}
+                      placeholder="0.00"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div style={styles.field}>
+                    <label style={styles.label}>KDV Tipi</label>
+                    <select
+                      className="product-form-select"
+                      value={editForm.vat_type}
+                      onChange={(e) => handleEditChange("vat_type", e.target.value)}
+                      style={styles.input}
+                    >
+                      <option value="DAHIL">DAHİL</option>
+                      <option value="HARIC">HARİÇ</option>
+                    </select>
+                  </div>
+
+                  <div style={styles.field}>
+                    <label style={styles.label}>KDV Oranı</label>
+                    <input
+                      className="product-form-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={editForm.vat_rate}
+                      onChange={(e) => handleEditChange("vat_rate", e.target.value)}
+                      placeholder="1"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div style={styles.checkboxField}>
+                    <label style={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={editForm.is_active}
+                        onChange={(e) => handleEditChange("is_active", e.target.checked)}
+                      />
+                      <span>Ürün aktif olsun</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.modalFooter}>
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  style={styles.secondaryButton}
+                >
+                  İptal
+                </button>
+
+                <button type="submit" disabled={updatingProduct} style={styles.primaryButton}>
+                  {updatingProduct ? "Güncelleniyor..." : "Güncelle"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isDeleteOpen && (
+        <div style={styles.modalOverlay} onClick={closeDeleteModal}>
+          <div style={styles.deleteModal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <div>
+                <div style={styles.modalTitle}>Ürünü Sil</div>
+                <div style={styles.modalSubtitle}>
+                  Bu işlem geri alınamaz. Ürün sistemden tamamen kaldırılacaktır.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                style={styles.modalCloseButton}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={styles.modalBody}>
+              <div style={styles.deleteWarningBox}>
+                <div style={styles.deleteWarningTitle}>
+                  Silinecek ürün: {selectedProduct?.name || "-"}
+                </div>
+                <div style={styles.deleteWarningText}>
+                  Ürün geçmiş satış kayıtlarında kullanıldıysa hard delete yerine pasife alma
+                  daha güvenlidir.
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.modalFooter}>
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                style={styles.secondaryButton}
+              >
+                İptal
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDeleteProduct}
+                disabled={deletingProduct}
+                style={styles.dangerButton}
+              >
+                {deletingProduct ? "Siliniyor..." : "Evet, sil"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -430,7 +1045,8 @@ const styles = {
     marginBottom: "18px",
     padding: "14px",
     borderRadius: "24px",
-    background: "linear-gradient(180deg, rgba(248,250,252,0.9) 0%, rgba(255,255,255,0.72) 100%)",
+    background:
+      "linear-gradient(180deg, rgba(248,250,252,0.9) 0%, rgba(255,255,255,0.72) 100%)",
     border: "1px solid rgba(226,232,240,1)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
   },
@@ -502,7 +1118,8 @@ const styles = {
     padding: "0 14px",
     borderRadius: "999px",
     border: "1px solid rgba(147,197,253,1)",
-    background: "linear-gradient(180deg, rgba(239,246,255,1) 0%, rgba(219,234,254,1) 100%)",
+    background:
+      "linear-gradient(180deg, rgba(239,246,255,1) 0%, rgba(219,234,254,1) 100%)",
     color: "#1d4ed8",
     fontWeight: 800,
     fontSize: "13px",
@@ -657,6 +1274,56 @@ const styles = {
     whiteSpace: "nowrap",
   },
 
+  cardActions: {
+    display: "flex",
+    gap: "10px",
+    marginTop: "16px",
+  },
+
+  secondaryActionButton: {
+    height: "40px",
+    padding: "0 14px",
+    borderRadius: "12px",
+    border: "1px solid rgba(226,232,240,1)",
+    background: "rgba(248,250,252,0.95)",
+    color: "#334155",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  warningActionButton: {
+    height: "40px",
+    padding: "0 14px",
+    borderRadius: "12px",
+    border: "1px solid rgba(251,191,36,0.3)",
+    background: "rgba(254,252,232,0.95)",
+    color: "#a16207",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  successActionButton: {
+    height: "40px",
+    padding: "0 14px",
+    borderRadius: "12px",
+    border: "1px solid rgba(16,185,129,0.22)",
+    background: "rgba(236,253,245,0.95)",
+    color: "#047857",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  dangerActionButton: {
+    height: "40px",
+    padding: "0 14px",
+    borderRadius: "12px",
+    border: "1px solid rgba(239,68,68,0.25)",
+    background: "rgba(254,226,226,0.9)",
+    color: "#b91c1c",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
   activeBadge: {
     display: "inline-flex",
     alignItems: "center",
@@ -739,5 +1406,184 @@ const styles = {
     color: "#64748b",
     fontSize: "14px",
     lineHeight: 1.7,
+  },
+
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(15,23,42,0.42)",
+    backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "24px",
+    zIndex: 1000,
+  },
+
+  modal: {
+    width: "100%",
+    maxWidth: "720px",
+    borderRadius: "28px",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.88) 100%)",
+    border: "1px solid rgba(226,232,240,1)",
+    boxShadow: "0 30px 80px rgba(15,23,42,0.18)",
+    overflow: "hidden",
+  },
+
+  deleteModal: {
+    width: "100%",
+    maxWidth: "620px",
+    borderRadius: "28px",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.90) 100%)",
+    border: "1px solid rgba(226,232,240,1)",
+    boxShadow: "0 30px 80px rgba(15,23,42,0.18)",
+    overflow: "hidden",
+  },
+
+  modalHeader: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: "16px",
+    padding: "22px 22px 16px",
+    borderBottom: "1px solid rgba(226,232,240,0.9)",
+  },
+
+  modalTitle: {
+    color: "#0f172a",
+    fontSize: "22px",
+    fontWeight: 900,
+    letterSpacing: "-0.02em",
+  },
+
+  modalSubtitle: {
+    marginTop: "6px",
+    color: "#64748b",
+    fontSize: "14px",
+    lineHeight: 1.6,
+  },
+
+  modalCloseButton: {
+    width: "38px",
+    height: "38px",
+    borderRadius: "12px",
+    border: "1px solid rgba(226,232,240,1)",
+    background: "rgba(248,250,252,0.9)",
+    color: "#334155",
+    fontSize: "20px",
+    cursor: "pointer",
+  },
+
+  modalBody: {
+    padding: "20px 22px",
+  },
+
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: "14px",
+  },
+
+  field: {
+    display: "grid",
+    gap: "8px",
+  },
+
+  label: {
+    color: "#334155",
+    fontSize: "13px",
+    fontWeight: 800,
+  },
+
+  input: {
+    width: "100%",
+    height: "46px",
+    padding: "0 14px",
+    borderRadius: "14px",
+    border: "1px solid #e2e8f0",
+    background: "rgba(255,255,255,0.88)",
+    color: "#0f172a",
+    fontSize: "14px",
+    fontWeight: 600,
+    transition: "all 160ms ease",
+  },
+
+  checkboxField: {
+    gridColumn: "1 / -1",
+    paddingTop: "4px",
+  },
+
+  checkboxLabel: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "10px",
+    color: "#334155",
+    fontSize: "14px",
+    fontWeight: 700,
+  },
+
+  deleteWarningBox: {
+    borderRadius: "18px",
+    padding: "16px",
+    background: "rgba(254,242,242,0.95)",
+    border: "1px solid rgba(252,165,165,0.45)",
+  },
+
+  deleteWarningTitle: {
+    color: "#991b1b",
+    fontSize: "15px",
+    fontWeight: 900,
+    marginBottom: "6px",
+  },
+
+  deleteWarningText: {
+    color: "#7f1d1d",
+    fontSize: "14px",
+    lineHeight: 1.7,
+  },
+
+  modalFooter: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px",
+    padding: "0 22px 22px",
+  },
+
+  secondaryButton: {
+    height: "42px",
+    padding: "0 16px",
+    borderRadius: "12px",
+    border: "1px solid rgba(226,232,240,1)",
+    background: "rgba(248,250,252,0.95)",
+    color: "#475569",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  primaryButton: {
+    height: "42px",
+    padding: "0 16px",
+    borderRadius: "12px",
+    border: "1px solid rgba(37,99,235,0.18)",
+    background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+    color: "#fff",
+    fontWeight: 800,
+    cursor: "pointer",
+    boxShadow: "0 12px 28px rgba(37,99,235,0.18)",
+  },
+
+  dangerButton: {
+    height: "42px",
+    padding: "0 16px",
+    borderRadius: "12px",
+    border: "1px solid rgba(239,68,68,0.3)",
+    background: "linear-gradient(135deg, #dc2626, #ef4444)",
+    color: "#fff",
+    fontWeight: 800,
+    cursor: "pointer",
+    boxShadow: "0 12px 28px rgba(239,68,68,0.18)",
   },
 };

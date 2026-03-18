@@ -7,7 +7,6 @@ const navItems = [
   { to: ROUTES.SALES, label: "Satışlar", icon: "▤" },
   { to: ROUTES.NEW_SALE, label: "Yeni Satış", icon: "+" },
   { to: ROUTES.PRODUCTS, label: "Ürünler", icon: "◈" },
-  { to: ROUTES.PRICE_MANAGEMENT, label: "Fiyat Yönetimi", icon: "₺", adminOnly: true },
   { to: ROUTES.REPORTS, label: "Raporlar", icon: "◭" },
 ];
 
