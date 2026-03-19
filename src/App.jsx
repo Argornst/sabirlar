@@ -5,6 +5,8 @@ import { authRepository } from "./infrastructure/repositories/authRepository";
 import { supabase } from "./infrastructure/supabase/client";
 import { ROLES } from "./shared/constants/roles";
 import { useToast } from "./presentation/hooks/useToast";
+import { usersRepository } from "./infrastructure/repositories/usersRepository";
+import { adminUsersRepository } from "./infrastructure/repositories/adminUsersRepository";
 import {
   exportSalesCsv,
   exportSalesExcel,
@@ -17,6 +19,7 @@ import SalesPage from "./pages/SalesPage";
 import NewSalePage from "./pages/NewSalePage";
 import ProductsPage from "./pages/ProductsPage";
 import ReportsPage from "./pages/ReportsPage";
+import UsersPage from "./pages/UsersPage";
 
 function todayForInput() {
   const d = new Date();
@@ -164,23 +167,46 @@ export default function App() {
     }
   }
 
-  async function handleLogin(email, password) {
-    try {
-      setAuthLoading(true);
-      setAuthMessage("");
+async function handleLogin(username, password) {
+  try {
+    setAuthLoading(true);
+    setAuthMessage("");
 
-      await authRepository.signIn({ email, password });
+    const lookup = await adminUsersRepository.lookupLoginUsername(username);
 
-      setAuthMessage("Giriş başarılı.");
-      toast.success("Giriş başarılı", "Yönetim paneline yönlendiriliyorsun.");
-    } catch (error) {
-      const message = error?.message || "Giriş başarısız.";
-      setAuthMessage(message);
-      toast.error("Giriş başarısız", message);
-    } finally {
-      setAuthLoading(false);
+    if (!lookup?.email) {
+      throw new Error("Kullanıcı bulunamadı.");
     }
+
+    if (!lookup?.is_active) {
+      throw new Error("Bu hesap pasif durumda.");
+    }
+
+    await authRepository.signIn({
+      email: lookup.email,
+      password,
+    });
+
+    setAuthMessage("Giriş başarılı.");
+    toast.success("Giriş başarılı", "Yönetim paneline yönlendiriliyorsun.");
+  } catch (error) {
+    const rawMessage = error?.message || "Giriş başarısız.";
+
+    let message = rawMessage;
+
+    if (
+      rawMessage.toLowerCase().includes("invalid login credentials") ||
+      rawMessage.toLowerCase().includes("invalid credentials")
+    ) {
+      message = "Şifre yanlış.";
+    }
+
+    setAuthMessage(message);
+    toast.error("Giriş başarısız", message);
+  } finally {
+    setAuthLoading(false);
   }
+}
 
   async function handleLogout() {
     try {
@@ -345,6 +371,8 @@ export default function App() {
     <DashboardPage sales={filteredSales} loading={loadingSales} />
   );
 
+  const usersElement = <UsersPage />;
+
   const salesElement = (
     <SalesPage
       filteredSales={filteredSales}
@@ -416,6 +444,7 @@ export default function App() {
       newSaleElement={newSaleElement}
       productsElement={productsElement}
       reportsElement={reportsElement}
+      usersElement={usersElement}
     />
   );
 }

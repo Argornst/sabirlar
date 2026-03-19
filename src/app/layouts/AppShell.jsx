@@ -1,6 +1,9 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { ROUTES } from "../../shared/constants/routes";
-import { ROLES } from "../../shared/constants/roles";
+import {
+  canAccessRoute,
+  isAdminProfile,
+} from "../../shared/constants/permissions";
 
 const navItems = [
   { to: ROUTES.DASHBOARD, label: "Dashboard", icon: "◫" },
@@ -8,33 +11,23 @@ const navItems = [
   { to: ROUTES.NEW_SALE, label: "Yeni Satış", icon: "+" },
   { to: ROUTES.PRODUCTS, label: "Ürünler", icon: "◈" },
   { to: ROUTES.REPORTS, label: "Raporlar", icon: "◭" },
+  { to: ROUTES.USERS, label: "Kullanıcılar", icon: "◎" },
 ];
 
-export default function AppShell({ session, profile, onLogout, refreshing = false }) {
+export default function AppShell({
+  session,
+  profile,
+  onLogout,
+  refreshing = false,
+}) {
   const roleName = profile?.roles?.name || "-";
-  const isAdmin = roleName === ROLES.ADMIN;
+  const isAdmin = isAdminProfile(profile);
   const fullName = profile?.full_name || session?.user?.email || "Kullanıcı";
+
+  const visibleNavItems = navItems.filter((item) => canAccessRoute(profile, item.to));
 
   return (
     <div style={styles.app}>
-      <style>{`
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.55; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.08); }
-        }
-
-        @keyframes topProgress {
-          0% { transform: translateX(-120%); }
-          100% { transform: translateX(320%); }
-        }
-
-        @media (max-width: 980px) {
-          .app-shell-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
-
       {refreshing && (
         <div style={styles.topProgressTrack}>
           <div style={styles.topProgressBar} />
@@ -44,7 +37,7 @@ export default function AppShell({ session, profile, onLogout, refreshing = fals
       <div style={styles.bgGlowOne} />
       <div style={styles.bgGlowTwo} />
 
-      <div className="app-shell-grid" style={styles.grid}>
+      <div style={styles.grid}>
         <aside style={styles.sidebar}>
           <div>
             <div style={styles.brand}>
@@ -56,26 +49,30 @@ export default function AppShell({ session, profile, onLogout, refreshing = fals
             </div>
 
             <div style={styles.profileCard}>
-              <div style={styles.avatar}>{String(fullName).charAt(0).toUpperCase()}</div>
+              <div style={styles.avatar}>
+                {String(fullName).charAt(0).toUpperCase()}
+              </div>
+
               <div>
                 <div style={styles.profileName}>{fullName}</div>
-                <div style={styles.profileRole}>Rol: {roleName}</div>
+                <div style={styles.profileRole}>
+                  Rol: {roleName} {isAdmin ? "• Tam yetki" : ""}
+                </div>
               </div>
+
               <div style={styles.liveDot} />
             </div>
 
             <nav style={styles.nav}>
-              {navItems
-                .filter((item) => !item.adminOnly || isAdmin)
-                .map((item) => (
-                  <NavItem key={item.to} to={item.to} icon={item.icon}>
-                    {item.label}
-                  </NavItem>
-                ))}
+              {visibleNavItems.map((item) => (
+                <NavItem key={item.to} to={item.to} icon={item.icon}>
+                  {item.label}
+                </NavItem>
+              ))}
             </nav>
           </div>
 
-          <button onClick={onLogout} style={styles.logoutButton}>
+          <button type="button" style={styles.logoutButton} onClick={onLogout}>
             Çıkış Yap
           </button>
         </aside>
@@ -117,7 +114,7 @@ function NavItem({ to, children, icon }) {
       >
         {icon}
       </span>
-      <span>{children}</span>
+      {children}
     </NavLink>
   );
 }
@@ -125,7 +122,8 @@ function NavItem({ to, children, icon }) {
 const styles = {
   app: {
     minHeight: "100vh",
-    background: "linear-gradient(180deg, #0b1020 0%, #111827 18%, #f5f7fb 18%, #eef2f7 100%)",
+    background:
+      "linear-gradient(180deg, #0b1020 0%, #111827 18%, #f5f7fb 18%, #eef2f7 100%)",
     position: "relative",
     overflow: "hidden",
     fontFamily:
@@ -269,7 +267,8 @@ const styles = {
   },
   navItemActive: {
     color: "#ffffff",
-    background: "linear-gradient(135deg, rgba(16,185,129,0.20) 0%, rgba(59,130,246,0.18) 100%)",
+    background:
+      "linear-gradient(135deg, rgba(16,185,129,0.20) 0%, rgba(59,130,246,0.18) 100%)",
     border: "1px solid rgba(16,185,129,0.20)",
   },
   navIcon: {

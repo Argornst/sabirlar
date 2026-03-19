@@ -13,6 +13,15 @@ export async function getCurrentSession() {
 
   const profile = await usersRepository.getProfileByUserId(session.user.id);
 
+  if (!profile?.is_active) {
+    await authRepository.signOut();
+
+    return {
+      session: null,
+      profile: null,
+    };
+  }
+
   return {
     session,
     profile,

@@ -1,15 +1,9 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "../../presentation/routes/ProtectedRoute";
 import PublicRoute from "../../presentation/routes/PublicRoute";
 import { ROUTES } from "../../shared/constants/routes";
+import { canAccessRoute } from "../../shared/constants/permissions";
 import AppShell from "../layouts/AppShell";
-
-import LoginPage from "../../pages/LoginPage";
-import DashboardPage from "../../pages/DashboardPage";
-import SalesPage from "../../pages/SalesPage";
-import NewSalePage from "../../pages/NewSalePage";
-import ProductsPage from "../../pages/ProductsPage";
-import ReportsPage from "../../pages/ReportsPage";
 
 export function AppRouter({
   auth,
@@ -19,59 +13,111 @@ export function AppRouter({
   newSaleElement,
   productsElement,
   reportsElement,
+  usersElement,
   loginElement,
 }) {
+  const isAuthenticated = Boolean(auth?.session);
+  const loading = auth?.loading;
+  const profile = auth?.profile;
+  const session = auth?.session;
+
   return (
     <BrowserRouter>
       <Routes>
         <Route
           element={
             <PublicRoute
-              isAuthenticated={!!auth.session}
-              loading={auth.loading}
+              isAuthenticated={isAuthenticated}
+              loading={loading}
             />
           }
         >
-          <Route path={ROUTES.LOGIN} element={loginElement ?? <LoginPage />} />
+          <Route path={ROUTES.LOGIN} element={loginElement} />
         </Route>
 
         <Route
           element={
             <ProtectedRoute
-              isAuthenticated={!!auth.session}
-              loading={auth.loading}
+              isAuthenticated={isAuthenticated}
+              loading={loading}
+              canAccess={true}
             />
           }
         >
           <Route
             element={
               <AppShell
-                session={auth.session}
-                profile={auth.profile}
+                session={session}
+                profile={profile}
                 onLogout={onLogout}
-                refreshing={auth.refreshing}
+                refreshing={auth?.refreshing}
               />
             }
           >
             <Route
               path={ROUTES.DASHBOARD}
-              element={dashboardElement ?? <DashboardPage />}
+              element={
+                canAccessRoute(profile, ROUTES.DASHBOARD) ? (
+                  dashboardElement
+                ) : (
+                  <Navigate to={ROUTES.SALES} replace />
+                )
+              }
             />
+
             <Route
               path={ROUTES.SALES}
-              element={salesElement ?? <SalesPage />}
+              element={
+                canAccessRoute(profile, ROUTES.SALES) ? (
+                  salesElement
+                ) : (
+                  <Navigate to={ROUTES.DASHBOARD} replace />
+                )
+              }
             />
+
             <Route
               path={ROUTES.NEW_SALE}
-              element={newSaleElement ?? <NewSalePage />}
+              element={
+                canAccessRoute(profile, ROUTES.NEW_SALE) ? (
+                  newSaleElement
+                ) : (
+                  <Navigate to={ROUTES.DASHBOARD} replace />
+                )
+              }
             />
+
             <Route
               path={ROUTES.PRODUCTS}
-              element={productsElement ?? <ProductsPage />}
+              element={
+                canAccessRoute(profile, ROUTES.PRODUCTS) ? (
+                  productsElement
+                ) : (
+                  <Navigate to={ROUTES.DASHBOARD} replace />
+                )
+              }
             />
+
             <Route
               path={ROUTES.REPORTS}
-              element={reportsElement ?? <ReportsPage />}
+              element={
+                canAccessRoute(profile, ROUTES.REPORTS) ? (
+                  reportsElement
+                ) : (
+                  <Navigate to={ROUTES.DASHBOARD} replace />
+                )
+              }
+            />
+
+            <Route
+              path={ROUTES.USERS}
+              element={
+                canAccessRoute(profile, ROUTES.USERS) ? (
+                  usersElement
+                ) : (
+                  <Navigate to={ROUTES.DASHBOARD} replace />
+                )
+              }
             />
           </Route>
         </Route>

@@ -3,16 +3,7 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import { ROUTES } from "../shared/constants/routes";
 import DashboardSkeleton from "../presentation/components/common/DashboardSkeleton";
 import PageHero from "../presentation/components/ui/PageHero";
-import MetricCard from "../presentation/components/ui/MetricCard";
 import SectionCard from "../presentation/components/ui/SectionCard";
-
-function formatMoney(value) {
-  return new Intl.NumberFormat("tr-TR", {
-    style: "currency",
-    currency: "TRY",
-    maximumFractionDigits: 2,
-  }).format(value || 0);
-}
 
 function isToday(dateString) {
   if (!dateString) return false;
@@ -25,6 +16,16 @@ function isToday(dateString) {
   return dateString === `${yyyy}-${mm}-${dd}`;
 }
 
+function isThisMonth(dateString) {
+  if (!dateString) return false;
+
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+
+  return String(dateString).startsWith(`${yyyy}-${mm}`);
+}
+
 function formatTodayLabel() {
   return new Intl.DateTimeFormat("tr-TR", {
     weekday: "long",
@@ -34,57 +35,132 @@ function formatTodayLabel() {
   }).format(new Date());
 }
 
+function formatShortDate(dateString) {
+  if (!dateString) return "-";
+
+  const [year, month, day] = String(dateString).split("-");
+  return `${day}.${month}.${year}`;
+}
+
+function getStatusLabel(status) {
+  switch (status) {
+    case "odendi":
+      return "Ödendi";
+    case "faturalandi":
+      return "Faturalandı";
+    case "odendi_faturalandi":
+      return "Ödendi + Faturalandı";
+    case "beklemede":
+    default:
+      return "İşlem Yok";
+  }
+}
+
+function getStatusTone(status) {
+  switch (status) {
+    case "odendi":
+      return {
+        color: "#1d4ed8",
+        background: "rgba(59,130,246,0.12)",
+        border: "1px solid rgba(59,130,246,0.14)",
+      };
+    case "faturalandi":
+      return {
+        color: "#047857",
+        background: "rgba(16,185,129,0.14)",
+        border: "1px solid rgba(16,185,129,0.14)",
+      };
+    case "odendi_faturalandi":
+      return {
+        color: "#6d28d9",
+        background: "rgba(139,92,246,0.14)",
+        border: "1px solid rgba(139,92,246,0.14)",
+      };
+    case "beklemede":
+    default:
+      return {
+        color: "#c2410c",
+        background: "rgba(249,115,22,0.14)",
+        border: "1px solid rgba(249,115,22,0.14)",
+      };
+  }
+}
+
 export default function DashboardPage({ sales = [], loading = false }) {
   const { profile } = useOutletContext() || {};
   const navigate = useNavigate();
 
   const stats = useMemo(() => {
-    const totalSales = sales.length;
-    const totalRevenue = sales.reduce(
-      (sum, sale) => sum + Number(sale.total_amount || 0),
-      0
-    );
-    const todaySales = sales.filter((sale) => isToday(sale.sale_date)).length;
+    const todayCount = sales.filter((sale) => isToday(sale.sale_date)).length;
+
+    const monthCount = sales.filter((sale) => isThisMonth(sale.sale_date)).length;
+
     const pendingCount = sales.filter(
       (sale) => sale.status === "beklemede"
     ).length;
-    const approvedCount = sales.filter(
-      (sale) => sale.status === "onaylandi"
-    ).length;
-    const invoicedCount = sales.filter(
-      (sale) => sale.status === "faturalandi"
-    ).length;
-    const cancelledCount = sales.filter(
-      (sale) => sale.status === "iptal"
+
+    const paidOnlyCount = sales.filter(
+      (sale) => sale.status === "odendi"
     ).length;
 
-    const grouped = sales.reduce((acc, sale) => {
+    const invoicedOnlyCount = sales.filter(
+      (sale) => sale.status === "faturalandi"
+    ).length;
+
+    const completedCount = sales.filter(
+      (sale) => sale.status === "odendi_faturalandi"
+    ).length;
+
+    const groupedByDate = sales.reduce((acc, sale) => {
       const key = sale.sale_date || "Bilinmiyor";
-      acc[key] = (acc[key] || 0) + Number(sale.total_amount || 0);
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
 
-    const trend = Object.entries(grouped)
+    const trend = Object.entries(groupedByDate)
       .sort(([a], [b]) => (a < b ? -1 : 1))
       .slice(-7);
 
     const maxTrendValue = Math.max(...trend.map(([, value]) => value), 1);
 
+    const trendTotal = trend.reduce((sum, [, value]) => sum + Number(value || 0), 0);
+    const trendAverage = trend.length ? trendTotal / trend.length : 0;
+
+    const topProductsMap = sales.reduce((acc, sale) => {
+      const name = sale.products?.name || "Bilinmeyen Ürün";
+
+      if (!acc[name]) {
+        acc[name] = {
+          name,
+          quantity: 0,
+        };
+      }
+
+      acc[name].quantity += Number(sale.quantity || 0);
+
+      return acc;
+    }, {});
+
+    const topProducts = Object.values(topProductsMap)
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5);
+
     return {
-      totalSales,
-      totalRevenue,
-      todaySales,
+      todayCount,
+      monthCount,
       pendingCount,
-      approvedCount,
-      invoicedCount,
-      cancelledCount,
+      paidOnlyCount,
+      invoicedOnlyCount,
+      completedCount,
       trend,
       maxTrendValue,
+      trendAverage,
+      topProducts,
     };
   }, [sales]);
 
   const recentSales = useMemo(() => {
-    return [...sales].slice(0, 6);
+    return [...sales].slice(0, 5);
   }, [sales]);
 
   if (loading) {
@@ -94,69 +170,104 @@ export default function DashboardPage({ sales = [], loading = false }) {
   return (
     <div style={styles.page}>
       <style>{`
-        @media (max-width: 1100px) {
-          .dashboard-main-grid {
+        @media (max-width: 1240px) {
+          .dashboard-premium-top-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-premium-bottom-grid {
             grid-template-columns: 1fr !important;
           }
         }
 
-        @media (max-width: 720px) {
-          .dashboard-hero-actions {
-            grid-template-columns: 1fr !important;
-          }
-
-          .dashboard-stats-grid {
+        @media (max-width: 920px) {
+          .dashboard-premium-summary-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
+
+          .dashboard-premium-distribution-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .dashboard-premium-actions {
+            grid-template-columns: 1fr !important;
+          }
         }
 
-        @media (max-width: 520px) {
-          .dashboard-stats-grid {
+        @media (max-width: 560px) {
+          .dashboard-premium-summary-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-premium-distribution-grid {
             grid-template-columns: 1fr !important;
           }
         }
       `}</style>
 
       <PageHero
-        kicker="Genel görünüm"
+        kicker="Premium Control Center"
         title={`Hoş geldin, ${profile?.full_name || "Kullanıcı"}.`}
-        subtitle="Satış operasyonunun güncel durumu, kritik metrikler ve son hareketler burada."
+        subtitle="Verilen malzeme hareketlerinin güncel özeti, bekleyen işlemler ve son kayıtlar burada."
         variant="blue"
         rightContent={
-          <div style={styles.metaCard}>
-            <div style={styles.metaLabel}>Bugün</div>
-            <div style={styles.metaValue}>{formatTodayLabel()}</div>
-            <div style={styles.roleBadge}>
-              Rol: {profile?.roles?.name || "-"}
+          <div style={styles.rightPanel}>
+            <div style={styles.rightPanelGlowOne} />
+            <div style={styles.rightPanelGlowTwo} />
+
+            <div style={styles.rightPanelLabel}>Sistem Özeti</div>
+            <div style={styles.rightPanelDate}>{formatTodayLabel()}</div>
+
+            <div style={styles.rightPanelMetaRow}>
+              <div style={styles.rightMiniBox}>
+                <div style={styles.rightMiniLabel}>Rol</div>
+                <div style={styles.rightMiniValue}>
+                  {profile?.roles?.name || "-"}
+                </div>
+              </div>
+
+              <div style={styles.rightMiniBox}>
+                <div style={styles.rightMiniLabel}>Toplam Kayıt</div>
+                <div style={styles.rightMiniValue}>{sales.length}</div>
+              </div>
             </div>
           </div>
         }
       >
-        <div className="dashboard-stats-grid" style={styles.heroStatsGrid}>
-          <HeroMiniStat
-            label="Toplam Ciro"
-            value={formatMoney(stats.totalRevenue)}
-          />
-          <HeroMiniStat
-            label="Toplam Satış"
-            value={stats.totalSales}
-          />
-          <HeroMiniStat
+        <div className="dashboard-premium-summary-grid" style={styles.summaryGrid}>
+          <PremiumStatCard
             label="Bugünkü Kayıt"
-            value={stats.todaySales}
+            value={stats.todayCount}
+            hint="Bugün eklenen satış hareketi"
+            tone="blue"
           />
-          <HeroMiniStat
-            label="Bekleyen"
-            value={stats.pendingCount}
+          <PremiumStatCard
+            label="Bu Ay Toplam"
+            value={stats.monthCount}
+            hint="Bu ay açılan kayıt sayısı"
+            tone="green"
+          />
+          <PremiumStatCard
+            label="Ödendi, Faturalanmadı"
+            value={stats.paidOnlyCount}
+            hint="Ödeme alındı, fatura bekliyor"
+            tone="orange"
+          />
+          <PremiumStatCard
+            label="Faturalandı, Ödenmedi"
+            value={stats.invoicedOnlyCount}
+            hint="Fatura var, ödeme bekliyor"
+            tone="purple"
           />
         </div>
 
-        <div className="dashboard-hero-actions" style={styles.actionsGrid}>
+        <div className="dashboard-premium-actions" style={styles.actionsGrid}>
           <button
             type="button"
             style={styles.primaryAction}
             onClick={() => navigate(ROUTES.NEW_SALE)}
           >
+            <span style={styles.actionAccent} />
             + Yeni Satış Oluştur
           </button>
 
@@ -165,66 +276,33 @@ export default function DashboardPage({ sales = [], loading = false }) {
             style={styles.secondaryAction}
             onClick={() => navigate(ROUTES.SALES)}
           >
-            Satışları Görüntüle
-          </button>
-
-          <button
-            type="button"
-            style={styles.secondaryAction}
-            onClick={() => navigate(ROUTES.REPORTS)}
-          >
-            Raporları Aç
+            Satış Operasyonuna Git
           </button>
         </div>
       </PageHero>
 
-      <div style={styles.metricsGrid}>
-        <MetricCard
-          title="Toplam Satış"
-          value={stats.totalSales}
-          subtitle="Sistemdeki toplam kayıt"
-          tone="blue"
-        />
-        <MetricCard
-          title="Toplam Ciro"
-          value={formatMoney(stats.totalRevenue)}
-          subtitle="Filtrelenmiş satış toplamı"
-          tone="green"
-        />
-        <MetricCard
-          title="Bugünkü Satış"
-          value={stats.todaySales}
-          subtitle="Bugün açılan satış kaydı"
-          tone="default"
-        />
-        <MetricCard
-          title="Bekleyen İşlem"
-          value={stats.pendingCount}
-          subtitle="Aksiyon bekleyen satışlar"
-          tone="orange"
-        />
-      </div>
-
-      <div className="dashboard-main-grid" style={styles.mainGrid}>
+      <div className="dashboard-premium-top-grid" style={styles.topGrid}>
         <SectionCard
-          title="Son 7 Günlük Satış Trendi"
-          subtitle="Günlük toplam tutar akışı"
+          title="Son 7 Günlük Kayıt Trendi"
+          subtitle={`Günlük ortalama: ${stats.trendAverage.toFixed(1)} kayıt`}
         >
-          <div style={styles.chartArea}>
+          <div style={styles.chartShell}>
             {stats.trend.length === 0 ? (
-              <div style={styles.empty}>Grafik için yeterli veri yok.</div>
+              <PremiumEmpty text="Trend grafiği için yeterli veri yok." />
             ) : (
               <div style={styles.barGrid}>
                 {stats.trend.map(([date, value]) => {
                   const height = Math.max(
                     (value / stats.maxTrendValue) * 180,
-                    14
+                    18
                   );
 
                   return (
                     <div key={date} style={styles.barItem}>
-                      <div style={styles.barValue}>{formatMoney(value)}</div>
+                      <div style={styles.barValue}>{value} kayıt</div>
+
                       <div style={styles.barTrack}>
+                        <div style={styles.barGlow} />
                         <div
                           style={{
                             ...styles.barFill,
@@ -232,6 +310,7 @@ export default function DashboardPage({ sales = [], loading = false }) {
                           }}
                         />
                       </div>
+
                       <div style={styles.barLabel}>{date.slice(5)}</div>
                     </div>
                   );
@@ -241,106 +320,217 @@ export default function DashboardPage({ sales = [], loading = false }) {
           </div>
         </SectionCard>
 
-        <div style={styles.sideColumn}>
-          <SectionCard title="Durum Dağılımı">
-            <div style={styles.statusList}>
-              <StatusRow
-                label="Beklemede"
-                value={stats.pendingCount}
-                tone="warning"
-              />
-              <StatusRow
-                label="Onaylandı"
-                value={stats.approvedCount}
-                tone="info"
-              />
-              <StatusRow
-                label="Faturalandı"
-                value={stats.invoicedCount}
-                tone="success"
-              />
-              <StatusRow
-                label="İptal"
-                value={stats.cancelledCount}
-                tone="danger"
-              />
-            </div>
-          </SectionCard>
-
-          <SectionCard title="Kısa Özet">
-            <div style={styles.summaryText}>
-              Toplam <strong>{stats.totalSales}</strong> satış kaydı bulunuyor.
-              Mevcut toplam ciro{" "}
-              <strong>{formatMoney(stats.totalRevenue)}</strong>. Bekleyen kayıt
-              sayısı <strong>{stats.pendingCount}</strong>.
-            </div>
-          </SectionCard>
-        </div>
+        <SectionCard
+          title="Durum Dağılımı"
+          subtitle="İşlem akışının mevcut durumu"
+        >
+          <div
+            className="dashboard-premium-distribution-grid"
+            style={styles.distributionGrid}
+          >
+            <StatusMetric
+              label="İşlem Yok"
+              value={stats.pendingCount}
+              tone="pending"
+            />
+            <StatusMetric
+              label="Ödendi"
+              value={stats.paidOnlyCount}
+              tone="paid"
+            />
+            <StatusMetric
+              label="Faturalandı"
+              value={stats.invoicedOnlyCount}
+              tone="invoiced"
+            />
+            <StatusMetric
+              label="Tamamlandı"
+              value={stats.completedCount}
+              tone="completed"
+            />
+          </div>
+        </SectionCard>
       </div>
 
-      <SectionCard
-        title="Son Satış Hareketleri"
-        subtitle="En güncel 6 kayıt"
-      >
-        {recentSales.length === 0 ? (
-          <div style={styles.empty}>Henüz satış kaydı yok.</div>
-        ) : (
-          <div style={styles.recentList}>
-            {recentSales.map((sale) => (
-              <div key={sale.id} style={styles.recentItem}>
-                <div>
-                  <div style={styles.recentCustomer}>
-                    {sale.customer_name || "-"}
-                  </div>
-                  <div style={styles.recentMeta}>
-                    {sale.products?.name || "-"} • {sale.sale_date || "-"}
-                  </div>
-                </div>
+      <div className="dashboard-premium-bottom-grid" style={styles.bottomGrid}>
+        <SectionCard
+          title="Son Satış Hareketleri"
+          subtitle="En yeni 5 kayıt"
+        >
+          {recentSales.length === 0 ? (
+            <PremiumEmpty text="Henüz satış hareketi görünmüyor." />
+          ) : (
+            <div style={styles.recentList}>
+              {recentSales.map((sale) => {
+                const tone = getStatusTone(sale.status);
 
-                <div style={styles.recentRight}>
-                  <div style={styles.recentAmount}>
-                    {formatMoney(sale.total_amount)}
+                return (
+                  <div key={sale.id} style={styles.recentItem}>
+                    <div style={styles.recentStripe} />
+
+                    <div style={styles.recentLeft}>
+                      <div style={styles.recentCustomer}>
+                        {sale.customer_name || "-"}
+                      </div>
+                      <div style={styles.recentMeta}>
+                        {sale.products?.name || "-"} • {formatShortDate(sale.sale_date)}
+                      </div>
+                    </div>
+
+                    <div style={styles.recentRight}>
+                      <div style={styles.recentAmount}>
+                        {Number(sale.quantity || 0)} {sale.unit || ""}
+                      </div>
+                      <div
+                        style={{
+                          ...styles.recentStatus,
+                          color: tone.color,
+                          background: tone.background,
+                          border: tone.border,
+                        }}
+                      >
+                        {getStatusLabel(sale.status)}
+                      </div>
+                    </div>
                   </div>
-                  <div style={styles.recentStatus}>{sale.status}</div>
+                );
+              })}
+            </div>
+          )}
+        </SectionCard>
+
+        <SectionCard
+          title="En Çok Satılan Ürünler"
+          subtitle="Miktara göre ilk 5 ürün"
+        >
+          {stats.topProducts.length === 0 ? (
+            <PremiumEmpty text="Ürün bazlı görünüm için henüz veri yok." />
+          ) : (
+            <div style={styles.topProductsList}>
+              {stats.topProducts.map((product, index) => (
+                <div key={product.name} style={styles.topProductItem}>
+                  <div style={styles.topProductRank}>{index + 1}</div>
+
+                  <div style={styles.topProductContent}>
+                    <div style={styles.topProductName}>{product.name}</div>
+                    <div style={styles.topProductMeta}>
+                      En çok çıkan ürünlerden biri
+                    </div>
+                  </div>
+
+                  <div style={styles.topProductRevenueWrap}>
+                    <div style={styles.topProductRevenue}>
+                      {product.quantity} adet
+                    </div>
+                    <div style={styles.topProductRevenueHint}>Toplam miktar</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+      </div>
     </div>
   );
 }
 
-function HeroMiniStat({ label, value }) {
-  return (
-    <div style={styles.heroMiniCard}>
-      <div style={styles.heroMiniLabel}>{label}</div>
-      <div style={styles.heroMiniValue}>{value}</div>
-    </div>
-  );
-}
-
-function StatusRow({ label, value, tone }) {
+function PremiumStatCard({ label, value, hint, tone = "blue" }) {
   const tones = {
-    warning: { bg: "#fff7ed", color: "#c2410c" },
-    info: { bg: "#eff6ff", color: "#1d4ed8" },
-    success: { bg: "#ecfdf5", color: "#047857" },
-    danger: { bg: "#fef2f2", color: "#b91c1c" },
+    blue: {
+      glow: "rgba(59,130,246,0.22)",
+      accent: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
+      shadow: "0 18px 40px rgba(59,130,246,0.16)",
+    },
+    green: {
+      glow: "rgba(16,185,129,0.22)",
+      accent: "linear-gradient(135deg, #10b981 0%, #34d399 100%)",
+      shadow: "0 18px 40px rgba(16,185,129,0.16)",
+    },
+    orange: {
+      glow: "rgba(249,115,22,0.22)",
+      accent: "linear-gradient(135deg, #f97316 0%, #fb923c 100%)",
+      shadow: "0 18px 40px rgba(249,115,22,0.16)",
+    },
+    purple: {
+      glow: "rgba(139,92,246,0.22)",
+      accent: "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)",
+      shadow: "0 18px 40px rgba(139,92,246,0.16)",
+    },
   };
 
+  const theme = tones[tone];
+
   return (
-    <div style={styles.statusRow}>
-      <span style={styles.statusLabel}>{label}</span>
-      <span
-        style={{
-          ...styles.statusPill,
-          background: tones[tone].bg,
-          color: tones[tone].color,
-        }}
-      >
+    <div style={{ ...styles.statCard, boxShadow: theme.shadow }}>
+      <div style={{ ...styles.statCardGlow, background: theme.glow }} />
+      <div style={{ ...styles.statCardAccent, background: theme.accent }} />
+      <div style={styles.statCardLabel}>{label}</div>
+      <div style={styles.statCardValue}>{value}</div>
+      <div style={styles.statCardHint}>{hint}</div>
+    </div>
+  );
+}
+
+function StatusMetric({ label, value, tone }) {
+  const tones = {
+    pending: {
+      glow: "rgba(249,115,22,0.12)",
+      border: "1px solid rgba(249,115,22,0.18)",
+      text: "#c2410c",
+      accent: "linear-gradient(135deg, #f97316 0%, #fb923c 100%)",
+    },
+    paid: {
+      glow: "rgba(59,130,246,0.12)",
+      border: "1px solid rgba(59,130,246,0.18)",
+      text: "#1d4ed8",
+      accent: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
+    },
+    invoiced: {
+      glow: "rgba(16,185,129,0.12)",
+      border: "1px solid rgba(16,185,129,0.18)",
+      text: "#047857",
+      accent: "linear-gradient(135deg, #10b981 0%, #34d399 100%)",
+    },
+    completed: {
+      glow: "rgba(139,92,246,0.12)",
+      border: "1px solid rgba(139,92,246,0.18)",
+      text: "#6d28d9",
+      accent: "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)",
+    },
+  };
+
+  const style = tones[tone];
+
+  return (
+    <div
+      style={{
+        ...styles.statusMetricCard,
+        background: style.glow,
+        border: style.border,
+      }}
+    >
+      <div style={styles.statusMetricTop}>
+        <div style={styles.statusMetricLabel}>{label}</div>
+        <div
+          style={{
+            ...styles.statusMetricDot,
+            background: style.accent,
+          }}
+        />
+      </div>
+
+      <div style={{ ...styles.statusMetricValue, color: style.text }}>
         {value}
-      </span>
+      </div>
+    </div>
+  );
+}
+
+function PremiumEmpty({ text }) {
+  return (
+    <div style={styles.emptyWrap}>
+      <div style={styles.emptyOrb} />
+      <div style={styles.emptyText}>{text}</div>
     </div>
   );
 }
@@ -351,71 +541,149 @@ const styles = {
     gap: "20px",
   },
 
-  metaCard: {
-    minWidth: "220px",
+  rightPanel: {
+    minWidth: "260px",
+    position: "relative",
+    overflow: "hidden",
     background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "24px",
-    padding: "16px",
-    backdropFilter: "blur(10px)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: "28px",
+    padding: "18px",
+    backdropFilter: "blur(12px)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
   },
-  metaLabel: {
-    fontSize: "12px",
-    color: "#93c5fd",
-    fontWeight: 800,
-    marginBottom: "8px",
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-  },
-  metaValue: {
-    fontSize: "15px",
-    color: "#f8fafc",
-    fontWeight: 800,
-    lineHeight: 1.5,
-    marginBottom: "14px",
-  },
-  roleBadge: {
-    display: "inline-block",
-    padding: "10px 12px",
+  rightPanelGlowOne: {
+    position: "absolute",
+    top: "-26px",
+    right: "-20px",
+    width: "110px",
+    height: "110px",
     borderRadius: "999px",
-    background: "rgba(255,255,255,0.12)",
-    color: "#ffffff",
+    background: "rgba(96,165,250,0.22)",
+    filter: "blur(24px)",
+  },
+  rightPanelGlowTwo: {
+    position: "absolute",
+    bottom: "-26px",
+    left: "-18px",
+    width: "100px",
+    height: "100px",
+    borderRadius: "999px",
+    background: "rgba(16,185,129,0.18)",
+    filter: "blur(24px)",
+  },
+  rightPanelLabel: {
+    position: "relative",
+    zIndex: 1,
+    color: "#bfdbfe",
     fontSize: "12px",
     fontWeight: 800,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    marginBottom: "8px",
+  },
+  rightPanelDate: {
+    position: "relative",
+    zIndex: 1,
+    color: "#ffffff",
+    fontSize: "15px",
+    fontWeight: 900,
+    lineHeight: 1.5,
+    marginBottom: "16px",
+  },
+  rightPanelMetaRow: {
+    position: "relative",
+    zIndex: 1,
+    display: "grid",
+    gap: "12px",
+  },
+  rightMiniBox: {
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: "18px",
+    padding: "12px 14px",
+  },
+  rightMiniLabel: {
+    color: "#93c5fd",
+    fontSize: "11px",
+    fontWeight: 800,
+    marginBottom: "6px",
+  },
+  rightMiniValue: {
+    color: "#ffffff",
+    fontSize: "14px",
+    fontWeight: 800,
+    lineHeight: 1.45,
   },
 
-  heroStatsGrid: {
+  summaryGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
     gap: "14px",
     marginBottom: "18px",
   },
-  heroMiniCard: {
-    background: "rgba(255,255,255,0.08)",
+  statCard: {
+    position: "relative",
+    overflow: "hidden",
+    background: "rgba(255,255,255,0.09)",
     border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "22px",
-    padding: "16px",
-    backdropFilter: "blur(10px)",
+    borderRadius: "24px",
+    padding: "18px",
+    backdropFilter: "blur(12px)",
   },
-  heroMiniLabel: {
+  statCardGlow: {
+    position: "absolute",
+    top: "-18px",
+    right: "-18px",
+    width: "92px",
+    height: "92px",
+    borderRadius: "999px",
+    filter: "blur(22px)",
+    opacity: 0.9,
+  },
+  statCardAccent: {
+    position: "absolute",
+    left: "18px",
+    top: "18px",
+    width: "42px",
+    height: "6px",
+    borderRadius: "999px",
+  },
+  statCardLabel: {
+    position: "relative",
+    zIndex: 1,
     color: "#bfdbfe",
     fontSize: "12px",
     fontWeight: 800,
+    marginTop: "14px",
     marginBottom: "10px",
   },
-  heroMiniValue: {
+  statCardValue: {
+    position: "relative",
+    zIndex: 1,
     color: "#ffffff",
-    fontSize: "26px",
+    fontSize: "28px",
     fontWeight: 900,
     lineHeight: 1.05,
+    letterSpacing: "-0.03em",
+    marginBottom: "8px",
+  },
+  statCardHint: {
+    position: "relative",
+    zIndex: 1,
+    color: "rgba(255,255,255,0.72)",
+    fontSize: "12px",
+    fontWeight: 600,
   },
 
   actionsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 220px))",
+    gridTemplateColumns: "repeat(2, minmax(0, 240px))",
     gap: "12px",
   },
   primaryAction: {
+    position: "relative",
+    overflow: "hidden",
     border: "none",
     borderRadius: "18px",
     padding: "15px 18px",
@@ -425,6 +693,13 @@ const styles = {
     fontWeight: 900,
     cursor: "pointer",
     boxShadow: "0 18px 36px rgba(59,130,246,0.22)",
+  },
+  actionAccent: {
+    position: "absolute",
+    inset: "0",
+    background:
+      "linear-gradient(90deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 40%)",
+    pointerEvents: "none",
   },
   secondaryAction: {
     border: "1px solid rgba(255,255,255,0.14)",
@@ -438,29 +713,24 @@ const styles = {
     backdropFilter: "blur(10px)",
   },
 
-  metricsGrid: {
+  topGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "16px",
-  },
-
-  mainGrid: {
-    display: "grid",
-    gridTemplateColumns: "1.5fr 0.9fr",
+    gridTemplateColumns: "1.45fr 0.95fr",
     gap: "18px",
   },
-  sideColumn: {
+  bottomGrid: {
     display: "grid",
+    gridTemplateColumns: "1.2fr 0.8fr",
     gap: "18px",
   },
 
-  chartArea: {
-    minHeight: "260px",
+  chartShell: {
+    minHeight: "280px",
     display: "grid",
     alignItems: "end",
   },
   barGrid: {
-    minHeight: "240px",
+    minHeight: "250px",
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(72px, 1fr))",
     gap: "14px",
@@ -475,60 +745,82 @@ const styles = {
     fontSize: "11px",
     color: "#64748b",
     textAlign: "center",
+    fontWeight: 700,
   },
   barTrack: {
+    position: "relative",
     width: "100%",
-    maxWidth: "42px",
-    height: "190px",
-    borderRadius: "18px",
-    background: "#ecf2f7",
+    maxWidth: "46px",
+    height: "194px",
+    borderRadius: "20px",
+    background: "linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)",
     display: "flex",
     alignItems: "flex-end",
     padding: "4px",
+    border: "1px solid rgba(148,163,184,0.14)",
+    overflow: "hidden",
+  },
+  barGlow: {
+    position: "absolute",
+    bottom: "-12px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "34px",
+    height: "34px",
+    borderRadius: "999px",
+    background: "rgba(59,130,246,0.20)",
+    filter: "blur(12px)",
   },
   barFill: {
     width: "100%",
-    borderRadius: "14px",
+    borderRadius: "16px",
     background: "linear-gradient(180deg, #3b82f6 0%, #10b981 100%)",
-    boxShadow: "0 16px 24px rgba(16,185,129,0.18)",
+    boxShadow: "0 18px 30px rgba(59,130,246,0.20)",
     transition: "height 0.3s ease",
+    position: "relative",
+    zIndex: 1,
   },
   barLabel: {
     fontSize: "12px",
-    fontWeight: 700,
+    fontWeight: 800,
     color: "#334155",
   },
 
-  statusList: {
+  distributionGrid: {
     display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: "12px",
   },
-  statusRow: {
+  statusMetricCard: {
+    borderRadius: "22px",
+    padding: "18px",
+    minHeight: "112px",
     display: "flex",
+    flexDirection: "column",
     justifyContent: "space-between",
+    boxShadow: "0 10px 28px rgba(15,23,42,0.04)",
+  },
+  statusMetricTop: {
+    display: "flex",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: "12px",
-    padding: "12px 0",
-    borderTop: "1px solid #f1f5f9",
   },
-  statusLabel: {
-    color: "#334155",
-    fontWeight: 700,
-    fontSize: "14px",
-  },
-  statusPill: {
-    minWidth: "48px",
-    textAlign: "center",
-    padding: "8px 12px",
-    borderRadius: "999px",
-    fontWeight: 900,
-    fontSize: "13px",
-  },
-
-  summaryText: {
+  statusMetricLabel: {
     color: "#475569",
-    fontSize: "14px",
-    lineHeight: 1.8,
+    fontSize: "13px",
+    fontWeight: 800,
+  },
+  statusMetricDot: {
+    width: "12px",
+    height: "12px",
+    borderRadius: "999px",
+  },
+  statusMetricValue: {
+    fontSize: "34px",
+    lineHeight: 1,
+    fontWeight: 900,
+    letterSpacing: "-0.04em",
   },
 
   recentList: {
@@ -536,41 +828,135 @@ const styles = {
     gap: "12px",
   },
   recentItem: {
+    position: "relative",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "12px",
-    paddingTop: "14px",
-    borderTop: "1px solid #f1f5f9",
+    padding: "16px 16px 16px 18px",
+    borderRadius: "20px",
+    background: "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
+    border: "1px solid rgba(226,232,240,0.8)",
+    boxShadow: "0 12px 24px rgba(15,23,42,0.04)",
+  },
+  recentStripe: {
+    position: "absolute",
+    left: "0",
+    top: "12px",
+    bottom: "12px",
+    width: "4px",
+    borderRadius: "999px",
+    background: "linear-gradient(180deg, #3b82f6 0%, #10b981 100%)",
+  },
+  recentLeft: {
+    minWidth: 0,
+    paddingLeft: "2px",
   },
   recentCustomer: {
     color: "#0f172a",
     fontSize: "14px",
-    fontWeight: 800,
+    fontWeight: 900,
     marginBottom: "4px",
   },
   recentMeta: {
     color: "#64748b",
     fontSize: "13px",
+    fontWeight: 600,
   },
   recentRight: {
     textAlign: "right",
+    display: "grid",
+    gap: "8px",
+    justifyItems: "end",
   },
   recentAmount: {
     color: "#0f172a",
     fontWeight: 900,
     fontSize: "14px",
-    marginBottom: "4px",
   },
   recentStatus: {
-    color: "#64748b",
     fontSize: "12px",
+    fontWeight: 800,
+    padding: "8px 10px",
+    borderRadius: "999px",
     textTransform: "capitalize",
   },
 
-  empty: {
-    padding: "24px 0",
+  topProductsList: {
+    display: "grid",
+    gap: "12px",
+  },
+  topProductItem: {
+    display: "grid",
+    gridTemplateColumns: "46px 1fr auto",
+    gap: "12px",
+    alignItems: "center",
+    padding: "16px",
+    borderRadius: "20px",
+    background: "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
+    border: "1px solid rgba(226,232,240,0.8)",
+    boxShadow: "0 12px 24px rgba(15,23,42,0.04)",
+  },
+  topProductRank: {
+    width: "46px",
+    height: "46px",
+    borderRadius: "16px",
+    display: "grid",
+    placeItems: "center",
+    background: "linear-gradient(135deg, rgba(59,130,246,0.14) 0%, rgba(16,185,129,0.14) 100%)",
+    color: "#0f172a",
+    fontWeight: 900,
+    fontSize: "15px",
+    border: "1px solid rgba(148,163,184,0.14)",
+  },
+  topProductContent: {
+    minWidth: 0,
+  },
+  topProductName: {
+    color: "#0f172a",
+    fontSize: "14px",
+    fontWeight: 900,
+    marginBottom: "4px",
+  },
+  topProductMeta: {
+    color: "#64748b",
+    fontSize: "13px",
+    fontWeight: 600,
+  },
+  topProductRevenueWrap: {
+    textAlign: "right",
+  },
+  topProductRevenue: {
+    color: "#0f172a",
+    fontSize: "14px",
+    fontWeight: 900,
+    marginBottom: "4px",
+  },
+  topProductRevenueHint: {
+    color: "#64748b",
+    fontSize: "11px",
+    fontWeight: 700,
+  },
+
+  emptyWrap: {
+    minHeight: "180px",
+    display: "grid",
+    placeItems: "center",
+    gap: "12px",
+    alignContent: "center",
+  },
+  emptyOrb: {
+    width: "58px",
+    height: "58px",
+    borderRadius: "999px",
+    background: "linear-gradient(135deg, rgba(59,130,246,0.14) 0%, rgba(16,185,129,0.14) 100%)",
+    border: "1px solid rgba(148,163,184,0.14)",
+    boxShadow: "0 16px 30px rgba(59,130,246,0.10)",
+  },
+  emptyText: {
     color: "#64748b",
     fontSize: "14px",
+    fontWeight: 700,
+    textAlign: "center",
   },
 };
