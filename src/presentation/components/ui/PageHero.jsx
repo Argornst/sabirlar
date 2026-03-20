@@ -9,38 +9,19 @@ export default function PageHero({
   const variantStyles = heroVariants[variant] || heroVariants.blue;
 
   return (
-    <div
-      className="page-hero-root"
+    <section
       style={{
         ...styles.wrapper,
         background: variantStyles.background,
       }}
     >
-      <style>{`
-        @media (max-width: 1180px) {
-          .page-hero-root {
-            padding-right: 28px !important;
-          }
-
-          .page-hero-right {
-            position: static !important;
-            width: 100% !important;
-            max-width: none !important;
-            margin-top: 18px !important;
-          }
-
-          .page-hero-top {
-            display: block !important;
-          }
-        }
-      `}</style>
-
       <div
         style={{
           ...styles.glowOne,
           background: variantStyles.glowOne,
         }}
       />
+
       <div
         style={{
           ...styles.glowTwo,
@@ -48,7 +29,7 @@ export default function PageHero({
         }}
       />
 
-      <div className="page-hero-top" style={styles.topRow}>
+      <div style={styles.topRow}>
         <div style={styles.content}>
           {kicker ? (
             <div
@@ -67,38 +48,39 @@ export default function PageHero({
 
           {subtitle ? <p style={styles.subtitle}>{subtitle}</p> : null}
         </div>
+
+        {rightContent ? <div style={styles.rightContent}>{rightContent}</div> : null}
       </div>
 
-      {rightContent ? (
-        <div className="page-hero-right" style={styles.rightContent}>
-          {rightContent}
-        </div>
-      ) : null}
-
       {children ? <div style={styles.bottomContent}>{children}</div> : null}
-    </div>
+    </section>
   );
 }
 
 const heroVariants = {
   blue: {
-    background: "linear-gradient(135deg, #0f172a 0%, #111827 45%, #0b3b66 100%)",
+    background:
+      "linear-gradient(135deg, #0f172a 0%, #111827 45%, #0b3b66 100%)",
     glowOne: "rgba(16,185,129,0.18)",
     glowTwo: "rgba(59,130,246,0.16)",
     kickerBg: "rgba(59,130,246,0.14)",
     kickerColor: "#93c5fd",
     kickerBorder: "rgba(147,197,253,0.12)",
   },
+
   green: {
-    background: "linear-gradient(135deg, #052e2b 0%, #064e3b 45%, #0f766e 100%)",
+    background:
+      "linear-gradient(135deg, #052e2b 0%, #064e3b 45%, #0f766e 100%)",
     glowOne: "rgba(16,185,129,0.20)",
     glowTwo: "rgba(45,212,191,0.18)",
     kickerBg: "rgba(16,185,129,0.14)",
     kickerColor: "#86efac",
     kickerBorder: "rgba(134,239,172,0.12)",
   },
+
   indigo: {
-    background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #1d4ed8 100%)",
+    background:
+      "linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #1d4ed8 100%)",
     glowOne: "rgba(99,102,241,0.22)",
     glowTwo: "rgba(59,130,246,0.18)",
     kickerBg: "rgba(99,102,241,0.16)",
@@ -113,13 +95,13 @@ const styles = {
     overflow: "hidden",
     borderRadius: "34px",
     padding: "28px",
-    paddingRight: "340px",
     boxShadow: "0 26px 60px rgba(15,23,42,0.18)",
     border: "1px solid rgba(255,255,255,0.08)",
     width: "100%",
     minWidth: 0,
     boxSizing: "border-box",
   },
+
   glowOne: {
     position: "absolute",
     top: "-40px",
@@ -130,6 +112,7 @@ const styles = {
     filter: "blur(70px)",
     pointerEvents: "none",
   },
+
   glowTwo: {
     position: "absolute",
     bottom: "-40px",
@@ -140,15 +123,24 @@ const styles = {
     filter: "blur(60px)",
     pointerEvents: "none",
   },
+
   topRow: {
     position: "relative",
     zIndex: 2,
     minWidth: 0,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "18px",
+    flexWrap: "wrap",
   },
+
   content: {
-    maxWidth: "760px",
     minWidth: 0,
+    flex: "1 1 560px",
+    maxWidth: "760px",
   },
+
   kicker: {
     display: "inline-block",
     padding: "8px 14px",
@@ -157,6 +149,7 @@ const styles = {
     fontWeight: 800,
     marginBottom: "14px",
   },
+
   title: {
     margin: 0,
     fontSize: "38px",
@@ -165,6 +158,7 @@ const styles = {
     letterSpacing: "-0.04em",
     lineHeight: 1.05,
   },
+
   subtitle: {
     margin: "12px 0 0 0",
     color: "#cbd5e1",
@@ -172,14 +166,18 @@ const styles = {
     lineHeight: 1.75,
     maxWidth: "720px",
   },
+
   rightContent: {
-    position: "absolute",
-    top: "28px",
-    right: "28px",
-    width: "280px",
-    maxWidth: "280px",
+    position: "relative",
     zIndex: 2,
+    minWidth: 0,
+    flex: "0 1 280px",
+    maxWidth: "100%",
+    display: "grid",
+    gap: "12px",
+    alignSelf: "flex-start",
   },
+
   bottomContent: {
     position: "relative",
     zIndex: 2,

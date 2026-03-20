@@ -6,15 +6,10 @@ export default function SectionCard({
   padding = 22,
 }) {
   return (
-    <div
-      style={{
-        ...styles.card,
-        padding,
-      }}
-    >
+    <section style={{ ...styles.card, padding }}>
       {(title || subtitle || rightContent) && (
         <div style={styles.header}>
-          <div>
+          <div style={{ minWidth: 0 }}>
             {title ? <h2 style={styles.title}>{title}</h2> : null}
             {subtitle ? <p style={styles.subtitle}>{subtitle}</p> : null}
           </div>
@@ -23,8 +18,8 @@ export default function SectionCard({
         </div>
       )}
 
-      <div>{children}</div>
-    </div>
+      {children}
+    </section>
   );
 }
 
@@ -35,11 +30,12 @@ const styles = {
     border: "1px solid #e5e7eb",
     borderRadius: "30px",
     boxShadow: "0 20px 40px rgba(15,23,42,0.05)",
-
     width: "100%",
-    minWidth: 0,       // 🔥
-    overflow: "hidden" // 🔥 TAŞMA KESİLDİ
+    minWidth: 0,
+    boxSizing: "border-box",
+    overflowX: "hidden",
   },
+
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -47,13 +43,16 @@ const styles = {
     gap: "12px",
     flexWrap: "wrap",
     marginBottom: "18px",
+    minWidth: 0,
   },
+
   title: {
     margin: 0,
     color: "#0f172a",
     fontSize: "22px",
     fontWeight: 900,
   },
+
   subtitle: {
     margin: "6px 0 0 0",
     color: "#64748b",

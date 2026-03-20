@@ -7,41 +7,44 @@ export default function AppPage({
 }) {
   return (
     <div style={styles.page}>
-      <div style={styles.heroWrap}>{hero}</div>
+      {hero ? <div style={styles.heroWrap}>{hero}</div> : null}
+      {actions ? <div style={styles.actionsWrap}>{actions}</div> : null}
+      {stats ? <div style={styles.statsWrap}>{stats}</div> : null}
 
-      {actions && <div style={styles.actionsWrap}>{actions}</div>}
-      {stats && <div style={styles.statsWrap}>{stats}</div>}
-
-      <div style={{ ...styles.content, ...contentStyle }}>
-        {children}
-      </div>
+      <div style={{ ...styles.content, ...contentStyle }}>{children}</div>
     </div>
   );
 }
 
 const styles = {
   page: {
+    width: "100%",
+    minWidth: 0,
     display: "grid",
     gap: "18px",
-    width: "100%",
-    minWidth: 0, // 🔥 KRİTİK
+    boxSizing: "border-box",
   },
+
   heroWrap: {
     width: "100%",
-    minWidth: 0, // 🔥
+    minWidth: 0,
   },
+
   actionsWrap: {
     width: "100%",
     minWidth: 0,
   },
+
   statsWrap: {
     width: "100%",
     minWidth: 0,
   },
+
   content: {
+    width: "100%",
+    minWidth: 0,
     display: "grid",
     gap: "18px",
-    width: "100%",
-    minWidth: 0, // 🔥 EN ÖNEMLİ
+    boxSizing: "border-box",
   },
 };
