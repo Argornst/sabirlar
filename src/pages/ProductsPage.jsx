@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import SkeletonTable from "../presentation/components/common/SkeletonTable";
+import AppPage from "../presentation/components/ui/AppPage";
 import PageHero from "../presentation/components/ui/PageHero";
+import PremiumStatsRow from "../presentation/components/ui/PremiumStatsRow";
 import SectionCard from "../presentation/components/ui/SectionCard";
 import { supabase } from "../infrastructure/supabase/client";
 import { useToast } from "../presentation/hooks/useToast";
@@ -208,9 +210,13 @@ export default function ProductsPage({
       visibleIds.every((id) => selectedProductIds.includes(id));
 
     if (allVisibleSelected) {
-      setSelectedProductIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+      setSelectedProductIds((prev) =>
+        prev.filter((id) => !visibleIds.includes(id))
+      );
     } else {
-      setSelectedProductIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+      setSelectedProductIds((prev) =>
+        Array.from(new Set([...prev, ...visibleIds]))
+      );
     }
   }
 
@@ -336,7 +342,10 @@ export default function ProductsPage({
 
       await onProductsRefresh?.();
 
-      toast.success("Ürün oluşturuldu", `${name} başarıyla ürün listesine eklendi.`);
+      toast.success(
+        "Ürün oluşturuldu",
+        `${name} başarıyla ürün listesine eklendi.`
+      );
 
       resetCreateForm();
       setIsCreateOpen(false);
@@ -439,7 +448,9 @@ export default function ProductsPage({
 
       toast.success(
         nextIsActive ? "Ürün aktif edildi" : "Ürün pasife alındı",
-        `${product.name} başarıyla ${nextIsActive ? "aktif" : "pasif"} duruma getirildi.`
+        `${product.name} başarıyla ${
+          nextIsActive ? "aktif" : "pasif"
+        } duruma getirildi.`
       );
     } catch (error) {
       console.error("handleToggleProductStatus error:", error);
@@ -590,18 +601,55 @@ export default function ProductsPage({
   const passiveCount = products.filter((product) => !product.is_active).length;
   const avgPrice =
     products.length > 0
-      ? products.reduce((sum, product) => sum + (Number(product.unit_price) || 0), 0) /
-        products.length
+      ? products.reduce(
+          (sum, product) => sum + (Number(product.unit_price) || 0),
+          0
+        ) / products.length
       : 0;
 
   return (
-    <div style={styles.page}>
+    <AppPage
+      hero={
+        <PageHero
+          kicker="Ürün kataloğu"
+          title="Ürünler"
+          subtitle="Aktif ürünler ve fiyat bilgileri burada listelenir."
+          variant="blue"
+        />
+      }
+      stats={
+        <PremiumStatsRow
+          items={[
+            {
+              label: "Toplam Ürün",
+              value: products.length,
+              hint: "Katalogda kayıtlı ürün sayısı",
+              accent: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
+            },
+            {
+              label: "Aktif Ürün",
+              value: activeCount,
+              hint: "Satışta olan ürünler",
+              accent: "linear-gradient(135deg, #10b981 0%, #34d399 100%)",
+            },
+            {
+              label: "Pasif Ürün",
+              value: passiveCount,
+              hint: "Görünürlüğü kapalı ürünler",
+              accent: "linear-gradient(135deg, #f97316 0%, #fb923c 100%)",
+            },
+            {
+              label: "Ortalama Fiyat",
+              value: formatMoney(avgPrice),
+              hint: "Birim fiyat ortalaması",
+              accent: "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)",
+            },
+          ]}
+        />
+      }
+    >
       <style>{`
         @media (max-width: 1024px) {
-          .products-stats {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-          }
-
           .products-toolbar {
             grid-template-columns: 1fr !important;
           }
@@ -619,10 +667,6 @@ export default function ProductsPage({
 
         @media (max-width: 640px) {
           .products-grid {
-            grid-template-columns: 1fr !important;
-          }
-
-          .products-stats {
             grid-template-columns: 1fr !important;
           }
 
@@ -689,39 +733,6 @@ export default function ProductsPage({
         }
       `}</style>
 
-      <PageHero
-        kicker="Ürün kataloğu"
-        title="Ürünler"
-        subtitle="Aktif ürünler ve fiyat bilgileri burada listelenir."
-        variant="blue"
-      />
-
-      <div className="products-stats" style={styles.statsGrid}>
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>Toplam Ürün</div>
-          <div style={styles.statValue}>{products.length}</div>
-          <div style={styles.statHint}>Katalogda kayıtlı ürün sayısı</div>
-        </div>
-
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>Aktif Ürün</div>
-          <div style={styles.statValue}>{activeCount}</div>
-          <div style={styles.statHint}>Satışta olan ürünler</div>
-        </div>
-
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>Pasif Ürün</div>
-          <div style={styles.statValue}>{passiveCount}</div>
-          <div style={styles.statHint}>Görünürlüğü kapalı ürünler</div>
-        </div>
-
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>Ortalama Fiyat</div>
-          <div style={styles.statValue}>{formatMoney(avgPrice)}</div>
-          <div style={styles.statHint}>Birim fiyat ortalaması</div>
-        </div>
-      </div>
-
       <SectionCard
         title="Ürün Listesi"
         subtitle="Sistemde tanımlı ürünler"
@@ -731,14 +742,22 @@ export default function ProductsPage({
               <button
                 type="button"
                 onClick={() => setViewMode("cards")}
-                style={viewMode === "cards" ? styles.viewButtonActive : styles.viewButton}
+                style={
+                  viewMode === "cards"
+                    ? styles.viewButtonActive
+                    : styles.viewButton
+                }
               >
                 Kart
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("table")}
-                style={viewMode === "table" ? styles.viewButtonActive : styles.viewButton}
+                style={
+                  viewMode === "table"
+                    ? styles.viewButtonActive
+                    : styles.viewButton
+                }
               >
                 Tablo
               </button>
@@ -768,7 +787,11 @@ export default function ProductsPage({
               <button
                 type="button"
                 onClick={() => setStatusFilter("all")}
-                style={statusFilter === "all" ? styles.filterChipActive : styles.filterChip}
+                style={
+                  statusFilter === "all"
+                    ? styles.filterChipActive
+                    : styles.filterChip
+                }
               >
                 Tümü
               </button>
@@ -776,7 +799,11 @@ export default function ProductsPage({
               <button
                 type="button"
                 onClick={() => setStatusFilter("active")}
-                style={statusFilter === "active" ? styles.filterChipActive : styles.filterChip}
+                style={
+                  statusFilter === "active"
+                    ? styles.filterChipActive
+                    : styles.filterChip
+                }
               >
                 Aktif
               </button>
@@ -784,7 +811,11 @@ export default function ProductsPage({
               <button
                 type="button"
                 onClick={() => setStatusFilter("passive")}
-                style={statusFilter === "passive" ? styles.filterChipActive : styles.filterChip}
+                style={
+                  statusFilter === "passive"
+                    ? styles.filterChipActive
+                    : styles.filterChip
+                }
               >
                 Pasif
               </button>
@@ -828,7 +859,8 @@ export default function ProductsPage({
             {filteredProducts.map((product) => {
               const isToggling = togglingProductId === product.id;
               const isEditingPrice = editingPriceId === product.id;
-              const isSavingInlinePrice = savingInlinePriceId === product.id;
+              const isSavingInlinePrice =
+                savingInlinePriceId === product.id;
 
               return (
                 <div key={product.id} className="product-card" style={styles.card}>
@@ -836,9 +868,11 @@ export default function ProductsPage({
 
                   <div className="products-card-top" style={styles.cardTop}>
                     <div style={styles.identity}>
-                      <div style={styles.avatar}>{getProductInitials(product.name)}</div>
+                      <div style={styles.avatar}>
+                        {getProductInitials(product.name)}
+                      </div>
 
-                      <div>
+                      <div style={styles.identityContent}>
                         <div style={styles.name}>{product.name}</div>
                         <div style={styles.meta}>
                           {product.unit || "-"} • {product.vat_type || "-"} • %
@@ -847,9 +881,19 @@ export default function ProductsPage({
                       </div>
                     </div>
 
-                    <div style={product.is_active ? styles.activeBadge : styles.passiveBadge}>
+                    <div
+                      style={
+                        product.is_active
+                          ? styles.activeBadge
+                          : styles.passiveBadge
+                      }
+                    >
                       <span
-                        style={product.is_active ? styles.activeBadgeDot : styles.passiveBadgeDot}
+                        style={
+                          product.is_active
+                            ? styles.activeBadgeDot
+                            : styles.passiveBadgeDot
+                        }
                       />
                       {product.is_active ? "Aktif" : "Pasif"}
                     </div>
@@ -858,7 +902,7 @@ export default function ProductsPage({
                   <div style={styles.divider} />
 
                   <div className="products-price-row" style={styles.priceRow}>
-                    <div>
+                    <div style={styles.priceContent}>
                       <div style={styles.priceLabel}>Birim Fiyat</div>
 
                       {isEditingPrice ? (
@@ -923,7 +967,11 @@ export default function ProductsPage({
                       type="button"
                       onClick={() => handleToggleProductStatus(product)}
                       disabled={isToggling}
-                      style={product.is_active ? styles.warningActionButton : styles.successActionButton}
+                      style={
+                        product.is_active
+                          ? styles.warningActionButton
+                          : styles.successActionButton
+                      }
                     >
                       {isToggling
                         ? "İşleniyor..."
@@ -949,8 +997,8 @@ export default function ProductsPage({
                 <div style={styles.emptyIcon}>□</div>
                 <div style={styles.emptyTitle}>Sonuç bulunamadı</div>
                 <div style={styles.emptyText}>
-                  Arama veya filtre kriterlerine uygun ürün yok. Filtreleri temizleyip tekrar
-                  deneyin.
+                  Arama veya filtre kriterlerine uygun ürün yok. Filtreleri
+                  temizleyip tekrar deneyin.
                 </div>
               </div>
             )}
@@ -1031,7 +1079,8 @@ export default function ProductsPage({
                   {filteredProducts.map((product) => {
                     const isToggling = togglingProductId === product.id;
                     const isEditingPrice = editingPriceId === product.id;
-                    const isSavingInlinePrice = savingInlinePriceId === product.id;
+                    const isSavingInlinePrice =
+                      savingInlinePriceId === product.id;
 
                     return (
                       <tr key={product.id} style={styles.tr}>
@@ -1048,7 +1097,7 @@ export default function ProductsPage({
                             <div style={styles.tableAvatar}>
                               {getProductInitials(product.name)}
                             </div>
-                            <div>
+                            <div style={styles.tableIdentityContent}>
                               <div style={styles.tableName}>{product.name}</div>
                             </div>
                           </div>
@@ -1106,7 +1155,11 @@ export default function ProductsPage({
 
                         <td style={styles.td}>
                           <span
-                            style={product.is_active ? styles.activeBadge : styles.passiveBadge}
+                            style={
+                              product.is_active
+                                ? styles.activeBadge
+                                : styles.passiveBadge
+                            }
                           >
                             <span
                               style={
@@ -1166,8 +1219,8 @@ export default function ProductsPage({
                   <div style={styles.emptyIcon}>□</div>
                   <div style={styles.emptyTitle}>Sonuç bulunamadı</div>
                   <div style={styles.emptyText}>
-                    Arama veya filtre kriterlerine uygun ürün yok. Filtreleri temizleyip tekrar
-                    deneyin.
+                    Arama veya filtre kriterlerine uygun ürün yok. Filtreleri
+                    temizleyip tekrar deneyin.
                   </div>
                 </div>
               )}
@@ -1204,7 +1257,9 @@ export default function ProductsPage({
                     <input
                       className="product-form-input"
                       value={createForm.name}
-                      onChange={(e) => handleCreateChange("name", e.target.value)}
+                      onChange={(e) =>
+                        handleCreateChange("name", e.target.value)
+                      }
                       placeholder="Örn. Kavrulmuş İç Fındık"
                       style={styles.input}
                     />
@@ -1215,7 +1270,9 @@ export default function ProductsPage({
                     <input
                       className="product-form-input"
                       value={createForm.unit}
-                      onChange={(e) => handleCreateChange("unit", e.target.value)}
+                      onChange={(e) =>
+                        handleCreateChange("unit", e.target.value)
+                      }
                       placeholder="Örn. kg"
                       style={styles.input}
                     />
@@ -1229,7 +1286,9 @@ export default function ProductsPage({
                       min="0"
                       step="0.01"
                       value={createForm.unit_price}
-                      onChange={(e) => handleCreateChange("unit_price", e.target.value)}
+                      onChange={(e) =>
+                        handleCreateChange("unit_price", e.target.value)
+                      }
                       placeholder="0.00"
                       style={styles.input}
                     />
@@ -1240,7 +1299,9 @@ export default function ProductsPage({
                     <select
                       className="product-form-select"
                       value={createForm.vat_type}
-                      onChange={(e) => handleCreateChange("vat_type", e.target.value)}
+                      onChange={(e) =>
+                        handleCreateChange("vat_type", e.target.value)
+                      }
                       style={styles.input}
                     >
                       <option value="DAHIL">DAHİL</option>
@@ -1256,7 +1317,9 @@ export default function ProductsPage({
                       min="0"
                       step="0.01"
                       value={createForm.vat_rate}
-                      onChange={(e) => handleCreateChange("vat_rate", e.target.value)}
+                      onChange={(e) =>
+                        handleCreateChange("vat_rate", e.target.value)
+                      }
                       placeholder="1"
                       style={styles.input}
                     />
@@ -1267,7 +1330,9 @@ export default function ProductsPage({
                       <input
                         type="checkbox"
                         checked={createForm.is_active}
-                        onChange={(e) => handleCreateChange("is_active", e.target.checked)}
+                        onChange={(e) =>
+                          handleCreateChange("is_active", e.target.checked)
+                        }
                       />
                       <span>Ürün aktif olarak oluşturulsun</span>
                     </label>
@@ -1284,7 +1349,11 @@ export default function ProductsPage({
                   İptal
                 </button>
 
-                <button type="submit" disabled={savingProduct} style={styles.primaryButton}>
+                <button
+                  type="submit"
+                  disabled={savingProduct}
+                  style={styles.primaryButton}
+                >
                   {savingProduct ? "Kaydediliyor..." : "Kaydet"}
                 </button>
               </div>
@@ -1321,7 +1390,9 @@ export default function ProductsPage({
                     <input
                       className="product-form-input"
                       value={editForm.name}
-                      onChange={(e) => handleEditChange("name", e.target.value)}
+                      onChange={(e) =>
+                        handleEditChange("name", e.target.value)
+                      }
                       placeholder="Örn. Kavrulmuş İç Fındık"
                       style={styles.input}
                     />
@@ -1332,7 +1403,9 @@ export default function ProductsPage({
                     <input
                       className="product-form-input"
                       value={editForm.unit}
-                      onChange={(e) => handleEditChange("unit", e.target.value)}
+                      onChange={(e) =>
+                        handleEditChange("unit", e.target.value)
+                      }
                       placeholder="Örn. kg"
                       style={styles.input}
                     />
@@ -1346,7 +1419,9 @@ export default function ProductsPage({
                       min="0"
                       step="0.01"
                       value={editForm.unit_price}
-                      onChange={(e) => handleEditChange("unit_price", e.target.value)}
+                      onChange={(e) =>
+                        handleEditChange("unit_price", e.target.value)
+                      }
                       placeholder="0.00"
                       style={styles.input}
                     />
@@ -1357,7 +1432,9 @@ export default function ProductsPage({
                     <select
                       className="product-form-select"
                       value={editForm.vat_type}
-                      onChange={(e) => handleEditChange("vat_type", e.target.value)}
+                      onChange={(e) =>
+                        handleEditChange("vat_type", e.target.value)
+                      }
                       style={styles.input}
                     >
                       <option value="DAHIL">DAHİL</option>
@@ -1373,7 +1450,9 @@ export default function ProductsPage({
                       min="0"
                       step="0.01"
                       value={editForm.vat_rate}
-                      onChange={(e) => handleEditChange("vat_rate", e.target.value)}
+                      onChange={(e) =>
+                        handleEditChange("vat_rate", e.target.value)
+                      }
                       placeholder="1"
                       style={styles.input}
                     />
@@ -1384,7 +1463,9 @@ export default function ProductsPage({
                       <input
                         type="checkbox"
                         checked={editForm.is_active}
-                        onChange={(e) => handleEditChange("is_active", e.target.checked)}
+                        onChange={(e) =>
+                          handleEditChange("is_active", e.target.checked)
+                        }
                       />
                       <span>Ürün aktif olsun</span>
                     </label>
@@ -1401,7 +1482,11 @@ export default function ProductsPage({
                   İptal
                 </button>
 
-                <button type="submit" disabled={updatingProduct} style={styles.primaryButton}>
+                <button
+                  type="submit"
+                  disabled={updatingProduct}
+                  style={styles.primaryButton}
+                >
                   {updatingProduct ? "Güncelleniyor..." : "Güncelle"}
                 </button>
               </div>
@@ -1436,8 +1521,8 @@ export default function ProductsPage({
                   Silinecek ürün: {selectedProduct?.name || "-"}
                 </div>
                 <div style={styles.deleteWarningText}>
-                  Ürün geçmiş satış kayıtlarında kullanıldıysa hard delete yerine pasife alma
-                  daha güvenlidir.
+                  Ürün geçmiş satış kayıtlarında kullanıldıysa hard delete yerine
+                  pasife alma daha güvenlidir.
                 </div>
               </div>
             </div>
@@ -1463,7 +1548,7 @@ export default function ProductsPage({
           </div>
         </div>
       )}
-    </div>
+    </AppPage>
   );
 }
 
@@ -1477,55 +1562,13 @@ const glassSurface = {
 };
 
 const styles = {
-  page: {
-    display: "grid",
-    gap: "20px",
-  },
-
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    gap: "16px",
-  },
-
-  statCard: {
-    ...glassSurface,
-    borderRadius: "24px",
-    padding: "18px 18px 16px",
-    position: "relative",
-    overflow: "hidden",
-  },
-
-  statLabel: {
-    color: "#64748b",
-    fontSize: "12px",
-    fontWeight: 800,
-    letterSpacing: "0.04em",
-    textTransform: "uppercase",
-  },
-
-  statValue: {
-    marginTop: "10px",
-    color: "#0f172a",
-    fontWeight: 900,
-    fontSize: "28px",
-    lineHeight: 1.1,
-    letterSpacing: "-0.03em",
-  },
-
-  statHint: {
-    marginTop: "8px",
-    color: "#94a3b8",
-    fontSize: "13px",
-    lineHeight: 1.5,
-  },
-
   headerRightWrap: {
     display: "flex",
     alignItems: "center",
     gap: "10px",
     flexWrap: "wrap",
     justifyContent: "flex-end",
+    minWidth: 0,
   },
 
   viewSwitch: {
@@ -1536,6 +1579,7 @@ const styles = {
     background: "rgba(248,250,252,0.95)",
     border: "1px solid rgba(226,232,240,1)",
     boxShadow: "0 8px 20px rgba(15,23,42,0.04)",
+    flexShrink: 0,
   },
 
   viewButton: {
@@ -1565,6 +1609,7 @@ const styles = {
   badgeWrap: {
     position: "relative",
     display: "inline-flex",
+    flexShrink: 0,
   },
 
   badgeGlow: {
@@ -1585,11 +1630,12 @@ const styles = {
     fontWeight: 800,
     fontSize: "12px",
     boxShadow: "0 8px 20px rgba(15,23,42,0.05)",
+    whiteSpace: "nowrap",
   },
 
   toolbar: {
     display: "grid",
-    gridTemplateColumns: "1fr auto",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
     gap: "16px",
     alignItems: "center",
     marginBottom: "18px",
@@ -1599,6 +1645,9 @@ const styles = {
       "linear-gradient(180deg, rgba(248,250,252,0.9) 0%, rgba(255,255,255,0.72) 100%)",
     border: "1px solid rgba(226,232,240,1)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
+    width: "100%",
+    boxSizing: "border-box",
+    minWidth: 0,
   },
 
   toolbarLeft: {
@@ -1606,6 +1655,7 @@ const styles = {
     alignItems: "center",
     gap: "12px",
     flexWrap: "wrap",
+    minWidth: 0,
   },
 
   toolbarRight: {
@@ -1614,6 +1664,7 @@ const styles = {
     alignItems: "center",
     gap: "10px",
     flexWrap: "wrap",
+    minWidth: 0,
   },
 
   searchWrap: {
@@ -1644,12 +1695,15 @@ const styles = {
     fontSize: "14px",
     fontWeight: 600,
     transition: "all 160ms ease",
+    boxSizing: "border-box",
   },
 
   filterChips: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
+    minWidth: 0,
+    flexWrap: "wrap",
   },
 
   filterChip: {
@@ -1663,6 +1717,7 @@ const styles = {
     fontSize: "13px",
     cursor: "pointer",
     transition: "all 160ms ease",
+    whiteSpace: "nowrap",
   },
 
   filterChipActive: {
@@ -1678,6 +1733,7 @@ const styles = {
     cursor: "pointer",
     boxShadow: "0 8px 20px rgba(59,130,246,0.10)",
     transition: "all 160ms ease",
+    whiteSpace: "nowrap",
   },
 
   select: {
@@ -1691,6 +1747,7 @@ const styles = {
     fontWeight: 700,
     minWidth: "190px",
     transition: "all 160ms ease",
+    maxWidth: "100%",
   },
 
   newButton: {
@@ -1708,12 +1765,15 @@ const styles = {
     alignItems: "center",
     gap: "8px",
     transition: "all 160ms ease",
+    whiteSpace: "nowrap",
   },
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: "16px",
+    width: "100%",
+    minWidth: 0,
   },
 
   card: {
@@ -1722,7 +1782,10 @@ const styles = {
     overflow: "hidden",
     borderRadius: "28px",
     padding: "20px",
-    transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+    transition:
+      "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+    minWidth: 0,
+    boxSizing: "border-box",
   },
 
   cardGlow: {
@@ -1731,7 +1794,8 @@ const styles = {
     right: "-20px",
     width: "140px",
     height: "140px",
-    background: "radial-gradient(circle, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0) 70%)",
+    background:
+      "radial-gradient(circle, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0) 70%)",
     pointerEvents: "none",
   },
 
@@ -1742,6 +1806,7 @@ const styles = {
     alignItems: "flex-start",
     position: "relative",
     zIndex: 1,
+    minWidth: 0,
   },
 
   identity: {
@@ -1749,6 +1814,12 @@ const styles = {
     alignItems: "flex-start",
     gap: "14px",
     minWidth: 0,
+    flex: 1,
+  },
+
+  identityContent: {
+    minWidth: 0,
+    flex: 1,
   },
 
   avatar: {
@@ -1765,6 +1836,7 @@ const styles = {
       "linear-gradient(135deg, rgba(219,234,254,1) 0%, rgba(239,246,255,0.95) 100%)",
     border: "1px solid rgba(191,219,254,1)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+    flexShrink: 0,
   },
 
   name: {
@@ -1774,12 +1846,14 @@ const styles = {
     marginBottom: "8px",
     lineHeight: 1.3,
     letterSpacing: "-0.02em",
+    wordBreak: "break-word",
   },
 
   meta: {
     color: "#64748b",
     fontSize: "13px",
     lineHeight: 1.6,
+    wordBreak: "break-word",
   },
 
   divider: {
@@ -1796,6 +1870,12 @@ const styles = {
     alignItems: "flex-end",
     position: "relative",
     zIndex: 1,
+    minWidth: 0,
+  },
+
+  priceContent: {
+    minWidth: 0,
+    flex: 1,
   },
 
   priceLabel: {
@@ -1818,6 +1898,8 @@ const styles = {
     lineHeight: 1.1,
     cursor: "pointer",
     textAlign: "left",
+    maxWidth: "100%",
+    wordBreak: "break-word",
   },
 
   inlinePriceInput: {
@@ -1832,6 +1914,8 @@ const styles = {
     fontWeight: 900,
     letterSpacing: "-0.02em",
     transition: "all 160ms ease",
+    boxSizing: "border-box",
+    maxWidth: "100%",
   },
 
   inlinePriceHint: {
@@ -1839,6 +1923,7 @@ const styles = {
     color: "#94a3b8",
     fontSize: "12px",
     fontWeight: 700,
+    wordBreak: "break-word",
   },
 
   pricePill: {
@@ -1850,21 +1935,26 @@ const styles = {
     fontWeight: 800,
     fontSize: "12px",
     whiteSpace: "nowrap",
+    flexShrink: 0,
   },
 
   cardActions: {
     display: "flex",
     gap: "10px",
     marginTop: "16px",
+    flexWrap: "wrap",
   },
 
   tableWrap: {
     width: "100%",
+    maxWidth: "100%",
     maxHeight: "70vh",
-    overflow: "auto",
+    overflowX: "auto",
+    overflowY: "auto",
     borderRadius: "22px",
     border: "1px solid rgba(226,232,240,1)",
     background: "rgba(255,255,255,0.66)",
+    minWidth: 0,
   },
 
   bulkBar: {
@@ -1878,6 +1968,7 @@ const styles = {
     background:
       "linear-gradient(180deg, rgba(239,246,255,0.95) 0%, rgba(219,234,254,0.88) 100%)",
     border: "1px solid rgba(147,197,253,0.9)",
+    minWidth: 0,
   },
 
   bulkInfo: {
@@ -1897,6 +1988,7 @@ const styles = {
     minWidth: "980px",
     borderCollapse: "separate",
     borderSpacing: 0,
+    tableLayout: "auto",
   },
 
   th: {
@@ -1914,6 +2006,7 @@ const styles = {
     background: "rgba(248,250,252,0.98)",
     backdropFilter: "blur(10px)",
     WebkitBackdropFilter: "blur(10px)",
+    whiteSpace: "nowrap",
   },
 
   thCheckbox: {
@@ -1945,6 +2038,7 @@ const styles = {
     fontSize: "14px",
     verticalAlign: "middle",
     background: "rgba(255,255,255,0.54)",
+    whiteSpace: "nowrap",
   },
 
   tdCheckbox: {
@@ -1968,6 +2062,11 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "12px",
+    minWidth: 0,
+  },
+
+  tableIdentityContent: {
+    minWidth: 0,
   },
 
   tableAvatar: {
@@ -1983,6 +2082,7 @@ const styles = {
     background:
       "linear-gradient(135deg, rgba(219,234,254,1) 0%, rgba(239,246,255,0.95) 100%)",
     border: "1px solid rgba(191,219,254,1)",
+    flexShrink: 0,
   },
 
   tableName: {
@@ -1990,6 +2090,8 @@ const styles = {
     fontSize: "14px",
     fontWeight: 900,
     lineHeight: 1.3,
+    whiteSpace: "normal",
+    wordBreak: "break-word",
   },
 
   inlineTablePriceButton: {
@@ -2001,6 +2103,7 @@ const styles = {
     fontWeight: 900,
     cursor: "pointer",
     textAlign: "left",
+    whiteSpace: "nowrap",
   },
 
   inlineTablePriceInput: {
@@ -2013,6 +2116,7 @@ const styles = {
     color: "#0f172a",
     fontSize: "16px",
     fontWeight: 800,
+    boxSizing: "border-box",
   },
 
   tablePriceHint: {
@@ -2020,6 +2124,7 @@ const styles = {
     color: "#94a3b8",
     fontSize: "11px",
     fontWeight: 700,
+    whiteSpace: "normal",
   },
 
   tableActions: {
@@ -2037,6 +2142,7 @@ const styles = {
     color: "#334155",
     fontWeight: 800,
     cursor: "pointer",
+    whiteSpace: "nowrap",
   },
 
   warningActionButton: {
@@ -2048,6 +2154,7 @@ const styles = {
     color: "#a16207",
     fontWeight: 800,
     cursor: "pointer",
+    whiteSpace: "nowrap",
   },
 
   successActionButton: {
@@ -2059,6 +2166,7 @@ const styles = {
     color: "#047857",
     fontWeight: 800,
     cursor: "pointer",
+    whiteSpace: "nowrap",
   },
 
   dangerActionButton: {
@@ -2070,6 +2178,7 @@ const styles = {
     color: "#b91c1c",
     fontWeight: 800,
     cursor: "pointer",
+    whiteSpace: "nowrap",
   },
 
   activeBadge: {
@@ -2085,6 +2194,7 @@ const styles = {
     whiteSpace: "nowrap",
     border: "1px solid rgba(167,243,208,0.9)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.65)",
+    flexShrink: 0,
   },
 
   passiveBadge: {
@@ -2100,6 +2210,7 @@ const styles = {
     whiteSpace: "nowrap",
     border: "1px solid rgba(226,232,240,1)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.65)",
+    flexShrink: 0,
   },
 
   activeBadgeDot: {
@@ -2225,6 +2336,7 @@ const styles = {
     color: "#334155",
     fontSize: "20px",
     cursor: "pointer",
+    flexShrink: 0,
   },
 
   modalBody: {
@@ -2259,6 +2371,7 @@ const styles = {
     fontSize: "14px",
     fontWeight: 600,
     transition: "all 160ms ease",
+    boxSizing: "border-box",
   },
 
   checkboxField: {
@@ -2300,6 +2413,7 @@ const styles = {
     justifyContent: "flex-end",
     gap: "10px",
     padding: "0 22px 22px",
+    flexWrap: "wrap",
   },
 
   secondaryButton: {

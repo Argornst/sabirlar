@@ -212,10 +212,10 @@ const styles = {
   },
 
   grid: {
-    display: "grid",
-    gridTemplateColumns: "1.2fr 0.8fr",
-    gap: "18px",
-  },
+  display: "grid",
+  gridTemplateColumns: "minmax(0,1.2fr) minmax(0,0.8fr)",
+  gap: "18px",
+},
 
   form: {
     display: "grid",

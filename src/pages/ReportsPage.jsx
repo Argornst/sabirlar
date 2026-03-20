@@ -1,6 +1,7 @@
 import InlineLoader from "../presentation/components/common/InLineLoader";
+import AppPage from "../presentation/components/ui/AppPage";
 import PageHero from "../presentation/components/ui/PageHero";
-import MetricCard from "../presentation/components/ui/MetricCard";
+import PremiumStatsRow from "../presentation/components/ui/PremiumStatsRow";
 import SectionCard from "../presentation/components/ui/SectionCard";
 
 function formatMoney(value) {
@@ -28,41 +29,46 @@ export default function ReportsPage({
   loadingReports = false,
 }) {
   return (
-    <div style={styles.page}>
-      <PageHero
-        kicker="Rapor merkezi"
-        title="Raporlar"
-        subtitle="Filtreleri kullanarak satış hareketlerini analiz et ve dışa aktar."
-        variant="indigo"
-      />
-
-      <div style={styles.metricsGrid}>
-        <MetricCard
-          title="Kayıt Sayısı"
-          value={filteredSales.length}
-          subtitle="Filtreye uyan toplam satış"
-          tone="blue"
+    <AppPage
+      hero={
+        <PageHero
+          kicker="Rapor merkezi"
+          title="Raporlar"
+          subtitle="Filtreleri kullanarak satış hareketlerini analiz et ve dışa aktar."
+          variant="indigo"
         />
-        <MetricCard
-          title="Toplam Tutar"
-          value={formatMoney(totalSalesAmount)}
-          subtitle="Seçili aralıktaki toplam tutar"
-          tone="green"
+      }
+      stats={
+        <PremiumStatsRow
+          items={[
+            {
+              label: "Kayıt Sayısı",
+              value: filteredSales.length,
+              hint: "Filtreye uyan toplam satış",
+              accent: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+            },
+            {
+              label: "Toplam Tutar",
+              value: formatMoney(totalSalesAmount),
+              hint: "Seçili aralıktaki toplam tutar",
+              accent: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+            },
+            {
+              label: "Beklemede",
+              value: pendingCount,
+              hint: "İşlem bekleyen satışlar",
+              accent: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+            },
+            {
+              label: "Faturalandı",
+              value: invoicedCount,
+              hint: "Tamamlanmış satışlar",
+              accent: "linear-gradient(135deg, #a78bfa 0%, #6366f1 100%)",
+            },
+          ]}
         />
-        <MetricCard
-          title="Beklemede"
-          value={pendingCount}
-          subtitle="İşlem bekleyen satışlar"
-          tone="orange"
-        />
-        <MetricCard
-          title="Faturalandı"
-          value={invoicedCount}
-          subtitle="Tamamlanmış satışlar"
-          tone="default"
-        />
-      </div>
-
+      }
+    >
       <SectionCard
         title="Filtreler ve Dışa Aktarma"
         subtitle="Tarih aralığı ve arama kriterleri ile sonuçları daralt."
@@ -171,22 +177,11 @@ export default function ReportsPage({
           )}
         </div>
       </SectionCard>
-    </div>
+    </AppPage>
   );
 }
 
 const styles = {
-  page: {
-    display: "grid",
-    gap: "20px",
-  },
-
-  metricsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "16px",
-  },
-
   toolbarGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
@@ -212,7 +207,6 @@ const styles = {
     fontSize: "14px",
     color: "#0f172a",
   },
-
   actionWrap: {
     display: "grid",
     gap: "10px",
@@ -240,7 +234,6 @@ const styles = {
   loaderWrap: {
     marginTop: "14px",
   },
-
   tableBadge: {
     padding: "10px 14px",
     borderRadius: "999px",
@@ -250,7 +243,6 @@ const styles = {
     fontWeight: 800,
     fontSize: "12px",
   },
-
   tableWrapper: {
     overflowX: "auto",
   },
@@ -286,7 +278,6 @@ const styles = {
     borderTop: "1px solid #eef2f7",
     borderBottom: "1px solid #eef2f7",
   },
-
   empty: {
     padding: "26px",
     textAlign: "center",

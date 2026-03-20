@@ -3,6 +3,8 @@ import { useOutletContext } from "react-router-dom";
 import { usersRepository } from "../infrastructure/repositories/usersRepository";
 import { adminUsersRepository } from "../infrastructure/repositories/adminUsersRepository";
 import { useToast } from "../presentation/hooks/useToast";
+import AppPage from "../presentation/components/ui/AppPage";
+import PageHero from "../presentation/components/ui/PageHero";
 import {
   DEFAULT_PAGE_PERMISSIONS,
   buildDefaultStaffPermissions,
@@ -303,27 +305,25 @@ export default function UsersPage() {
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.hero}>
-        <div>
-          <div style={styles.eyebrow}>Admin Control</div>
-          <h1 style={styles.title}>Kullanıcı Yönetimi</h1>
-          <p style={styles.subtitle}>
-            Kullanıcıları oluştur, düzenle, pasife al ve sayfa yetkilerini yönet.
-          </p>
-        </div>
-
-        <div style={styles.heroActions}>
-          <button
-            type="button"
-            style={styles.primaryButton}
-            onClick={() => setCreateOpen(true)}
-          >
-            + Yeni Kullanıcı
-          </button>
-        </div>
-      </div>
-
+    <AppPage
+      hero={
+        <PageHero
+          kicker="Admin Control"
+          title="Kullanıcı Yönetimi"
+          subtitle="Kullanıcıları oluştur, düzenle, pasife al ve sayfa yetkilerini yönet."
+          variant="blue"
+          rightContent={
+            <button
+              type="button"
+              style={styles.primaryButton}
+              onClick={() => setCreateOpen(true)}
+            >
+              + Yeni Kullanıcı
+            </button>
+          }
+        />
+      }
+    >
       <div style={styles.toolbar}>
         <input
           value={query}
@@ -739,7 +739,7 @@ export default function UsersPage() {
           </div>
         </div>
       ) : null}
-    </div>
+    </AppPage>
   );
 }
 
@@ -804,43 +804,6 @@ const styles = {
   page: {
     display: "grid",
     gap: "20px",
-  },
-  hero: {
-    ...glass,
-    borderRadius: "28px",
-    padding: "24px",
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "18px",
-    alignItems: "center",
-  },
-  heroActions: {
-    display: "flex",
-    gap: "12px",
-  },
-  eyebrow: {
-    display: "inline-flex",
-    padding: "8px 12px",
-    borderRadius: "999px",
-    background: "rgba(15,23,42,0.06)",
-    color: "#334155",
-    fontSize: "12px",
-    fontWeight: 800,
-    marginBottom: "12px",
-  },
-  title: {
-    margin: 0,
-    fontSize: "32px",
-    lineHeight: 1.05,
-    fontWeight: 900,
-    color: "#0f172a",
-    letterSpacing: "-0.03em",
-  },
-  subtitle: {
-    margin: "10px 0 0 0",
-    color: "#64748b",
-    fontSize: "14px",
-    lineHeight: 1.7,
   },
   toolbar: {
     ...glass,
@@ -1021,6 +984,20 @@ const styles = {
     ...glass,
     borderRadius: "28px",
     padding: "24px",
+  },
+  title: {
+    margin: 0,
+    fontSize: "32px",
+    lineHeight: 1.05,
+    fontWeight: 900,
+    color: "#0f172a",
+    letterSpacing: "-0.03em",
+  },
+  subtitle: {
+    margin: "10px 0 0 0",
+    color: "#64748b",
+    fontSize: "14px",
+    lineHeight: 1.7,
   },
   emptyCard: {
     ...glass,

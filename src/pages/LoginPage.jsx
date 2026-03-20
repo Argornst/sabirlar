@@ -238,10 +238,11 @@ const styles = {
 },
 
 showcaseLogo: {
-  width: "320px",   // 🔥 ASIL OLAY BURASI
-  height: "auto",   // oran bozulmaz
+  width: "320px",
+  height: "auto",
   objectFit: "contain",
   display: "block",
+  filter: "drop-shadow(0 10px 30px rgba(59,130,246,0.25))",
 },
   showcaseLogoFallback: {
     display: "none",
@@ -368,20 +369,21 @@ showcaseLogo: {
     fontSize: "13px",
     lineHeight: 1.6,
   },
-  button: {
-    position: "relative",
-    overflow: "hidden",
-    marginTop: "6px",
-    border: "none",
-    borderRadius: "18px",
-    padding: "16px 18px",
-    background: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
-    color: "#ffffff",
-    fontWeight: 900,
-    fontSize: "14px",
-    cursor: "pointer",
-    boxShadow: "0 18px 36px rgba(59,130,246,0.24)",
-  },
+ button: {
+  position: "relative",
+  overflow: "hidden",
+  marginTop: "6px",
+  border: "none",
+  borderRadius: "18px",
+  padding: "16px 18px",
+  background: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
+  color: "#ffffff",
+  fontWeight: 900,
+  fontSize: "14px",
+  cursor: "pointer",
+  boxShadow: "0 18px 36px rgba(59,130,246,0.24)",
+  transition: "transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease",
+},
   buttonShine: {
     position: "absolute",
     inset: 0,

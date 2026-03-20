@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { ROUTES } from "../../shared/constants/routes";
 import {
   canAccessRoute,
@@ -24,10 +25,57 @@ export default function AppShell({
   const isAdmin = isAdminProfile(profile);
   const fullName = profile?.full_name || session?.user?.email || "Kullanıcı";
 
-  const visibleNavItems = navItems.filter((item) => canAccessRoute(profile, item.to));
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setReady(true), 40);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  const visibleNavItems = navItems.filter((item) =>
+    canAccessRoute(profile, item.to)
+  );
 
   return (
     <div style={styles.app}>
+      <style>{`
+        @keyframes topProgress {
+          0% { transform: translateX(-30%); width: 18%; }
+          50% { transform: translateX(180%); width: 34%; }
+          100% { transform: translateX(430%); width: 18%; }
+        }
+
+        @keyframes pulseGlow {
+          0% { opacity: 0.65; box-shadow: 0 0 0 rgba(16,185,129,0.00); }
+          50% { opacity: 1; box-shadow: 0 0 18px rgba(16,185,129,0.42); }
+          100% { opacity: 0.65; box-shadow: 0 0 0 rgba(16,185,129,0.00); }
+        }
+
+        @media (max-width: 1080px) {
+          .app-shell-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .app-shell-sidebar {
+            min-height: auto !important;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            border-right: none !important;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+          }
+
+          .app-shell-main {
+            padding-top: 70px !important;
+          }
+
+          .app-shell-top-status {
+            top: 18px !important;
+            right: 18px !important;
+          }
+        }
+      `}</style>
+
       {refreshing && (
         <div style={styles.topProgressTrack}>
           <div style={styles.topProgressBar} />
@@ -37,8 +85,27 @@ export default function AppShell({
       <div style={styles.bgGlowOne} />
       <div style={styles.bgGlowTwo} />
 
-      <div style={styles.grid}>
-        <aside style={styles.sidebar}>
+      <div
+        className="app-shell-grid"
+        style={{
+          ...styles.grid,
+          opacity: ready ? 1 : 0,
+          transform: ready ? "translateY(0px)" : "translateY(20px)",
+          filter: ready ? "blur(0px)" : "blur(10px)",
+          transition:
+            "opacity 520ms cubic-bezier(0.22, 1, 0.36, 1), transform 520ms cubic-bezier(0.22, 1, 0.36, 1), filter 520ms ease",
+        }}
+      >
+        <aside
+          className="app-shell-sidebar"
+          style={{
+            ...styles.sidebar,
+            opacity: ready ? 1 : 0,
+            transform: ready ? "translateX(0px)" : "translateX(-18px)",
+            transition:
+              "opacity 560ms cubic-bezier(0.22, 1, 0.36, 1), transform 560ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        >
           <div>
             <div style={styles.brand}>
               <div style={styles.brandIcon}>S</div>
@@ -64,10 +131,47 @@ export default function AppShell({
             </div>
 
             <nav style={styles.nav}>
-              {visibleNavItems.map((item) => (
-                <NavItem key={item.to} to={item.to} icon={item.icon}>
-                  {item.label}
-                </NavItem>
+              {visibleNavItems.map((item, index) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  style={({ isActive }) => ({
+                    ...styles.navItem,
+                    ...(isActive ? styles.navItemActive : {}),
+                    opacity: ready ? 1 : 0,
+                    transform: ready ? "translateX(0px)" : "translateX(-10px)",
+                    transition: `opacity 420ms ease ${90 + index * 45}ms, transform 420ms cubic-bezier(0.22, 1, 0.36, 1) ${90 + index * 45}ms, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease`,
+                  })}
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span
+                        style={{
+                          ...styles.navActiveBar,
+                          opacity: isActive ? 1 : 0,
+                        }}
+                      />
+                      <span style={styles.navItemInner}>
+                        <span
+                          style={{
+                            ...styles.navIcon,
+                            ...(isActive ? styles.navIconActive : {}),
+                          }}
+                        >
+                          {item.icon}
+                        </span>
+                        <span
+                          style={{
+                            ...styles.navText,
+                            ...(isActive ? styles.navTextActive : {}),
+                          }}
+                        >
+                          {item.label}
+                        </span>
+                      </span>
+                    </>
+                  )}
+                </NavLink>
               ))}
             </nav>
           </div>
@@ -77,8 +181,17 @@ export default function AppShell({
           </button>
         </aside>
 
-        <main style={styles.main}>
-          <div style={styles.topRightStatus}>
+        <main
+          className="app-shell-main"
+          style={{
+            ...styles.main,
+            opacity: ready ? 1 : 0,
+            transform: ready ? "translateY(0px)" : "translateY(22px)",
+            transition:
+              "opacity 620ms cubic-bezier(0.22, 1, 0.36, 1) 120ms, transform 620ms cubic-bezier(0.22, 1, 0.36, 1) 120ms",
+          }}
+        >
+          <div className="app-shell-top-status" style={styles.topRightStatus}>
             <div style={styles.statusBadge}>
               <span style={styles.statusDot} />
               {refreshing ? "Senkronize ediliyor" : "Canlı sistem"}
@@ -91,31 +204,6 @@ export default function AppShell({
         </main>
       </div>
     </div>
-  );
-}
-
-function NavItem({ to, children, icon }) {
-  const location = useLocation();
-  const isActive = location.pathname === to;
-
-  return (
-    <NavLink
-      to={to}
-      style={{
-        ...styles.navItem,
-        ...(isActive ? styles.navItemActive : {}),
-      }}
-    >
-      <span
-        style={{
-          ...styles.navIcon,
-          ...(isActive ? styles.navIconActive : {}),
-        }}
-      >
-        {icon}
-      </span>
-      {children}
-    </NavLink>
   );
 }
 
@@ -168,7 +256,7 @@ const styles = {
   grid: {
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "290px 1fr",
+    gridTemplateColumns: "280px 1fr",
     position: "relative",
     zIndex: 2,
   },
@@ -177,7 +265,7 @@ const styles = {
     background: "rgba(8,12,22,0.88)",
     backdropFilter: "blur(16px)",
     borderRight: "1px solid rgba(255,255,255,0.06)",
-    padding: "24px 20px",
+    padding: "24px 18px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -198,6 +286,7 @@ const styles = {
     color: "#fff",
     fontWeight: 800,
     fontSize: "20px",
+    flexShrink: 0,
   },
   brandTitle: {
     color: "#f8fafc",
@@ -230,6 +319,7 @@ const styles = {
     color: "#fff",
     fontWeight: 800,
     fontSize: "18px",
+    flexShrink: 0,
   },
   profileName: {
     color: "#fff",
@@ -251,39 +341,76 @@ const styles = {
   nav: {
     display: "grid",
     gap: "10px",
+    width: "100%",
   },
   navItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px 14px",
-    borderRadius: "16px",
+    position: "relative",
+    width: "100%",
+    display: "block",
+    boxSizing: "border-box",
     textDecoration: "none",
     color: "#cbd5e1",
-    fontSize: "14px",
-    fontWeight: 700,
+    borderRadius: "18px",
     border: "1px solid rgba(255,255,255,0.04)",
     background: "rgba(255,255,255,0.02)",
+    overflow: "hidden",
   },
   navItemActive: {
     color: "#ffffff",
     background:
-      "linear-gradient(135deg, rgba(16,185,129,0.20) 0%, rgba(59,130,246,0.18) 100%)",
-    border: "1px solid rgba(16,185,129,0.20)",
+      "linear-gradient(135deg, rgba(16,185,129,0.16) 0%, rgba(59,130,246,0.18) 100%)",
+    border: "1px solid rgba(59,130,246,0.18)",
+    boxShadow: "0 14px 30px rgba(59,130,246,0.14)",
+  },
+  navActiveBar: {
+    position: "absolute",
+    left: "0",
+    top: "12px",
+    bottom: "12px",
+    width: "4px",
+    borderRadius: "999px",
+    background: "linear-gradient(180deg, #10b981 0%, #3b82f6 100%)",
+    transition: "opacity 180ms ease",
+  },
+  navItemInner: {
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
+    display: "grid",
+    gridTemplateColumns: "30px minmax(0, 1fr)",
+    alignItems: "center",
+    columnGap: "12px",
+    padding: "12px 14px 12px 16px",
   },
   navIcon: {
     width: "30px",
     height: "30px",
+    minWidth: "30px",
     borderRadius: "10px",
     display: "grid",
     placeItems: "center",
     background: "rgba(255,255,255,0.06)",
     color: "#cbd5e1",
     fontSize: "14px",
+    fontWeight: 800,
+    transition: "background 180ms ease, color 180ms ease",
   },
   navIconActive: {
     background: "rgba(255,255,255,0.14)",
-    color: "#fff",
+    color: "#ffffff",
+  },
+  navText: {
+    minWidth: 0,
+    display: "block",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    fontSize: "14px",
+    fontWeight: 700,
+    lineHeight: 1.2,
+  },
+  navTextActive: {
+    color: "#ffffff",
   },
   logoutButton: {
     background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
@@ -296,12 +423,20 @@ const styles = {
     cursor: "pointer",
   },
   main: {
+    position: "relative",
     padding: "26px",
+    paddingTop: "26px",
+    minWidth: 0,
+    boxSizing: "border-box",
   },
   topRightStatus: {
+    position: "absolute",
+    top: "18px",
+    right: "26px",
+    zIndex: 15,
     display: "flex",
     justifyContent: "flex-end",
-    marginBottom: "14px",
+    pointerEvents: "none",
   },
   statusBadge: {
     display: "inline-flex",
@@ -309,12 +444,14 @@ const styles = {
     gap: "8px",
     padding: "10px 14px",
     borderRadius: "999px",
-    background: "rgba(255,255,255,0.84)",
+    background: "rgba(255,255,255,0.92)",
     backdropFilter: "blur(10px)",
     border: "1px solid #e5e7eb",
     fontSize: "12px",
     fontWeight: 800,
     color: "#0f172a",
+    boxShadow: "0 10px 24px rgba(15,23,42,0.08)",
+    pointerEvents: "auto",
   },
   statusDot: {
     width: "8px",
@@ -324,5 +461,10 @@ const styles = {
   },
   mainInner: {
     width: "100%",
+    maxWidth: "1400px",
+    margin: "0 auto",
+    padding: "0 8px",
+    boxSizing: "border-box",
+    minWidth: 0,
   },
 };

@@ -4,6 +4,7 @@ import { ROUTES } from "../shared/constants/routes";
 import DashboardSkeleton from "../presentation/components/common/DashboardSkeleton";
 import PageHero from "../presentation/components/ui/PageHero";
 import SectionCard from "../presentation/components/ui/SectionCard";
+import PageReveal from "../presentation/components/ui/PageReveal";
 
 function isToday(dateString) {
   if (!dateString) return false;
@@ -95,13 +96,9 @@ export default function DashboardPage({ sales = [], loading = false }) {
 
     const monthCount = sales.filter((sale) => isThisMonth(sale.sale_date)).length;
 
-    const pendingCount = sales.filter(
-      (sale) => sale.status === "beklemede"
-    ).length;
+    const pendingCount = sales.filter((sale) => sale.status === "beklemede").length;
 
-    const paidOnlyCount = sales.filter(
-      (sale) => sale.status === "odendi"
-    ).length;
+    const paidOnlyCount = sales.filter((sale) => sale.status === "odendi").length;
 
     const invoicedOnlyCount = sales.filter(
       (sale) => sale.status === "faturalandi"
@@ -137,7 +134,6 @@ export default function DashboardPage({ sales = [], loading = false }) {
       }
 
       acc[name].quantity += Number(sale.quantity || 0);
-
       return acc;
     }, {});
 
@@ -221,9 +217,7 @@ export default function DashboardPage({ sales = [], loading = false }) {
             <div style={styles.rightPanelMetaRow}>
               <div style={styles.rightMiniBox}>
                 <div style={styles.rightMiniLabel}>Rol</div>
-                <div style={styles.rightMiniValue}>
-                  {profile?.roles?.name || "-"}
-                </div>
+                <div style={styles.rightMiniValue}>{profile?.roles?.name || "-"}</div>
               </div>
 
               <div style={styles.rightMiniBox}>
@@ -241,18 +235,21 @@ export default function DashboardPage({ sales = [], loading = false }) {
             hint="Bugün eklenen satış hareketi"
             tone="blue"
           />
+
           <PremiumStatCard
             label="Bu Ay Toplam"
             value={stats.monthCount}
             hint="Bu ay açılan kayıt sayısı"
             tone="green"
           />
+
           <PremiumStatCard
             label="Ödendi, Faturalanmadı"
             value={stats.paidOnlyCount}
             hint="Ödeme alındı, fatura bekliyor"
             tone="orange"
           />
+
           <PremiumStatCard
             label="Faturalandı, Ödenmedi"
             value={stats.invoicedOnlyCount}
@@ -282,153 +279,161 @@ export default function DashboardPage({ sales = [], loading = false }) {
       </PageHero>
 
       <div className="dashboard-premium-top-grid" style={styles.topGrid}>
-        <SectionCard
-          title="Son 7 Günlük Kayıt Trendi"
-          subtitle={`Günlük ortalama: ${stats.trendAverage.toFixed(1)} kayıt`}
-        >
-          <div style={styles.chartShell}>
-            {stats.trend.length === 0 ? (
-              <PremiumEmpty text="Trend grafiği için yeterli veri yok." />
+        <PageReveal delay={120}>
+          <SectionCard
+            title="Son 7 Günlük Kayıt Trendi"
+            subtitle={`Günlük ortalama: ${stats.trendAverage.toFixed(1)} kayıt`}
+          >
+            <div style={styles.chartShell}>
+              {stats.trend.length === 0 ? (
+                <PremiumEmpty text="Trend grafiği için yeterli veri yok." />
+              ) : (
+                <div style={styles.barGrid}>
+                  {stats.trend.map(([date, value]) => {
+                    const height = Math.max(
+                      (value / stats.maxTrendValue) * 180,
+                      18
+                    );
+
+                    return (
+                      <div key={date} style={styles.barItem}>
+                        <div style={styles.barValue}>{value} kayıt</div>
+
+                        <div style={styles.barTrack}>
+                          <div style={styles.barGlow} />
+                          <div
+                            style={{
+                              ...styles.barFill,
+                              height: `${height}px`,
+                            }}
+                          />
+                        </div>
+
+                        <div style={styles.barLabel}>{date.slice(5)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </SectionCard>
+        </PageReveal>
+
+        <PageReveal delay={180}>
+          <SectionCard
+            title="Durum Dağılımı"
+            subtitle="İşlem akışının mevcut durumu"
+          >
+            <div
+              className="dashboard-premium-distribution-grid"
+              style={styles.distributionGrid}
+            >
+              <StatusMetric
+                label="İşlem Yok"
+                value={stats.pendingCount}
+                tone="pending"
+              />
+              <StatusMetric
+                label="Ödendi"
+                value={stats.paidOnlyCount}
+                tone="paid"
+              />
+              <StatusMetric
+                label="Faturalandı"
+                value={stats.invoicedOnlyCount}
+                tone="invoiced"
+              />
+              <StatusMetric
+                label="Tamamlandı"
+                value={stats.completedCount}
+                tone="completed"
+              />
+            </div>
+          </SectionCard>
+        </PageReveal>
+      </div>
+
+      <div className="dashboard-premium-bottom-grid" style={styles.bottomGrid}>
+        <PageReveal delay={240}>
+          <SectionCard title="Son Satış Hareketleri" subtitle="En yeni 5 kayıt">
+            {recentSales.length === 0 ? (
+              <PremiumEmpty text="Henüz satış hareketi görünmüyor." />
             ) : (
-              <div style={styles.barGrid}>
-                {stats.trend.map(([date, value]) => {
-                  const height = Math.max(
-                    (value / stats.maxTrendValue) * 180,
-                    18
-                  );
+              <div style={styles.recentList}>
+                {recentSales.map((sale) => {
+                  const tone = getStatusTone(sale.status);
 
                   return (
-                    <div key={date} style={styles.barItem}>
-                      <div style={styles.barValue}>{value} kayıt</div>
+                    <div key={sale.id} style={styles.recentItem}>
+                      <div style={styles.recentStripe} />
 
-                      <div style={styles.barTrack}>
-                        <div style={styles.barGlow} />
-                        <div
-                          style={{
-                            ...styles.barFill,
-                            height: `${height}px`,
-                          }}
-                        />
+                      <div style={styles.recentLeft}>
+                        <div style={styles.recentCustomer}>
+                          {sale.customer_name || "-"}
+                        </div>
+                        <div style={styles.recentMeta}>
+                          {sale.products?.name || "-"} •{" "}
+                          {formatShortDate(sale.sale_date)}
+                        </div>
                       </div>
 
-                      <div style={styles.barLabel}>{date.slice(5)}</div>
+                      <div style={styles.recentRight}>
+                        <div style={styles.recentAmount}>
+                          {Number(sale.quantity || 0)} {sale.unit || ""}
+                        </div>
+                        <div
+                          style={{
+                            ...styles.recentStatus,
+                            color: tone.color,
+                            background: tone.background,
+                            border: tone.border,
+                          }}
+                        >
+                          {getStatusLabel(sale.status)}
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
               </div>
             )}
-          </div>
-        </SectionCard>
+          </SectionCard>
+        </PageReveal>
 
-        <SectionCard
-          title="Durum Dağılımı"
-          subtitle="İşlem akışının mevcut durumu"
-        >
-          <div
-            className="dashboard-premium-distribution-grid"
-            style={styles.distributionGrid}
+        <PageReveal delay={300}>
+          <SectionCard
+            title="En Çok Satılan Ürünler"
+            subtitle="Miktara göre ilk 5 ürün"
           >
-            <StatusMetric
-              label="İşlem Yok"
-              value={stats.pendingCount}
-              tone="pending"
-            />
-            <StatusMetric
-              label="Ödendi"
-              value={stats.paidOnlyCount}
-              tone="paid"
-            />
-            <StatusMetric
-              label="Faturalandı"
-              value={stats.invoicedOnlyCount}
-              tone="invoiced"
-            />
-            <StatusMetric
-              label="Tamamlandı"
-              value={stats.completedCount}
-              tone="completed"
-            />
-          </div>
-        </SectionCard>
-      </div>
+            {stats.topProducts.length === 0 ? (
+              <PremiumEmpty text="Ürün bazlı görünüm için henüz veri yok." />
+            ) : (
+              <div style={styles.topProductsList}>
+                {stats.topProducts.map((product, index) => (
+                  <div key={product.name} style={styles.topProductItem}>
+                    <div style={styles.topProductRank}>{index + 1}</div>
 
-      <div className="dashboard-premium-bottom-grid" style={styles.bottomGrid}>
-        <SectionCard
-          title="Son Satış Hareketleri"
-          subtitle="En yeni 5 kayıt"
-        >
-          {recentSales.length === 0 ? (
-            <PremiumEmpty text="Henüz satış hareketi görünmüyor." />
-          ) : (
-            <div style={styles.recentList}>
-              {recentSales.map((sale) => {
-                const tone = getStatusTone(sale.status);
-
-                return (
-                  <div key={sale.id} style={styles.recentItem}>
-                    <div style={styles.recentStripe} />
-
-                    <div style={styles.recentLeft}>
-                      <div style={styles.recentCustomer}>
-                        {sale.customer_name || "-"}
-                      </div>
-                      <div style={styles.recentMeta}>
-                        {sale.products?.name || "-"} • {formatShortDate(sale.sale_date)}
+                    <div style={styles.topProductContent}>
+                      <div style={styles.topProductName}>{product.name}</div>
+                      <div style={styles.topProductMeta}>
+                        En çok çıkan ürünlerden biri
                       </div>
                     </div>
 
-                    <div style={styles.recentRight}>
-                      <div style={styles.recentAmount}>
-                        {Number(sale.quantity || 0)} {sale.unit || ""}
+                    <div style={styles.topProductRevenueWrap}>
+                      <div style={styles.topProductRevenue}>
+                        {product.quantity} adet
                       </div>
-                      <div
-                        style={{
-                          ...styles.recentStatus,
-                          color: tone.color,
-                          background: tone.background,
-                          border: tone.border,
-                        }}
-                      >
-                        {getStatusLabel(sale.status)}
+                      <div style={styles.topProductRevenueHint}>
+                        Toplam miktar
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </SectionCard>
-
-        <SectionCard
-          title="En Çok Satılan Ürünler"
-          subtitle="Miktara göre ilk 5 ürün"
-        >
-          {stats.topProducts.length === 0 ? (
-            <PremiumEmpty text="Ürün bazlı görünüm için henüz veri yok." />
-          ) : (
-            <div style={styles.topProductsList}>
-              {stats.topProducts.map((product, index) => (
-                <div key={product.name} style={styles.topProductItem}>
-                  <div style={styles.topProductRank}>{index + 1}</div>
-
-                  <div style={styles.topProductContent}>
-                    <div style={styles.topProductName}>{product.name}</div>
-                    <div style={styles.topProductMeta}>
-                      En çok çıkan ürünlerden biri
-                    </div>
-                  </div>
-
-                  <div style={styles.topProductRevenueWrap}>
-                    <div style={styles.topProductRevenue}>
-                      {product.quantity} adet
-                    </div>
-                    <div style={styles.topProductRevenueHint}>Toplam miktar</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+        </PageReveal>
       </div>
     </div>
   );
@@ -539,10 +544,14 @@ const styles = {
   page: {
     display: "grid",
     gap: "20px",
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
   },
 
   rightPanel: {
-    minWidth: "260px",
+    width: "100%",
+    maxWidth: "280px",
     position: "relative",
     overflow: "hidden",
     background: "rgba(255,255,255,0.08)",
@@ -551,6 +560,7 @@ const styles = {
     padding: "18px",
     backdropFilter: "blur(12px)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+    boxSizing: "border-box",
   },
   rightPanelGlowOne: {
     position: "absolute",
@@ -590,6 +600,7 @@ const styles = {
     fontWeight: 900,
     lineHeight: 1.5,
     marginBottom: "16px",
+    wordBreak: "break-word",
   },
   rightPanelMetaRow: {
     position: "relative",
@@ -614,6 +625,7 @@ const styles = {
     fontSize: "14px",
     fontWeight: 800,
     lineHeight: 1.45,
+    wordBreak: "break-word",
   },
 
   summaryGrid: {
@@ -621,6 +633,8 @@ const styles = {
     gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
     gap: "14px",
     marginBottom: "18px",
+    width: "100%",
+    minWidth: 0,
   },
   statCard: {
     position: "relative",
@@ -630,6 +644,7 @@ const styles = {
     borderRadius: "24px",
     padding: "18px",
     backdropFilter: "blur(12px)",
+    minWidth: 0,
   },
   statCardGlow: {
     position: "absolute",
@@ -657,6 +672,7 @@ const styles = {
     fontWeight: 800,
     marginTop: "14px",
     marginBottom: "10px",
+    wordBreak: "break-word",
   },
   statCardValue: {
     position: "relative",
@@ -667,6 +683,7 @@ const styles = {
     lineHeight: 1.05,
     letterSpacing: "-0.03em",
     marginBottom: "8px",
+    wordBreak: "break-word",
   },
   statCardHint: {
     position: "relative",
@@ -674,12 +691,14 @@ const styles = {
     color: "rgba(255,255,255,0.72)",
     fontSize: "12px",
     fontWeight: 600,
+    wordBreak: "break-word",
   },
 
   actionsGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 240px))",
     gap: "12px",
+    width: "100%",
   },
   primaryAction: {
     position: "relative",
@@ -693,6 +712,7 @@ const styles = {
     fontWeight: 900,
     cursor: "pointer",
     boxShadow: "0 18px 36px rgba(59,130,246,0.22)",
+    minWidth: 0,
   },
   actionAccent: {
     position: "absolute",
@@ -711,23 +731,30 @@ const styles = {
     fontWeight: 800,
     cursor: "pointer",
     backdropFilter: "blur(10px)",
+    minWidth: 0,
   },
 
   topGrid: {
     display: "grid",
-    gridTemplateColumns: "1.45fr 0.95fr",
+    gridTemplateColumns: "minmax(0, 1.45fr) minmax(0, 0.95fr)",
     gap: "18px",
+    width: "100%",
+    minWidth: 0,
   },
   bottomGrid: {
     display: "grid",
-    gridTemplateColumns: "1.2fr 0.8fr",
+    gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 0.8fr)",
     gap: "18px",
+    width: "100%",
+    minWidth: 0,
   },
 
   chartShell: {
     minHeight: "280px",
     display: "grid",
     alignItems: "end",
+    width: "100%",
+    minWidth: 0,
   },
   barGrid: {
     minHeight: "250px",
@@ -735,11 +762,14 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fit, minmax(72px, 1fr))",
     gap: "14px",
     alignItems: "end",
+    width: "100%",
+    minWidth: 0,
   },
   barItem: {
     display: "grid",
     gap: "10px",
     justifyItems: "center",
+    minWidth: 0,
   },
   barValue: {
     fontSize: "11px",
@@ -759,6 +789,7 @@ const styles = {
     padding: "4px",
     border: "1px solid rgba(148,163,184,0.14)",
     overflow: "hidden",
+    boxSizing: "border-box",
   },
   barGlow: {
     position: "absolute",
@@ -790,6 +821,8 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: "12px",
+    width: "100%",
+    minWidth: 0,
   },
   statusMetricCard: {
     borderRadius: "22px",
@@ -799,6 +832,8 @@ const styles = {
     flexDirection: "column",
     justifyContent: "space-between",
     boxShadow: "0 10px 28px rgba(15,23,42,0.04)",
+    minWidth: 0,
+    boxSizing: "border-box",
   },
   statusMetricTop: {
     display: "flex",
@@ -810,22 +845,27 @@ const styles = {
     color: "#475569",
     fontSize: "13px",
     fontWeight: 800,
+    wordBreak: "break-word",
   },
   statusMetricDot: {
     width: "12px",
     height: "12px",
     borderRadius: "999px",
+    flexShrink: 0,
   },
   statusMetricValue: {
     fontSize: "34px",
     lineHeight: 1,
     fontWeight: 900,
     letterSpacing: "-0.04em",
+    wordBreak: "break-word",
   },
 
   recentList: {
     display: "grid",
     gap: "12px",
+    width: "100%",
+    minWidth: 0,
   },
   recentItem: {
     position: "relative",
@@ -838,6 +878,8 @@ const styles = {
     background: "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
     border: "1px solid rgba(226,232,240,0.8)",
     boxShadow: "0 12px 24px rgba(15,23,42,0.04)",
+    minWidth: 0,
+    boxSizing: "border-box",
   },
   recentStripe: {
     position: "absolute",
@@ -851,28 +893,33 @@ const styles = {
   recentLeft: {
     minWidth: 0,
     paddingLeft: "2px",
+    flex: 1,
   },
   recentCustomer: {
     color: "#0f172a",
     fontSize: "14px",
     fontWeight: 900,
     marginBottom: "4px",
+    wordBreak: "break-word",
   },
   recentMeta: {
     color: "#64748b",
     fontSize: "13px",
     fontWeight: 600,
+    wordBreak: "break-word",
   },
   recentRight: {
     textAlign: "right",
     display: "grid",
     gap: "8px",
     justifyItems: "end",
+    flexShrink: 0,
   },
   recentAmount: {
     color: "#0f172a",
     fontWeight: 900,
     fontSize: "14px",
+    whiteSpace: "nowrap",
   },
   recentStatus: {
     fontSize: "12px",
@@ -880,15 +927,18 @@ const styles = {
     padding: "8px 10px",
     borderRadius: "999px",
     textTransform: "capitalize",
+    whiteSpace: "nowrap",
   },
 
   topProductsList: {
     display: "grid",
     gap: "12px",
+    width: "100%",
+    minWidth: 0,
   },
   topProductItem: {
     display: "grid",
-    gridTemplateColumns: "46px 1fr auto",
+    gridTemplateColumns: "46px minmax(0, 1fr) auto",
     gap: "12px",
     alignItems: "center",
     padding: "16px",
@@ -896,6 +946,8 @@ const styles = {
     background: "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
     border: "1px solid rgba(226,232,240,0.8)",
     boxShadow: "0 12px 24px rgba(15,23,42,0.04)",
+    minWidth: 0,
+    boxSizing: "border-box",
   },
   topProductRank: {
     width: "46px",
@@ -903,11 +955,13 @@ const styles = {
     borderRadius: "16px",
     display: "grid",
     placeItems: "center",
-    background: "linear-gradient(135deg, rgba(59,130,246,0.14) 0%, rgba(16,185,129,0.14) 100%)",
+    background:
+      "linear-gradient(135deg, rgba(59,130,246,0.14) 0%, rgba(16,185,129,0.14) 100%)",
     color: "#0f172a",
     fontWeight: 900,
     fontSize: "15px",
     border: "1px solid rgba(148,163,184,0.14)",
+    flexShrink: 0,
   },
   topProductContent: {
     minWidth: 0,
@@ -917,20 +971,24 @@ const styles = {
     fontSize: "14px",
     fontWeight: 900,
     marginBottom: "4px",
+    wordBreak: "break-word",
   },
   topProductMeta: {
     color: "#64748b",
     fontSize: "13px",
     fontWeight: 600,
+    wordBreak: "break-word",
   },
   topProductRevenueWrap: {
     textAlign: "right",
+    flexShrink: 0,
   },
   topProductRevenue: {
     color: "#0f172a",
     fontSize: "14px",
     fontWeight: 900,
     marginBottom: "4px",
+    whiteSpace: "nowrap",
   },
   topProductRevenueHint: {
     color: "#64748b",
@@ -949,7 +1007,8 @@ const styles = {
     width: "58px",
     height: "58px",
     borderRadius: "999px",
-    background: "linear-gradient(135deg, rgba(59,130,246,0.14) 0%, rgba(16,185,129,0.14) 100%)",
+    background:
+      "linear-gradient(135deg, rgba(59,130,246,0.14) 0%, rgba(16,185,129,0.14) 100%)",
     border: "1px solid rgba(148,163,184,0.14)",
     boxShadow: "0 16px 30px rgba(59,130,246,0.10)",
   },

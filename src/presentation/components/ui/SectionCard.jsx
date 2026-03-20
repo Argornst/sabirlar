@@ -35,6 +35,10 @@ const styles = {
     border: "1px solid #e5e7eb",
     borderRadius: "30px",
     boxShadow: "0 20px 40px rgba(15,23,42,0.05)",
+
+    width: "100%",
+    minWidth: 0,       // 🔥
+    overflow: "hidden" // 🔥 TAŞMA KESİLDİ
   },
   header: {
     display: "flex",

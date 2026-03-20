@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SalesTableSkeleton from "../presentation/components/common/SalesTableSkeleton";
+import AppPage from "../presentation/components/ui/AppPage";
 import PageHero from "../presentation/components/ui/PageHero";
-import MetricCard from "../presentation/components/ui/MetricCard";
+import PremiumStatsRow from "../presentation/components/ui/PremiumStatsRow";
 import SectionCard from "../presentation/components/ui/SectionCard";
 
 function formatMoney(value) {
@@ -131,13 +132,48 @@ export default function SalesPage({
   }
 
   return (
-    <div style={styles.page}>
+    <AppPage
+      hero={
+        <PageHero
+          kicker="Satış operasyonu"
+          title="Satışlar"
+          subtitle="Kayıtları yönetin, ödeme ve fatura durumlarını hızlıca işaretleyin."
+          variant="blue"
+        />
+      }
+      stats={
+        <PremiumStatsRow
+          items={[
+            {
+              label: "Toplam Kayıt",
+              value: visibleStats.total,
+              hint: "Seçili filtreye göre toplam kayıt",
+              accent: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
+            },
+            {
+              label: "Toplam Tutar",
+              value: formatMoney(visibleStats.totalAmount),
+              hint: "Seçili filtreye göre toplam tutar",
+              accent: "linear-gradient(135deg, #10b981 0%, #34d399 100%)",
+            },
+            {
+              label: "Ödendi",
+              value: visibleStats.paidCount,
+              hint: "Ödeme alınan kayıtlar",
+              accent: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)",
+            },
+            {
+              label: "Faturalandı",
+              value: visibleStats.invoicedCount,
+              hint: "Fatura kesilen kayıtlar",
+              accent: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
+            },
+          ]}
+        />
+      }
+    >
       <style>{`
         @media (max-width: 1024px) {
-          .sales-hero-stats {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-          }
-
           .sales-toolbar {
             grid-template-columns: 1fr !important;
           }
@@ -148,10 +184,6 @@ export default function SalesPage({
         }
 
         @media (max-width: 640px) {
-          .sales-hero-stats {
-            grid-template-columns: 1fr !important;
-          }
-
           .sales-toolbar-left {
             flex-direction: column !important;
             align-items: stretch !important;
@@ -195,46 +227,6 @@ export default function SalesPage({
           opacity: 0.55;
         }
       `}</style>
-
-      <PageHero
-        kicker="Satış operasyonu"
-        title="Satışlar"
-        subtitle="Kayıtları yönetin, ödeme ve fatura durumlarını hızlıca işaretleyin."
-        variant="blue"
-      />
-
-      <div className="sales-hero-stats" style={styles.heroStatsGrid}>
-        <HeroMiniStat label="Toplam Kayıt" value={visibleStats.total} />
-        <HeroMiniStat
-          label="Toplam Tutar"
-          value={formatMoney(visibleStats.totalAmount)}
-        />
-        <HeroMiniStat label="Ödendi" value={visibleStats.paidCount} />
-        <HeroMiniStat label="Faturalandı" value={visibleStats.invoicedCount} />
-      </div>
-
-      <div style={styles.metricsGrid}>
-        <MetricCard
-          title="Tüm Satışlar"
-          value={stats.total}
-          subtitle="Filtre öncesi toplam kayıt"
-        />
-        <MetricCard
-          title="Toplam Hacim"
-          value={formatMoney(stats.totalAmount)}
-          subtitle="Filtre öncesi toplam satış tutarı"
-        />
-        <MetricCard
-          title="Ödenenler"
-          value={stats.paidCount}
-          subtitle="Ödeme alınan kayıtlar"
-        />
-        <MetricCard
-          title="Faturalananlar"
-          value={stats.invoicedCount}
-          subtitle="Fatura kesilen kayıtlar"
-        />
-      </div>
 
       <SectionCard
         title="Satış Listesi"
@@ -457,7 +449,7 @@ export default function SalesPage({
 
                     <td style={styles.td}>
                       <div style={styles.actionRow}>
-                        {isAdmin && (
+                        {(isAdmin || isOperasyon) && (
                           <button
                             type="button"
                             onClick={() => onEditSale(sale, navigate)}
@@ -498,16 +490,7 @@ export default function SalesPage({
           )}
         </div>
       </SectionCard>
-    </div>
-  );
-}
-
-function HeroMiniStat({ label, value }) {
-  return (
-    <div style={styles.heroMiniCard}>
-      <div style={styles.heroMiniLabel}>{label}</div>
-      <div style={styles.heroMiniValue}>{value}</div>
-    </div>
+    </AppPage>
   );
 }
 
@@ -558,48 +541,6 @@ function getStatusBadgeStyle(status) {
 }
 
 const styles = {
-  page: {
-    display: "grid",
-    gap: "20px",
-  },
-
-  heroStatsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    gap: "14px",
-  },
-
-  heroMiniCard: {
-    background:
-      "linear-gradient(180deg, rgba(15,23,42,0.18) 0%, rgba(15,23,42,0.10) 100%)",
-    border: "1px solid rgba(255,255,255,0.18)",
-    borderRadius: "22px",
-    padding: "18px",
-    backdropFilter: "blur(10px)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14)",
-  },
-
-  heroMiniLabel: {
-    color: "#dbeafe",
-    fontSize: "12px",
-    fontWeight: 800,
-    marginBottom: "10px",
-  },
-
-  heroMiniValue: {
-    color: "#ffffff",
-    fontSize: "26px",
-    fontWeight: 900,
-    lineHeight: 1.05,
-    textShadow: "0 1px 2px rgba(15,23,42,0.22)",
-  },
-
-  metricsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "16px",
-  },
-
   tableBadge: {
     padding: "10px 14px",
     borderRadius: "999px",
@@ -609,7 +550,6 @@ const styles = {
     fontWeight: 800,
     fontSize: "12px",
   },
-
   toolbar: {
     display: "grid",
     gridTemplateColumns: "1fr auto",
@@ -623,25 +563,21 @@ const styles = {
     border: "1px solid rgba(226,232,240,1)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
   },
-
   toolbarLeft: {
     display: "flex",
     alignItems: "center",
     gap: "16px",
     flexWrap: "wrap",
   },
-
   toolbarRight: {
     display: "flex",
     justifyContent: "flex-end",
     alignItems: "center",
   },
-
   toolbarGroup: {
     display: "grid",
     gap: "8px",
   },
-
   toolbarLabel: {
     color: "#64748b",
     fontSize: "11px",
@@ -649,13 +585,11 @@ const styles = {
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
-
   filterChips: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
   },
-
   filterChip: {
     height: "38px",
     padding: "0 14px",
@@ -667,7 +601,6 @@ const styles = {
     fontSize: "13px",
     cursor: "pointer",
   },
-
   filterChipActive: {
     height: "38px",
     padding: "0 14px",
@@ -681,7 +614,6 @@ const styles = {
     cursor: "pointer",
     boxShadow: "0 8px 20px rgba(59,130,246,0.10)",
   },
-
   newButton: {
     height: "44px",
     padding: "0 18px",
@@ -697,14 +629,12 @@ const styles = {
     alignItems: "center",
     gap: "8px",
   },
-
   table: {
     width: "100%",
     minWidth: "1180px",
     borderCollapse: "separate",
     borderSpacing: 0,
   },
-
   th: {
     position: "sticky",
     top: 0,
@@ -721,11 +651,9 @@ const styles = {
     backdropFilter: "blur(10px)",
     WebkitBackdropFilter: "blur(10px)",
   },
-
   tr: {
     background: "transparent",
   },
-
   td: {
     background: "rgba(255,255,255,0.78)",
     padding: "16px",
@@ -734,7 +662,6 @@ const styles = {
     borderBottom: "1px solid #eef2f7",
     verticalAlign: "middle",
   },
-
   tdCenter: {
     background: "rgba(255,255,255,0.78)",
     padding: "16px",
@@ -744,7 +671,6 @@ const styles = {
     verticalAlign: "middle",
     textAlign: "center",
   },
-
   tdStrong: {
     background: "rgba(255,255,255,0.78)",
     padding: "16px",
@@ -754,30 +680,25 @@ const styles = {
     borderBottom: "1px solid #eef2f7",
     verticalAlign: "middle",
   },
-
   dateCell: {
     color: "#334155",
     fontWeight: 700,
     whiteSpace: "nowrap",
   },
-
   productName: {
     color: "#0f172a",
     fontWeight: 800,
   },
-
   checkWrap: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
   },
-
   statusCell: {
     display: "grid",
     gap: "8px",
     alignItems: "start",
   },
-
   inlineSaving: {
     display: "inline-flex",
     alignItems: "center",
@@ -786,7 +707,6 @@ const styles = {
     fontSize: "12px",
     fontWeight: 700,
   },
-
   inlineSavingDot: {
     width: "8px",
     height: "8px",
@@ -794,13 +714,11 @@ const styles = {
     background: "#3b82f6",
     boxShadow: "0 0 0 4px rgba(59,130,246,0.12)",
   },
-
   actionRow: {
     display: "flex",
     gap: "8px",
     flexWrap: "wrap",
   },
-
   editButton: {
     border: "none",
     borderRadius: "12px",
@@ -811,7 +729,6 @@ const styles = {
     fontWeight: 800,
     cursor: "pointer",
   },
-
   deleteButton: {
     border: "none",
     borderRadius: "12px",
@@ -822,14 +739,12 @@ const styles = {
     fontWeight: 800,
     cursor: "pointer",
   },
-
   empty: {
     padding: "34px 24px",
     textAlign: "center",
     color: "#64748b",
     fontSize: "14px",
   },
-
   emptyIcon: {
     width: "56px",
     height: "56px",
@@ -844,7 +759,6 @@ const styles = {
     fontWeight: 900,
     fontSize: "24px",
   },
-
   emptyTitle: {
     color: "#0f172a",
     fontSize: "20px",
@@ -852,7 +766,6 @@ const styles = {
     marginBottom: "8px",
     letterSpacing: "-0.02em",
   },
-
   emptyText: {
     maxWidth: "460px",
     margin: "0 auto",

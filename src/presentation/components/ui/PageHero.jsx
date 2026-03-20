@@ -10,11 +10,31 @@ export default function PageHero({
 
   return (
     <div
+      className="page-hero-root"
       style={{
         ...styles.wrapper,
         background: variantStyles.background,
       }}
     >
+      <style>{`
+        @media (max-width: 1180px) {
+          .page-hero-root {
+            padding-right: 28px !important;
+          }
+
+          .page-hero-right {
+            position: static !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin-top: 18px !important;
+          }
+
+          .page-hero-top {
+            display: block !important;
+          }
+        }
+      `}</style>
+
       <div
         style={{
           ...styles.glowOne,
@@ -28,7 +48,7 @@ export default function PageHero({
         }}
       />
 
-      <div style={styles.topRow}>
+      <div className="page-hero-top" style={styles.topRow}>
         <div style={styles.content}>
           {kicker ? (
             <div
@@ -47,9 +67,13 @@ export default function PageHero({
 
           {subtitle ? <p style={styles.subtitle}>{subtitle}</p> : null}
         </div>
-
-        {rightContent ? <div style={styles.rightContent}>{rightContent}</div> : null}
       </div>
+
+      {rightContent ? (
+        <div className="page-hero-right" style={styles.rightContent}>
+          {rightContent}
+        </div>
+      ) : null}
 
       {children ? <div style={styles.bottomContent}>{children}</div> : null}
     </div>
@@ -89,8 +113,12 @@ const styles = {
     overflow: "hidden",
     borderRadius: "34px",
     padding: "28px",
+    paddingRight: "340px",
     boxShadow: "0 26px 60px rgba(15,23,42,0.18)",
     border: "1px solid rgba(255,255,255,0.08)",
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
   },
   glowOne: {
     position: "absolute",
@@ -115,14 +143,11 @@ const styles = {
   topRow: {
     position: "relative",
     zIndex: 2,
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: "18px",
-    flexWrap: "wrap",
+    minWidth: 0,
   },
   content: {
     maxWidth: "760px",
+    minWidth: 0,
   },
   kicker: {
     display: "inline-block",
@@ -148,12 +173,17 @@ const styles = {
     maxWidth: "720px",
   },
   rightContent: {
-    position: "relative",
+    position: "absolute",
+    top: "28px",
+    right: "28px",
+    width: "280px",
+    maxWidth: "280px",
     zIndex: 2,
   },
   bottomContent: {
     position: "relative",
     zIndex: 2,
     marginTop: "18px",
+    minWidth: 0,
   },
 };
