@@ -64,7 +64,8 @@ function getDefaultRole(roles) {
 }
 
 export default function UsersPage() {
-  const { profile } = useOutletContext() || {};
+  const outletContext = useOutletContext() || {};
+  const { profile } = outletContext;
   const toast = useToast();
 
   const [users, setUsers] = useState([]);
@@ -81,7 +82,26 @@ export default function UsersPage() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
 
-  const isAdmin = isAdminProfile(profile);
+  const resolvedRoleName = useMemo(() => {
+    return String(
+      profile?.roles?.name ||
+        profile?.role_name ||
+        profile?.role?.name ||
+        profile?.user_role?.name ||
+        ""
+    ).toLowerCase();
+  }, [profile]);
+
+  const isAdmin = useMemo(() => {
+    return (
+      isAdminProfile(profile) ||
+      profile?.page_permissions?.users === true ||
+      profile?.permissions?.users === true ||
+      resolvedRoleName.includes("admin") ||
+      resolvedRoleName.includes("yönetici") ||
+      resolvedRoleName.includes("yonetici")
+    );
+  }, [profile, resolvedRoleName]);
 
   useEffect(() => {
     loadPage();
@@ -284,6 +304,9 @@ export default function UsersPage() {
           <div style={styles.emptyText}>
             Kullanıcı yönetimi ve sayfa erişim kontrolü için admin yetkisi gerekli.
           </div>
+          <div style={styles.debugText}>
+            Debug role: {resolvedRoleName || "rol bulunamadı"}
+          </div>
         </div>
       </div>
     );
@@ -383,6 +406,7 @@ export default function UsersPage() {
                   <input
                     style={styles.input}
                     placeholder="Ad Soyad"
+                    autoComplete="name"
                     value={createForm.full_name}
                     onChange={(e) =>
                       setCreateForm((prev) => ({
@@ -397,6 +421,7 @@ export default function UsersPage() {
                   <input
                     style={styles.input}
                     placeholder="ornek: asahin"
+                    autoComplete="username"
                     value={createForm.username}
                     onChange={(e) =>
                       setCreateForm((prev) => ({
@@ -412,6 +437,7 @@ export default function UsersPage() {
                     style={styles.input}
                     placeholder="ornek@mail.com"
                     type="email"
+                    autoComplete="username"
                     value={createForm.email}
                     onChange={(e) =>
                       setCreateForm((prev) => ({
@@ -427,6 +453,7 @@ export default function UsersPage() {
                     style={styles.input}
                     placeholder="Şifre gir"
                     type="password"
+                    autoComplete="new-password"
                     value={createForm.password}
                     onChange={(e) =>
                       setCreateForm((prev) => ({
@@ -579,6 +606,7 @@ export default function UsersPage() {
                 <Field label="Ad Soyad">
                   <input
                     style={styles.input}
+                    autoComplete="name"
                     value={editForm.full_name}
                     onChange={(e) =>
                       setEditForm((prev) => ({
@@ -592,6 +620,7 @@ export default function UsersPage() {
                 <Field label="Kullanıcı Adı">
                   <input
                     style={styles.input}
+                    autoComplete="username"
                     value={editForm.username}
                     onChange={(e) =>
                       setEditForm((prev) => ({
@@ -606,6 +635,7 @@ export default function UsersPage() {
                   <input
                     style={styles.input}
                     type="email"
+                    autoComplete="username"
                     value={editForm.email}
                     onChange={(e) =>
                       setEditForm((prev) => ({
@@ -1014,6 +1044,12 @@ const styles = {
     color: "#64748b",
     fontSize: "14px",
     lineHeight: 1.7,
+  },
+  debugText: {
+    marginTop: "10px",
+    color: "#94a3b8",
+    fontSize: "12px",
+    lineHeight: 1.6,
   },
   modalOverlay: {
     position: "fixed",

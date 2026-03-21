@@ -8,6 +8,7 @@ const navItems = [
   { to: ROUTES.NEW_SALE, label: "Yeni Satış", icon: "+" },
   { to: ROUTES.PRODUCTS, label: "Ürünler", icon: "◈" },
   { to: ROUTES.REPORTS, label: "Raporlar", icon: "◭" },
+  { to: ROUTES.USERS, label: "Kullanıcılar", icon: "◎", adminOnly: true },
 ];
 
 export default function AppShell({

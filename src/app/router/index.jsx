@@ -4,6 +4,7 @@ import PublicRoute from "../../presentation/routes/PublicRoute";
 import { ROUTES } from "../../shared/constants/routes";
 import { canAccessRoute } from "../../shared/constants/permissions";
 import AppShell from "../layouts/AppShell";
+import UsersPage from "../../pages/UsersPage";
 
 export function AppRouter({
   auth,
