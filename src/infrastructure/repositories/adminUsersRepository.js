@@ -30,9 +30,7 @@ export const adminUsersRepository = {
           console.log("FUNCTION ERROR BODY(JSON):", body);
 
           throw new Error(
-            body?.error ||
-              body?.message ||
-              "Kullanıcı oluşturulamadı."
+            body?.error || body?.message || "Kullanıcı oluşturulamadı."
           );
         } catch (parseError) {
           console.log("FUNCTION ERROR JSON PARSE ERROR:", parseError);
@@ -61,6 +59,8 @@ export const adminUsersRepository = {
         role_id,
         is_active,
         created_at,
+        updated_at,
+        page_permissions,
         roles (
           id,
           name
@@ -91,9 +91,26 @@ export const adminUsersRepository = {
   async updateUser(userId, updates) {
     const { data, error } = await supabase
       .from("users")
-      .update(updates)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", userId)
-      .select()
+      .select(`
+        id,
+        email,
+        username,
+        full_name,
+        role_id,
+        is_active,
+        created_at,
+        updated_at,
+        page_permissions,
+        roles (
+          id,
+          name
+        )
+      `)
       .single();
 
     if (error) {
@@ -103,16 +120,104 @@ export const adminUsersRepository = {
     return data;
   },
 
+  async updateUserAccess(userId, updates) {
+    const { data, error } = await supabase
+      .from("users")
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId)
+      .select(`
+        id,
+        email,
+        username,
+        full_name,
+        role_id,
+        is_active,
+        created_at,
+        updated_at,
+        page_permissions,
+        roles (
+          id,
+          name
+        )
+      `)
+      .single();
+
+    if (error) {
+      throw new Error(error.message || "Kullanıcı erişimi güncellenemedi.");
+    }
+
+    return data;
+  },
+
   async toggleUserActive(userId, isActive) {
     const { data, error } = await supabase
       .from("users")
-      .update({ is_active: isActive })
+      .update({
+        is_active: isActive,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", userId)
-      .select()
+      .select(`
+        id,
+        email,
+        username,
+        full_name,
+        role_id,
+        is_active,
+        created_at,
+        updated_at,
+        page_permissions,
+        roles (
+          id,
+          name
+        )
+      `)
       .single();
 
     if (error) {
       throw new Error(error.message || "Kullanıcı durumu güncellenemedi.");
+    }
+
+    return data;
+  },
+
+  async lookupLoginUsername(loginValue) {
+    const normalized = String(loginValue || "").trim().toLowerCase();
+
+    if (!normalized) {
+      return null;
+    }
+
+    const { data, error } = await supabase.functions.invoke("resolve-login", {
+      body: {
+        login: normalized,
+      },
+    });
+
+    console.log("LOOKUP LOGIN INPUT:", normalized);
+    console.log("LOOKUP LOGIN RESULT:", data);
+    console.log("LOOKUP LOGIN ERROR:", error);
+
+    if (error) {
+      if (typeof error.context?.json === "function") {
+        try {
+          const body = await error.context.json();
+          throw new Error(
+            body?.error || body?.message || "Giriş kullanıcı bilgisi alınamadı."
+          );
+        } catch {
+          throw new Error("Giriş kullanıcı bilgisi alınamadı.");
+        }
+      }
+
+      throw new Error("Giriş kullanıcı bilgisi alınamadı.");
+    }
+
+    if (!data?.found) {
+      return null;
     }
 
     return data;

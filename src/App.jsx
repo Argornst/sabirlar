@@ -167,23 +167,41 @@ export default function App() {
     }
   }
 
-async function handleLogin(username, password) {
+async function handleLogin(loginInput, password) {
   try {
     setAuthLoading(true);
     setAuthMessage("");
 
-    const lookup = await adminUsersRepository.lookupLoginUsername(username);
+    const normalizedLogin = String(loginInput || "").trim().toLowerCase();
 
-    if (!lookup?.email) {
-      throw new Error("Kullanıcı bulunamadı.");
+    if (!normalizedLogin) {
+      throw new Error("Kullanıcı adı veya e-posta gerekli.");
     }
 
-    if (!lookup?.is_active) {
-      throw new Error("Bu hesap pasif durumda.");
+    if (!password) {
+      throw new Error("Şifre gerekli.");
+    }
+
+    let emailToUse = normalizedLogin;
+
+    if (!normalizedLogin.includes("@")) {
+      const lookup = await adminUsersRepository.lookupLoginUsername(
+        normalizedLogin
+      );
+
+      if (!lookup?.email) {
+        throw new Error("Kullanıcı bulunamadı.");
+      }
+
+      if (lookup?.is_active === false) {
+        throw new Error("Bu hesap pasif durumda.");
+      }
+
+      emailToUse = lookup.email;
     }
 
     await authRepository.signIn({
-      email: lookup.email,
+      email: emailToUse,
       password,
     });
 
@@ -191,14 +209,13 @@ async function handleLogin(username, password) {
     toast.success("Giriş başarılı", "Yönetim paneline yönlendiriliyorsun.");
   } catch (error) {
     const rawMessage = error?.message || "Giriş başarısız.";
-
     let message = rawMessage;
 
     if (
       rawMessage.toLowerCase().includes("invalid login credentials") ||
       rawMessage.toLowerCase().includes("invalid credentials")
     ) {
-      message = "Şifre yanlış.";
+      message = "Kullanıcı adı/e-posta veya şifre yanlış.";
     }
 
     setAuthMessage(message);

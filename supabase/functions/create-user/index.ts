@@ -76,7 +76,8 @@ Deno.serve(async (req: Request) => {
     const { data: requesterProfile, error: requesterProfileError } =
       await adminClient
         .from("users")
-        .select(`
+        .select(
+          `
           id,
           email,
           username,
@@ -88,7 +89,8 @@ Deno.serve(async (req: Request) => {
             id,
             name
           )
-        `)
+        `
+        )
         .eq("id", requestingUser.id)
         .maybeSingle();
 
@@ -226,9 +228,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { error: profileUpdateError } = await adminClient
-      .from("users")
-      .update({
+    const { error: profileUpsertError } = await adminClient.from("users").upsert(
+      {
+        id: authUserId,
         email: normalizedEmail,
         username: normalizedUsername,
         full_name,
@@ -236,19 +238,22 @@ Deno.serve(async (req: Request) => {
         is_active,
         page_permissions,
         updated_at: new Date().toISOString(),
-      })
-      .eq("id", authUserId);
+      },
+      {
+        onConflict: "id",
+      }
+    );
 
-    console.log("DEBUG public.users update error:", profileUpdateError);
+    console.log("DEBUG public.users upsert error:", profileUpsertError);
 
-    if (profileUpdateError) {
+    if (profileUpsertError) {
       await adminClient.auth.admin.deleteUser(authUserId);
 
       return jsonResponse(
         {
-          error: profileUpdateError.message || "Profil kaydı güncellenemedi.",
-          details: profileUpdateError,
-          step: "public.users.update",
+          error: profileUpsertError.message || "Profil kaydı kaydedilemedi.",
+          details: profileUpsertError,
+          step: "public.users.upsert",
         },
         500
       );
