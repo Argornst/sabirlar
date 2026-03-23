@@ -1,0 +1,37 @@
+import FilterBar from "../../../../shared/components/ui/FilterBar";
+
+export default function ProductsFilters({
+  search,
+  onSearchChange,
+  status,
+  onStatusChange,
+}) {
+  return (
+    <FilterBar>
+      <div className="filter-field">
+        <label htmlFor="products-search">Ara</label>
+        <input
+          id="products-search"
+          type="text"
+          placeholder="Ürün adı veya birim ara"
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
+        />
+      </div>
+
+      <div className="filter-field">
+        <label htmlFor="products-status">Durum</label>
+        <select
+          id="products-status"
+          className="form-select"
+          value={status}
+          onChange={(event) => onStatusChange(event.target.value)}
+        >
+          <option value="">Tümü</option>
+          <option value="active">Aktif</option>
+          <option value="inactive">Pasif</option>
+        </select>
+      </div>
+    </FilterBar>
+  );
+}

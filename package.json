@@ -10,15 +10,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.99.1",
+    "@hookform/resolvers": "^5.2.2",
+    "@supabase/supabase-js": "^2.99.3",
+    "@tanstack/react-query": "^5.94.5",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
+    "framer-motion": "^12.38.0",
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
     "pdfmake": "^0.3.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.13.1"
+    "react-hook-form": "^7.71.2",
+    "react-router-dom": "^7.13.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -29,6 +34,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "prettier": "^3.8.1",
     "vite": "^8.0.0"
   }
 }

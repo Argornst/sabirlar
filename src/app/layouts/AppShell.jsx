@@ -1,391 +1,210 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { ROUTES } from "../../shared/constants/routes";
-import { ROLES } from "../../shared/constants/roles";
+import { PAGE_KEYS } from "../../shared/constants/permissions";
+import {
+  canAccessPage,
+  getFirstAccessibleRoute,
+} from "../../shared/lib/permissions";
+import { useAuth } from "../providers/AppProviders";
 
-const navItems = [
-  { to: ROUTES.DASHBOARD, label: "Dashboard", icon: "◫" },
-  { to: ROUTES.SALES, label: "Satışlar", icon: "▤" },
-  { to: ROUTES.NEW_SALE, label: "Yeni Satış", icon: "+" },
-  { to: ROUTES.PRODUCTS, label: "Ürünler", icon: "◈" },
-  { to: ROUTES.REPORTS, label: "Raporlar", icon: "◭" },
-  { to: ROUTES.USERS, label: "Kullanıcılar", icon: "◎", adminOnly: true },
+function IconDashboard() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
+      <path d="M4 13h7V4H4v9Zm0 7h7v-5H4v5Zm9 0h7V11h-7v9Zm0-18v7h7V2h-7Z" />
+    </svg>
+  );
+}
+
+function IconSales() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
+      <path d="M4 19h16M7 16l3-4 3 2 4-6" />
+    </svg>
+  );
+}
+
+function IconNewSale() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function IconProducts() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
+      <path d="M12 3 4 7l8 4 8-4-8-4ZM4 12l8 4 8-4M4 17l8 4 8-4" />
+    </svg>
+  );
+}
+
+function IconReports() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
+      <path d="M5 19V9M12 19V5M19 19v-8" />
+    </svg>
+  );
+}
+
+function IconUsers() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
+      <path d="M16 19a4 4 0 0 0-8 0M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8 7a4 4 0 0 0-3-3.87M17 4.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+const navigationItems = [
+  {
+    label: "Dashboard",
+    path: ROUTES.DASHBOARD,
+    pageKey: PAGE_KEYS.DASHBOARD,
+    icon: <IconDashboard />,
+  },
+  {
+    label: "Sales",
+    path: ROUTES.SALES,
+    pageKey: PAGE_KEYS.SALES,
+    icon: <IconSales />,
+  },
+  {
+    label: "New Sale",
+    path: ROUTES.NEW_SALE,
+    pageKey: PAGE_KEYS.NEW_SALE,
+    icon: <IconNewSale />,
+  },
+  {
+    label: "Products",
+    path: ROUTES.PRODUCTS,
+    pageKey: PAGE_KEYS.PRODUCTS,
+    icon: <IconProducts />,
+  },
+  {
+    label: "Reports",
+    path: ROUTES.REPORTS,
+    pageKey: PAGE_KEYS.REPORTS,
+    icon: <IconReports />,
+  },
+  {
+    label: "Users",
+    path: ROUTES.USERS,
+    pageKey: PAGE_KEYS.USERS,
+    icon: <IconUsers />,
+  },
 ];
 
-export default function AppShell({
-  session,
-  profile,
-  onLogout,
-  refreshing = false,
-}) {
-  const roleName = profile?.roles?.name || "-";
-  const isAdmin = roleName === ROLES.ADMIN;
-  const fullName = profile?.full_name || session?.user?.email || "Kullanıcı";
+function getPageTitle(pathname) {
+  const matched = navigationItems.find((item) => item.path === pathname);
+  return matched?.label ?? "Panel";
+}
+
+export default function AppShell() {
+  const { user, profile, activeOrganization, signOut } = useAuth();
+  const location = useLocation();
+
+  const visibleNavigationItems = navigationItems.filter((item) =>
+    canAccessPage(profile, item.pageKey)
+  );
+
+  const fallbackRoute = getFirstAccessibleRoute(profile, ROUTES);
+
+  async function handleSignOut() {
+    try {
+      await signOut();
+    } catch (error) {
+      alert(error?.message || "Çıkış yapılırken hata oluştu.");
+    }
+  }
+
+  const displayName = profile?.fullName || user?.email || "Bilinmeyen kullanıcı";
+  const roleName = profile?.roleName || "Kullanıcı";
+  const avatarLetter = displayName.slice(0, 1).toUpperCase();
 
   return (
-    <div style={styles.app}>
-      {refreshing && (
-        <div style={styles.topProgressTrack}>
-          <div style={styles.topProgressBar} />
+    <div className="app-shell app-shell--premium">
+      <aside className="sidebar sidebar--premium">
+        <div className="sidebar__background-glow sidebar__background-glow--top" />
+        <div className="sidebar__background-glow sidebar__background-glow--bottom" />
+
+        <div className="sidebar__top">
+          <div className="sidebar__brand sidebar__brand--premium">
+            <div className="sidebar__logo sidebar__logo--premium">S</div>
+            <div>
+              <h1>Sabırlar</h1>
+              <p>{activeOrganization?.name || "Sales Management Platform"}</p>
+            </div>
+          </div>
+
+          <div className="sidebar__section-label">Navigation</div>
+
+          <div className="sidebar__nav">
+            {visibleNavigationItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  isActive
+                    ? "sidebar__link sidebar__link--active"
+                    : "sidebar__link"
+                }
+              >
+                <span className="sidebar__link-icon">{item.icon}</span>
+                <span className="sidebar__link-label">{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
         </div>
-      )}
 
-      <div style={styles.bgGlowOne} />
-      <div style={styles.bgGlowTwo} />
+        <div className="sidebar__footer">
+          <div className="sidebar__user-card sidebar__user-card--premium">
+            <div className="sidebar__user-avatar sidebar__user-avatar--premium">
+              {avatarLetter}
+            </div>
 
-      <div style={styles.grid}>
-        <aside style={styles.sidebar}>
-          <div>
-            <div style={styles.brand}>
-              <div style={styles.brandIcon}>S</div>
+            <div className="sidebar__user-meta">
+              <strong>{displayName}</strong>
+              <span>{roleName}</span>
+            </div>
+          </div>
 
-              <div>
-                <div style={styles.brandTitle}>SABIRLAR</div>
-                <div style={styles.brandSubtitle}>Perakende Satışlar</div>
+          {!visibleNavigationItems.length ? (
+            <NavLink to={fallbackRoute} className="sidebar__link sidebar__link--active">
+              <span className="sidebar__link-label">Uygulamaya Dön</span>
+            </NavLink>
+          ) : null}
+
+          <button type="button" className="danger-button" onClick={handleSignOut}>
+            Çıkış Yap
+          </button>
+        </div>
+      </aside>
+
+      <div className="content-area content-area--premium">
+        <header className="topbar topbar--premium">
+          <div className="topbar__left">
+            <h2>{getPageTitle(location.pathname)}</h2>
+            <p>
+              {activeOrganization?.name
+                ? `${activeOrganization.name} paneli`
+                : "Sabırlar satış yönetim paneli"}
+            </p>
+          </div>
+
+          <div className="topbar__right">
+            {activeOrganization?.name ? (
+              <div className="topbar__organization-chip">
+                {activeOrganization.name}
               </div>
-            </div>
-
-            <div style={styles.profileCard}>
-              <div style={styles.avatar}>
-                {String(fullName).charAt(0).toUpperCase()}
-              </div>
-
-              <div style={{ minWidth: 0 }}>
-                <div style={styles.profileName}>{fullName}</div>
-                <div style={styles.profileRole}>Rol: {roleName}</div>
-              </div>
-
-              <div style={styles.liveDot} />
-            </div>
-
-            <nav style={styles.nav}>
-              {navItems
-                .filter((item) => !item.adminOnly || isAdmin)
-                .map((item) => (
-                  <NavItem key={item.to} to={item.to} icon={item.icon}>
-                    {item.label}
-                  </NavItem>
-                ))}
-            </nav>
+            ) : null}
+            <div className="topbar__pill topbar__pill--premium">{roleName}</div>
           </div>
+        </header>
 
-          <div style={styles.sidebarFooter}>
-            <button type="button" onClick={onLogout} style={styles.logoutButton}>
-              Çıkış Yap
-            </button>
-
-            <div style={styles.systemStatus}>
-              {refreshing ? "Senkronize ediliyor" : "Canlı sistem"}
-            </div>
-          </div>
-        </aside>
-
-        <main style={styles.main}>
-          <div style={styles.topRightStatus}>
-            <div style={styles.statusBadge}>
-              <span style={styles.statusDot} />
-              Sistem aktif
-            </div>
-          </div>
-
-          <div style={styles.mainInner}>
-            <Outlet context={{ profile, session }} />
-          </div>
+        <main className="page-content page-content--premium">
+          <Outlet />
         </main>
       </div>
     </div>
   );
 }
-
-function NavItem({ to, children, icon }) {
-  const location = useLocation();
-  const isActive = location.pathname === to;
-
-  return (
-    <NavLink
-      to={to}
-      style={{
-        ...styles.navItem,
-        ...(isActive ? styles.navItemActive : null),
-      }}
-    >
-      <span
-        style={{
-          ...styles.navIcon,
-          ...(isActive ? styles.navIconActive : null),
-        }}
-      >
-        {icon}
-      </span>
-
-      <span style={{ minWidth: 0 }}>{children}</span>
-    </NavLink>
-  );
-}
-
-const styles = {
-  app: {
-    minHeight: "100vh",
-    background:
-      "linear-gradient(180deg, #0b1020 0%, #111827 18%, #f5f7fb 18%, #eef2f7 100%)",
-    position: "relative",
-    overflow: "hidden",
-    fontFamily:
-      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  },
-
-  topProgressTrack: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "3px",
-    zIndex: 9999,
-    background: "rgba(255,255,255,0.12)",
-  },
-
-  topProgressBar: {
-    width: "24%",
-    height: "100%",
-    borderRadius: "999px",
-    background: "linear-gradient(90deg, #10b981 0%, #3b82f6 100%)",
-    animation: "topProgress 1.6s ease-in-out infinite",
-  },
-
-  bgGlowOne: {
-    position: "absolute",
-    top: "-80px",
-    left: "-120px",
-    width: "320px",
-    height: "320px",
-    borderRadius: "999px",
-    background: "rgba(16,185,129,0.18)",
-    filter: "blur(80px)",
-    pointerEvents: "none",
-  },
-
-  bgGlowTwo: {
-    position: "absolute",
-    top: "60px",
-    right: "-80px",
-    width: "280px",
-    height: "280px",
-    borderRadius: "999px",
-    background: "rgba(59,130,246,0.16)",
-    filter: "blur(80px)",
-    pointerEvents: "none",
-  },
-
-  grid: {
-    minHeight: "100vh",
-    display: "grid",
-    gridTemplateColumns: "290px minmax(0, 1fr)",
-    position: "relative",
-    zIndex: 2,
-  },
-
-  sidebar: {
-    minHeight: "100vh",
-    background: "rgba(8,12,22,0.88)",
-    backdropFilter: "blur(16px)",
-    borderRight: "1px solid rgba(255,255,255,0.06)",
-    padding: "24px 20px",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    boxSizing: "border-box",
-  },
-
-  brand: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    marginBottom: "22px",
-  },
-
-  brandIcon: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "16px",
-    display: "grid",
-    placeItems: "center",
-    background: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
-    color: "#fff",
-    fontWeight: 800,
-    fontSize: "20px",
-    flexShrink: 0,
-  },
-
-  brandTitle: {
-    color: "#f8fafc",
-    fontSize: "17px",
-    fontWeight: 800,
-  },
-
-  brandSubtitle: {
-    color: "#94a3b8",
-    fontSize: "13px",
-    marginTop: "3px",
-  },
-
-  profileCard: {
-    display: "grid",
-    gridTemplateColumns: "48px minmax(0, 1fr) 10px",
-    alignItems: "center",
-    gap: "12px",
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: "20px",
-    padding: "14px",
-    marginBottom: "20px",
-  },
-
-  avatar: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "16px",
-    display: "grid",
-    placeItems: "center",
-    background: "rgba(255,255,255,0.09)",
-    color: "#fff",
-    fontWeight: 800,
-    fontSize: "18px",
-    flexShrink: 0,
-  },
-
-  profileName: {
-    color: "#fff",
-    fontWeight: 700,
-    fontSize: "14px",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  },
-
-  profileRole: {
-    color: "#94a3b8",
-    fontSize: "12px",
-    marginTop: "4px",
-  },
-
-  liveDot: {
-    width: "10px",
-    height: "10px",
-    borderRadius: "999px",
-    background: "#10b981",
-    animation: "pulseGlow 1.8s ease-in-out infinite",
-  },
-
-  nav: {
-    display: "grid",
-    gap: "10px",
-  },
-
-  navItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px 14px",
-    borderRadius: "16px",
-    textDecoration: "none",
-    color: "#cbd5e1",
-    fontSize: "14px",
-    fontWeight: 700,
-    border: "1px solid rgba(255,255,255,0.04)",
-    background: "rgba(255,255,255,0.02)",
-    minWidth: 0,
-    boxSizing: "border-box",
-  },
-
-  navItemActive: {
-    color: "#ffffff",
-    background:
-      "linear-gradient(135deg, rgba(16,185,129,0.20) 0%, rgba(59,130,246,0.18) 100%)",
-    border: "1px solid rgba(16,185,129,0.20)",
-  },
-
-  navIcon: {
-    width: "30px",
-    height: "30px",
-    borderRadius: "10px",
-    display: "grid",
-    placeItems: "center",
-    background: "rgba(255,255,255,0.06)",
-    color: "#cbd5e1",
-    fontSize: "14px",
-    flexShrink: 0,
-  },
-
-  navIconActive: {
-    background: "rgba(255,255,255,0.14)",
-    color: "#fff",
-  },
-
-  sidebarFooter: {
-    display: "grid",
-    gap: "12px",
-    marginTop: "24px",
-  },
-
-  logoutButton: {
-    background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
-    color: "#fff",
-    border: "none",
-    borderRadius: "16px",
-    padding: "14px 16px",
-    fontSize: "14px",
-    fontWeight: 800,
-    cursor: "pointer",
-  },
-
-  systemStatus: {
-    color: "#94a3b8",
-    fontSize: "12px",
-    textAlign: "center",
-  },
-
-  main: {
-    minWidth: 0,
-    width: "100%",
-    padding: "26px",
-    boxSizing: "border-box",
-  },
-
-  topRightStatus: {
-    display: "flex",
-    justifyContent: "flex-end",
-    marginBottom: "14px",
-    minWidth: 0,
-  },
-
-  statusBadge: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "10px 14px",
-    borderRadius: "999px",
-    background: "rgba(255,255,255,0.84)",
-    backdropFilter: "blur(10px)",
-    border: "1px solid #e5e7eb",
-    fontSize: "12px",
-    fontWeight: 800,
-    color: "#0f172a",
-    maxWidth: "100%",
-    boxSizing: "border-box",
-  },
-
-  statusDot: {
-    width: "8px",
-    height: "8px",
-    borderRadius: "999px",
-    background: "#10b981",
-    flexShrink: 0,
-  },
-
-  mainInner: {
-    width: "100%",
-    maxWidth: "1360px",
-    minWidth: 0,
-    margin: "0 auto",
-    boxSizing: "border-box",
-  },
-};

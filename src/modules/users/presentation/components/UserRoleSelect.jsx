@@ -1,0 +1,52 @@
+import { useRolesQuery } from "../hooks/useRolesQuery";
+import { useUpdateUserRole } from "../hooks/useUpdateUserRole";
+
+export default function UserRoleSelect({ userItem }) {
+  const { data: roles = [], isLoading } = useRolesQuery();
+  const mutation = useUpdateUserRole();
+
+  async function handleChange(event) {
+    const nextRoleId = Number(event.target.value);
+
+    if (!nextRoleId || nextRoleId === Number(userItem.roleId)) {
+      return;
+    }
+
+    try {
+      await mutation.mutateAsync({
+        userId: userItem.id,
+        roleId: nextRoleId,
+      });
+    } catch (error) {
+      console.error("User role update error:", error);
+    }
+  }
+
+  return (
+    <div className="user-role-select">
+      <label htmlFor={`role-select-${userItem.id}`}>Rol</label>
+      <select
+        id={`role-select-${userItem.id}`}
+        className="form-select"
+        value={userItem.roleId ?? ""}
+        onChange={handleChange}
+        disabled={isLoading || mutation.isPending}
+      >
+        <option value="">
+          {isLoading ? "Roller yükleniyor..." : "Rol seçin"}
+        </option>
+        {roles.map((role) => (
+          <option key={role.id} value={role.id}>
+            {role.name}
+          </option>
+        ))}
+      </select>
+
+      {mutation.error ? (
+        <div className="error-text">
+          {mutation.error.message || "Rol güncellenemedi."}
+        </div>
+      ) : null}
+    </div>
+  );
+}

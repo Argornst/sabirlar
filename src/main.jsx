@@ -1,13 +1,16 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
-import "./index.css";
-import ToastProvider from "./presentation/components/feedback/ToastProvider";
+import { BrowserRouter } from "react-router-dom";
+import AppProviders from "./app/providers/AppProviders";
+import AppRouter from "./app/router";
+import "./app/styles/index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ToastProvider>
-      <App />
-    </ToastProvider>
+    <BrowserRouter>
+      <AppProviders>
+        <AppRouter />
+      </AppProviders>
+    </BrowserRouter>
   </React.StrictMode>
 );
