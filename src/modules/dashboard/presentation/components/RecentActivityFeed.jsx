@@ -40,9 +40,15 @@ export default function RecentActivityFeed({ logs = [] }) {
           </div>
 
           <div className="activity-feed__meta">
-            <span>Tür: {log.entity_type}</span>
-            <span>Kayıt ID: {log.entity_id || "-"}</span>
-            <span>Aktör: {log.actor_email || log.actor_user_id || "-"}</span>
+            <span>
+              <strong>Tür:</strong> {log.entity_type || "-"}
+            </span>
+            <span>
+              <strong>Kayıt ID:</strong> {log.entity_id || "-"}
+            </span>
+            <span>
+              <strong>Aktör:</strong> {log.actor_email || log.actor_user_id || "-"}
+            </span>
           </div>
         </div>
       ))}

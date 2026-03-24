@@ -5,9 +5,12 @@ export default function UsersFilters({
   onSearchChange,
   role,
   onRoleChange,
+  organization,
+  onOrganizationChange,
   status,
   onStatusChange,
   roles = [],
+  organizations = [],
 }) {
   return (
     <FilterBar>
@@ -34,6 +37,23 @@ export default function UsersFilters({
           {roles.map((roleItem) => (
             <option key={roleItem.id} value={roleItem.name}>
               {roleItem.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="filter-field">
+        <label htmlFor="users-organization">Organizasyon</label>
+        <select
+          id="users-organization"
+          className="form-select"
+          value={organization}
+          onChange={(event) => onOrganizationChange(event.target.value)}
+        >
+          <option value="">Tüm Organizasyonlar</option>
+          {organizations.map((organizationItem) => (
+            <option key={organizationItem.id} value={organizationItem.name}>
+              {organizationItem.name}
             </option>
           ))}
         </select>

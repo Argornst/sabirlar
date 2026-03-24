@@ -3,8 +3,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../../../app/providers/AppProviders";
-import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../../../../shared/constants/audit";
+import {
+  AUDIT_ACTIONS,
+  AUDIT_ENTITY_TYPES,
+} from "../../../../shared/constants/audit";
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
+import { getReadableErrorMessage } from "../../../../shared/lib/error/getReadableErrorMessage";
 import {
   createSaleDefaultValues,
   createSaleSchema,
@@ -62,6 +66,11 @@ export function useCreateSaleForm() {
     ...form,
     onSubmit,
     isSubmitting: mutation.isPending,
-    submitError: mutation.error?.message ?? "",
+    submitError: mutation.error
+      ? getReadableErrorMessage(
+          mutation.error,
+          "Satış oluşturulurken hata oluştu."
+        )
+      : "",
   };
 }

@@ -1,9 +1,21 @@
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+};
+
+type CreateUserPayload = {
+  email?: string;
+  username?: string;
+  full_name?: string;
+  password?: string;
+  role_id?: number | string;
+  organization_id?: number | string | null;
+  is_active?: boolean;
+  page_permissions?: Record<string, boolean>;
 };
 
 function jsonResponse(body: unknown, status = 200) {
@@ -16,33 +28,56 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-Deno.serve(async (req: Request) => {
+function normalizeEmail(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeUsername(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+function toNumberOrNull(value: unknown) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+
+  return parsed;
+}
+
+serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!supabaseUrl || !serviceRoleKey || !anonKey) {
+    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
       return jsonResponse(
-        {
-          error:
-            "Environment variables eksik. SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / SUPABASE_ANON_KEY gerekli.",
-        },
+        { error: "Supabase environment variables are missing." },
         500
       );
     }
 
-    const authHeader = req.headers.get("authorization");
+    const authHeader = req.headers.get("Authorization");
 
     if (!authHeader) {
-      return jsonResponse({ error: "Authorization header yok." }, 401);
+      return jsonResponse({ error: "Authorization header is required." }, 401);
     }
 
-    const userClient = createClient(supabaseUrl, anonKey, {
+    const requesterClient = createClient(supabaseUrl, anonKey, {
       global: {
         headers: {
           Authorization: authHeader,
@@ -50,228 +85,269 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    const {
-      data: { user: requestingUser },
-      error: requestingUserError,
-    } = await userClient.auth.getUser();
-
-    console.log("DEBUG requesting user:", requestingUser?.email ?? null);
-    console.log(
-      "DEBUG requesting user error:",
-      requestingUserError?.message ?? null
-    );
-
-    if (requestingUserError || !requestingUser) {
-      return jsonResponse(
-        {
-          error: "Geçersiz kullanıcı tokenı.",
-          details: requestingUserError?.message ?? null,
-        },
-        401
-      );
-    }
-
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data: requesterProfile, error: requesterProfileError } =
-      await adminClient
-        .from("users")
-        .select(
-          `
+    const {
+      data: { user: requesterUser },
+      error: requesterAuthError,
+    } = await requesterClient.auth.getUser();
+
+    if (requesterAuthError || !requesterUser) {
+      return jsonResponse({ error: "Unauthorized request." }, 401);
+    }
+
+    const {
+      data: requesterProfile,
+      error: requesterProfileError,
+    } = await adminClient
+      .from("users")
+      .select(
+        `
           id,
           email,
-          username,
-          full_name,
+          organization_id,
           role_id,
-          is_active,
-          page_permissions,
           roles (
             id,
             name
           )
         `
-        )
-        .eq("id", requestingUser.id)
-        .maybeSingle();
+      )
+      .eq("id", requesterUser.id)
+      .single();
 
-    console.log("DEBUG requester profile:", requesterProfile);
-    console.log(
-      "DEBUG requester profile error:",
-      requesterProfileError?.message ?? null
-    );
-
-    if (requesterProfileError) {
+    if (requesterProfileError || !requesterProfile) {
       return jsonResponse(
-        {
-          error: "İstek yapan kullanıcının profili okunamadı.",
-          details: requesterProfileError.message,
-        },
-        500
-      );
-    }
-
-    if (!requesterProfile) {
-      return jsonResponse(
-        { error: "İstek yapan kullanıcı profili bulunamadı." },
+        { error: "Requester profile could not be resolved." },
         403
       );
     }
 
     const requesterRoleName = String(
-      requesterProfile?.roles?.name || ""
+      requesterProfile.roles?.name ?? ""
     ).toLowerCase();
+    const requesterOrganizationId = requesterProfile.organization_id ?? null;
 
-    const requesterHasUsersPermission =
-      requesterProfile?.page_permissions?.users === true;
-
-    const requesterIsAdmin =
-      requesterRoleName.includes("admin") ||
-      requesterRoleName.includes("yönetici") ||
-      requesterRoleName.includes("yonetici") ||
-      requesterHasUsersPermission;
-
-    if (!requesterIsAdmin) {
+    if (requesterRoleName !== "admin") {
       return jsonResponse(
-        { error: "Bu işlem için admin yetkisi gerekli." },
+        { error: "Only admin users can create new users." },
         403
       );
     }
 
-    const body = await req.json();
+    const payload = (await req.json()) as CreateUserPayload;
 
-    const {
-      email,
-      password,
-      username,
-      full_name,
-      role_id,
-      is_active = true,
-      page_permissions = {},
-    } = body || {};
+    const email = normalizeEmail(payload.email);
+    const username = normalizeUsername(payload.username);
+    const fullName = String(payload.full_name ?? "").trim();
+    const password = String(payload.password ?? "");
+    const roleId = toNumberOrNull(payload.role_id);
+    const requestedOrganizationId = toNumberOrNull(payload.organization_id);
+    const pagePermissions =
+      payload.page_permissions && typeof payload.page_permissions === "object"
+        ? payload.page_permissions
+        : {};
 
-    console.log("DEBUG request body:", {
-      email,
-      username,
-      full_name,
-      role_id,
-      is_active,
-      page_permissions,
-      hasPassword: Boolean(password),
-    });
+    const organizationId =
+      requestedOrganizationId ?? requesterOrganizationId ?? null;
 
-    if (!email || !password || !username || !full_name || !role_id) {
-      return jsonResponse({ error: "Eksik alanlar var." }, 400);
+    if (!email) {
+      return jsonResponse({ error: "E-posta zorunludur." }, 400);
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
-    const normalizedUsername = String(username).trim().toLowerCase();
+    if (!username) {
+      return jsonResponse({ error: "Kullanıcı adı zorunludur." }, 400);
+    }
 
-    const { data: existingUser, error: existingUserError } = await adminClient
+    if (!fullName) {
+      return jsonResponse({ error: "Ad soyad zorunludur." }, 400);
+    }
+
+    if (!password || password.length < 6) {
+      return jsonResponse(
+        { error: "Şifre en az 6 karakter olmalıdır." },
+        400
+      );
+    }
+
+    if (!roleId) {
+      return jsonResponse({ error: "Rol seçimi zorunludur." }, 400);
+    }
+
+    if (!organizationId) {
+      return jsonResponse({ error: "Organizasyon seçimi zorunludur." }, 400);
+    }
+
+    if (
+      requesterOrganizationId &&
+      Number(organizationId) !== Number(requesterOrganizationId)
+    ) {
+      return jsonResponse(
+        {
+          error:
+            "Admin yalnızca kendi organizasyonu içine kullanıcı oluşturabilir.",
+        },
+        403
+      );
+    }
+
+    const { data: existingEmailUser } = await adminClient
       .from("users")
       .select("id")
-      .ilike("username", normalizedUsername)
+      .eq("email", email)
       .maybeSingle();
 
-    console.log("DEBUG existing user:", existingUser);
-    console.log(
-      "DEBUG existing user error:",
-      existingUserError?.message ?? null
-    );
-
-    if (existingUserError) {
-      throw existingUserError;
+    if (existingEmailUser) {
+      return jsonResponse(
+        { error: "Bu e-posta ile kayıtlı kullanıcı zaten var." },
+        409
+      );
     }
 
-    if (existingUser) {
+    const { data: existingUsernameUser } = await adminClient
+      .from("users")
+      .select("id")
+      .eq("username", username)
+      .maybeSingle();
+
+    if (existingUsernameUser) {
       return jsonResponse(
         { error: "Bu kullanıcı adı zaten kullanılıyor." },
         409
       );
     }
 
-    console.log("DEBUG creating auth user...");
+    const { data: roleRecord, error: roleError } = await adminClient
+      .from("roles")
+      .select("id, name")
+      .eq("id", roleId)
+      .single();
 
-    const { data: createdAuthUser, error: authError } =
+    if (roleError || !roleRecord) {
+      return jsonResponse({ error: "Seçilen rol bulunamadı." }, 400);
+    }
+
+    const { data: organizationRecord, error: organizationError } =
+      await adminClient
+        .from("organizations")
+        .select("id, name, is_active")
+        .eq("id", organizationId)
+        .single();
+
+    if (organizationError || !organizationRecord) {
+      return jsonResponse({ error: "Seçilen organizasyon bulunamadı." }, 400);
+    }
+
+    if (!organizationRecord.is_active) {
+      return jsonResponse(
+        { error: "Pasif organizasyona kullanıcı oluşturulamaz." },
+        400
+      );
+    }
+
+    const { data: authCreatedUser, error: authCreateError } =
       await adminClient.auth.admin.createUser({
-        email: normalizedEmail,
-        password: String(password),
+        email,
+        password,
         email_confirm: true,
         user_metadata: {
-          full_name,
-          username: normalizedUsername,
+          username,
+          full_name: fullName,
+          organization_id: organizationId,
         },
       });
 
-    console.log("DEBUG auth create result:", createdAuthUser);
-    console.log("DEBUG auth create error:", authError);
-
-    if (authError) {
+    if (authCreateError || !authCreatedUser?.user) {
       return jsonResponse(
-        {
-          error: authError.message || "Auth kullanıcı oluşturulamadı.",
-          details: authError,
-          step: "auth.admin.createUser",
-        },
-        500
+        { error: authCreateError?.message || "Auth user oluşturulamadı." },
+        400
       );
     }
 
-    const authUserId = createdAuthUser.user?.id;
+    const newUserId = authCreatedUser.user.id;
 
-    if (!authUserId) {
+    const userInsertPayload = {
+      id: newUserId,
+      email,
+      username,
+      full_name: fullName,
+      role_id: roleId,
+      organization_id: organizationId,
+      is_active: payload.is_active ?? true,
+      page_permissions: pagePermissions,
+    };
+
+    const { data: insertedUser, error: insertUserError } = await adminClient
+      .from("users")
+      .insert(userInsertPayload)
+      .select(
+        `
+          id,
+          email,
+          username,
+          full_name,
+          role_id,
+          organization_id,
+          is_active,
+          page_permissions
+        `
+      )
+      .single();
+
+    if (insertUserError || !insertedUser) {
+      await adminClient.auth.admin.deleteUser(newUserId);
+
       return jsonResponse(
-        {
-          error: "Auth kullanıcı ID alınamadı.",
-          step: "auth.admin.createUser",
-        },
-        500
+        { error: insertUserError?.message || "User profili oluşturulamadı." },
+        400
       );
     }
 
-    const { error: profileUpsertError } = await adminClient.from("users").upsert(
-      {
-        id: authUserId,
-        email: normalizedEmail,
-        username: normalizedUsername,
-        full_name,
-        role_id,
-        is_active,
-        page_permissions,
-        updated_at: new Date().toISOString(),
+    const membershipPayload = {
+      organization_id: organizationId,
+      user_id: newUserId,
+      role_id: roleId,
+      is_active: true,
+    };
+
+    const { error: membershipError } = await adminClient
+      .from("organization_memberships")
+      .upsert(membershipPayload, {
+        onConflict: "organization_id,user_id",
+      });
+
+    if (membershipError) {
+      await adminClient.from("users").delete().eq("id", newUserId);
+      await adminClient.auth.admin.deleteUser(newUserId);
+
+      return jsonResponse(
+        {
+          error:
+            membershipError.message ||
+            "Organization membership kaydı oluşturulamadı.",
+        },
+        400
+      );
+    }
+
+    return jsonResponse({
+      success: true,
+      user: insertedUser,
+      organization: {
+        id: organizationRecord.id,
+        name: organizationRecord.name,
       },
-      {
-        onConflict: "id",
-      }
-    );
-
-    console.log("DEBUG public.users upsert error:", profileUpsertError);
-
-    if (profileUpsertError) {
-      await adminClient.auth.admin.deleteUser(authUserId);
-
-      return jsonResponse(
-        {
-          error: profileUpsertError.message || "Profil kaydı kaydedilemedi.",
-          details: profileUpsertError,
-          step: "public.users.upsert",
-        },
-        500
-      );
-    }
-
+      role: {
+        id: roleRecord.id,
+        name: roleRecord.name,
+      },
+    });
+  } catch (error) {
     return jsonResponse(
       {
-        success: true,
-        user_id: authUserId,
+        error: error instanceof Error ? error.message : "Unexpected error",
       },
-      200
+      500
     );
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Beklenmeyen hata";
-
-    console.log("DEBUG FUNCTION CATCH ERROR:", error);
-
-    return jsonResponse({ error: message }, 500);
   }
 });

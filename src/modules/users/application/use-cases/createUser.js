@@ -11,6 +11,10 @@ export async function createUser({ usersRepository, values }) {
     throw new Error("Seçilen rol bulunamadı.");
   }
 
+  if (!values.organizationId) {
+    throw new Error("Organizasyon seçimi zorunludur.");
+  }
+
   const payload = mapCreateUserFormToPayload(values, selectedRole);
   return usersRepository.create(payload);
 }

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 export function useUsersFilters(users = []) {
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("");
+  const [organization, setOrganization] = useState("");
   const [status, setStatus] = useState("");
 
   const filteredUsers = useMemo(() => {
@@ -18,14 +19,19 @@ export function useUsersFilters(users = []) {
       const matchesRole =
         !role || String(user.roleName || "").toLowerCase() === role.toLowerCase();
 
+      const matchesOrganization =
+        !organization ||
+        String(user.organizationName || "").toLowerCase() ===
+          organization.toLowerCase();
+
       const matchesStatus =
         !status ||
         (status === "active" && user.isActive) ||
         (status === "inactive" && !user.isActive);
 
-      return matchesSearch && matchesRole && matchesStatus;
+      return matchesSearch && matchesRole && matchesOrganization && matchesStatus;
     });
-  }, [users, search, role, status]);
+  }, [users, search, role, organization, status]);
 
   const summary = useMemo(() => {
     const total = users.length;
@@ -51,6 +57,8 @@ export function useUsersFilters(users = []) {
     setSearch,
     role,
     setRole,
+    organization,
+    setOrganization,
     status,
     setStatus,
     filteredUsers,

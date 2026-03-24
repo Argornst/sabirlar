@@ -5,6 +5,10 @@ import {
   canAccessPage,
   getFirstAccessibleRoute,
 } from "../../shared/lib/permissions";
+import {
+  getOrganizationDisplayName,
+  getOrganizationDisplaySubtitle,
+} from "../../shared/lib/tenant";
 import { useAuth } from "../providers/AppProviders";
 
 function IconDashboard() {
@@ -120,88 +124,97 @@ export default function AppShell() {
   const displayName = profile?.fullName || user?.email || "Bilinmeyen kullanıcı";
   const roleName = profile?.roleName || "Kullanıcı";
   const avatarLetter = displayName.slice(0, 1).toUpperCase();
+  const organizationName = getOrganizationDisplayName(activeOrganization, profile);
+  const organizationSubtitle = getOrganizationDisplaySubtitle(
+    activeOrganization,
+    profile
+  );
 
   return (
-    <div className="app-shell app-shell--premium">
-      <aside className="sidebar sidebar--premium">
-        <div className="sidebar__background-glow sidebar__background-glow--top" />
-        <div className="sidebar__background-glow sidebar__background-glow--bottom" />
+    <div className="app-shell app-shell--ultra">
+      <aside className="sidebar sidebar--ultra">
+        <div className="sidebar__ambient sidebar__ambient--one" />
+        <div className="sidebar__ambient sidebar__ambient--two" />
 
-        <div className="sidebar__top">
-          <div className="sidebar__brand sidebar__brand--premium">
-            <div className="sidebar__logo sidebar__logo--premium">S</div>
-            <div>
-              <h1>Sabırlar</h1>
-              <p>{activeOrganization?.name || "Sales Management Platform"}</p>
+        <div className="sidebar__inner">
+          <div className="sidebar__top">
+            <div className="sidebar__brand sidebar__brand--ultra">
+              <div className="sidebar__logo sidebar__logo--ultra">S</div>
+
+              <div className="sidebar__brand-text">
+                <h1>Sabırlar</h1>
+                <p>{organizationName}</p>
+              </div>
             </div>
+
+            <div className="sidebar__workspace-card">
+              <span className="sidebar__workspace-label">Workspace</span>
+              <strong>{organizationName}</strong>
+              <small>{organizationSubtitle}</small>
+            </div>
+
+            <div className="sidebar__section-label">Navigation</div>
+
+            <nav className="sidebar__nav">
+              {visibleNavigationItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    isActive
+                      ? "sidebar__link sidebar__link--active"
+                      : "sidebar__link"
+                  }
+                >
+                  <span className="sidebar__link-icon">{item.icon}</span>
+                  <span className="sidebar__link-label">{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
           </div>
 
-          <div className="sidebar__section-label">Navigation</div>
+          <div className="sidebar__footer">
+            <div className="sidebar__user-card sidebar__user-card--ultra">
+              <div className="sidebar__user-avatar sidebar__user-avatar--ultra">
+                {avatarLetter}
+              </div>
 
-          <div className="sidebar__nav">
-            {visibleNavigationItems.map((item) => (
+              <div className="sidebar__user-meta">
+                <strong>{displayName}</strong>
+                <span>{roleName}</span>
+              </div>
+            </div>
+
+            {!visibleNavigationItems.length ? (
               <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  isActive
-                    ? "sidebar__link sidebar__link--active"
-                    : "sidebar__link"
-                }
+                to={fallbackRoute}
+                className="sidebar__link sidebar__link--active"
               >
-                <span className="sidebar__link-icon">{item.icon}</span>
-                <span className="sidebar__link-label">{item.label}</span>
+                <span className="sidebar__link-label">Uygulamaya Dön</span>
               </NavLink>
-            ))}
+            ) : null}
+
+            <button type="button" className="danger-button" onClick={handleSignOut}>
+              Çıkış Yap
+            </button>
           </div>
-        </div>
-
-        <div className="sidebar__footer">
-          <div className="sidebar__user-card sidebar__user-card--premium">
-            <div className="sidebar__user-avatar sidebar__user-avatar--premium">
-              {avatarLetter}
-            </div>
-
-            <div className="sidebar__user-meta">
-              <strong>{displayName}</strong>
-              <span>{roleName}</span>
-            </div>
-          </div>
-
-          {!visibleNavigationItems.length ? (
-            <NavLink to={fallbackRoute} className="sidebar__link sidebar__link--active">
-              <span className="sidebar__link-label">Uygulamaya Dön</span>
-            </NavLink>
-          ) : null}
-
-          <button type="button" className="danger-button" onClick={handleSignOut}>
-            Çıkış Yap
-          </button>
         </div>
       </aside>
 
-      <div className="content-area content-area--premium">
-        <header className="topbar topbar--premium">
+      <div className="content-area content-area--ultra">
+        <header className="topbar topbar--ultra">
           <div className="topbar__left">
             <h2>{getPageTitle(location.pathname)}</h2>
-            <p>
-              {activeOrganization?.name
-                ? `${activeOrganization.name} paneli`
-                : "Sabırlar satış yönetim paneli"}
-            </p>
+            <p>{organizationName} paneli</p>
           </div>
 
           <div className="topbar__right">
-            {activeOrganization?.name ? (
-              <div className="topbar__organization-chip">
-                {activeOrganization.name}
-              </div>
-            ) : null}
-            <div className="topbar__pill topbar__pill--premium">{roleName}</div>
+            <div className="topbar__organization-chip">{organizationName}</div>
+            <div className="topbar__pill topbar__pill--ultra">{roleName}</div>
           </div>
         </header>
 
-        <main className="page-content page-content--premium">
+        <main className="page-content page-content--ultra">
           <Outlet />
         </main>
       </div>

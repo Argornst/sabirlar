@@ -2,14 +2,14 @@ import { formatCurrency } from "../../../../shared/utils/currency";
 
 export default function ReportsHero({ summary }) {
   return (
-    <div className="reports-hero reports-hero--premium">
+    <div className="reports-hero reports-hero--ultra">
       <div className="reports-hero__content">
-        <span className="reports-hero__eyebrow">Rapor Merkezi</span>
+        <span className="reports-hero__eyebrow">Insights Center</span>
         <h2>Performans verileri ve dağılımlar</h2>
         <p>
           Finansal toplamlar, stok görünümü ve kullanıcı bazlı genel yoğunluk
-          tek merkezden izlenir. Kritik verileri sade değil, güçlü bir yüzeyde
-          takip edersin.
+          tek merkezden izlenir. Kritik veriler yalnızca görünmez, etkileyici
+          biçimde sunulur.
         </p>
       </div>
 

@@ -28,6 +28,9 @@ export default function UsersTable({ users = [] }) {
               <StatusBadge tone="warning">
                 {userItem.roleName || "rol yok"}
               </StatusBadge>
+              <StatusBadge tone="default">
+                {userItem.organizationName || "organizasyon yok"}
+              </StatusBadge>
               <StatusBadge tone={userItem.isActive ? "success" : "danger"}>
                 {userItem.isActive ? "active" : "inactive"}
               </StatusBadge>

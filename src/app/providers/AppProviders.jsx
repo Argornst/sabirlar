@@ -37,6 +37,7 @@ export default function AppProviders({ children }) {
   const [profile, setProfile] = useState(null);
   const [activeOrganization, setActiveOrganization] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authBootstrapError, setAuthBootstrapError] = useState("");
 
   async function loadProfile(userId) {
     if (!userId) {
@@ -47,6 +48,7 @@ export default function AppProviders({ children }) {
 
     try {
       const nextProfile = await usersRepository.getProfileByUserId(userId);
+
       setProfile(nextProfile);
       setActiveOrganization(
         nextProfile?.organizationId
@@ -57,6 +59,7 @@ export default function AppProviders({ children }) {
             }
           : null
       );
+
       return nextProfile;
     } catch (error) {
       console.error("Profile load error:", error);
@@ -70,6 +73,9 @@ export default function AppProviders({ children }) {
     let mounted = true;
 
     async function bootstrapAuth() {
+      setIsAuthLoading(true);
+      setAuthBootstrapError("");
+
       try {
         const currentSession = await authRepository.getSession();
 
@@ -77,10 +83,9 @@ export default function AppProviders({ children }) {
 
         setSession(currentSession ?? null);
         setUser(currentSession?.user ?? null);
-        setIsAuthLoading(false);
 
         if (currentSession?.user?.id) {
-          loadProfile(currentSession.user.id);
+          await loadProfile(currentSession.user.id);
         } else {
           setProfile(null);
           setActiveOrganization(null);
@@ -93,6 +98,12 @@ export default function AppProviders({ children }) {
           setUser(null);
           setProfile(null);
           setActiveOrganization(null);
+          setAuthBootstrapError(
+            error?.message || "Oturum başlatılırken beklenmeyen bir hata oluştu."
+          );
+        }
+      } finally {
+        if (mounted) {
           setIsAuthLoading(false);
         }
       }
@@ -107,13 +118,17 @@ export default function AppProviders({ children }) {
 
       setSession(nextSession ?? null);
       setUser(nextSession?.user ?? null);
-      setIsAuthLoading(false);
 
       if (nextSession?.user?.id) {
-        loadProfile(nextSession.user.id);
+        loadProfile(nextSession.user.id).finally(() => {
+          if (mounted) {
+            setIsAuthLoading(false);
+          }
+        });
       } else {
         setProfile(null);
         setActiveOrganization(null);
+        setIsAuthLoading(false);
       }
     });
 
@@ -131,28 +146,38 @@ export default function AppProviders({ children }) {
       activeOrganization,
       isAuthenticated: Boolean(session?.user),
       isAuthLoading,
+      authBootstrapError,
       refreshSession: async () => {
-        const currentSession = await authRepository.getSession();
+        setIsAuthLoading(true);
+        try {
+          const currentSession = await authRepository.getSession();
 
-        setSession(currentSession ?? null);
-        setUser(currentSession?.user ?? null);
+          setSession(currentSession ?? null);
+          setUser(currentSession?.user ?? null);
 
-        if (currentSession?.user?.id) {
-          await loadProfile(currentSession.user.id);
-        } else {
-          setProfile(null);
-          setActiveOrganization(null);
+          if (currentSession?.user?.id) {
+            await loadProfile(currentSession.user.id);
+          } else {
+            setProfile(null);
+            setActiveOrganization(null);
+          }
+
+          return currentSession;
+        } finally {
+          setIsAuthLoading(false);
         }
-
-        return currentSession;
       },
       signOut: async () => {
-        await logActivity({
-          action: AUDIT_ACTIONS.LOGOUT,
-          entityType: AUDIT_ENTITY_TYPES.AUTH,
-          actorUserId: user?.id ?? null,
-          actorEmail: user?.email ?? null,
-        });
+        try {
+          await logActivity({
+            action: AUDIT_ACTIONS.LOGOUT,
+            entityType: AUDIT_ENTITY_TYPES.AUTH,
+            actorUserId: user?.id ?? null,
+            actorEmail: user?.email ?? null,
+          });
+        } catch (error) {
+          console.error("Logout audit error:", error);
+        }
 
         await authRepository.signOut();
         setSession(null);
@@ -162,7 +187,7 @@ export default function AppProviders({ children }) {
         setIsAuthLoading(false);
       },
     }),
-    [session, user, profile, activeOrganization, isAuthLoading]
+    [session, user, profile, activeOrganization, isAuthLoading, authBootstrapError]
   );
 
   return (

@@ -3,6 +3,7 @@ export const AUDIT_ENTITY_TYPES = {
   PRODUCT: "product",
   USER: "user",
   AUTH: "auth",
+  ORGANIZATION: "organization",
 };
 
 export const AUDIT_ACTIONS = {
@@ -21,6 +22,9 @@ export const AUDIT_ACTIONS = {
   USER_ROLE_UPDATED: "user_role_updated",
   USER_PERMISSIONS_UPDATED: "user_permissions_updated",
   USER_STATUS_UPDATED: "user_status_updated",
+
+  ORGANIZATION_CREATED: "organization_created",
+  ORGANIZATION_UPDATED: "organization_updated",
 
   LOGIN_SUCCESS: "login_success",
   LOGOUT: "logout",

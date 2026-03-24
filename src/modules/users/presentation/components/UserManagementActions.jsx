@@ -1,6 +1,7 @@
 import Button from "../../../../shared/components/ui/Button";
 import { useResetUserPermissions } from "../hooks/useResetUserPermissions";
 import { useToggleUserActive } from "../hooks/useToggleUserActive";
+import UserOrganizationSelect from "./UserOrganizationSelect";
 import UserRoleSelect from "./UserRoleSelect";
 
 export default function UserManagementActions({ userItem }) {
@@ -32,6 +33,7 @@ export default function UserManagementActions({ userItem }) {
   return (
     <div className="user-management-actions">
       <UserRoleSelect userItem={userItem} />
+      <UserOrganizationSelect userItem={userItem} />
 
       <div className="row-actions">
         <Button

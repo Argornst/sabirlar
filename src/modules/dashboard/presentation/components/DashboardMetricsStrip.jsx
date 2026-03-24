@@ -43,7 +43,7 @@ export default function DashboardMetricsStrip({ summary }) {
   ];
 
   return (
-    <div className="dashboard-metrics-strip dashboard-metrics-strip--premium">
+    <div className="dashboard-metrics-strip dashboard-metrics-strip--ultra">
       {items.map((item) => (
         <div key={item.label} className="dashboard-metrics-strip__item">
           <span>{item.label}</span>

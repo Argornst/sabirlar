@@ -5,6 +5,7 @@ import SectionCard from "../../../../shared/components/ui/SectionCard";
 import EmptyState from "../../../../shared/components/ui/EmptyState";
 import ErrorState from "../../../../shared/components/ui/ErrorState";
 import LoadingState from "../../../../shared/components/ui/LoadingState";
+import { useOrganizationsListQuery } from "../../../organizations/presentation/hooks/useOrganizationsListQuery";
 import CreateUserForm from "../components/CreateUserForm";
 import UsersFilters from "../components/UsersFilters";
 import UsersSummaryCards from "../components/UsersSummaryCards";
@@ -16,6 +17,7 @@ import { useUsersFilters } from "../hooks/useUsersFilters";
 export default function UsersPage() {
   const { data, isLoading, isError, error } = useUsersListQuery();
   const { data: roles = [] } = useRolesQuery();
+  const { data: organizations = [] } = useOrganizationsListQuery();
   const users = data ?? [];
 
   const {
@@ -23,6 +25,8 @@ export default function UsersPage() {
     setSearch,
     role,
     setRole,
+    organization,
+    setOrganization,
     status,
     setStatus,
     filteredUsers,
@@ -62,9 +66,12 @@ export default function UsersPage() {
               onSearchChange={setSearch}
               role={role}
               onRoleChange={setRole}
+              organization={organization}
+              onOrganizationChange={setOrganization}
               status={status}
               onStatusChange={setStatus}
               roles={roles}
+              organizations={organizations}
             />
 
             {isLoading ? (

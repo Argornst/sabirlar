@@ -5,5 +5,6 @@ export function useAuditLogsQuery() {
   return useQuery({
     queryKey: ["audit-logs"],
     queryFn: () => auditRepository.getRecent(8),
+    retry: 0,
   });
 }

@@ -16,9 +16,30 @@ import RecentSalesList from "../components/RecentSalesList";
 import { useAuditLogsQuery } from "../hooks/useAuditLogsQuery";
 import { useDashboardSummaryQuery } from "../hooks/useDashboardSummaryQuery";
 
+const EMPTY_SUMMARY = {
+  totalRevenue: 0,
+  totalSalesCount: 0,
+  pendingSalesCount: 0,
+  totalUsersCount: 0,
+  totalProductsCount: 0,
+  paidSalesCount: 0,
+  recentSales: [],
+};
+
 export default function DashboardPage() {
-  const { data, isLoading, isError, error } = useDashboardSummaryQuery();
-  const { data: logs = [] } = useAuditLogsQuery();
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+  } = useDashboardSummaryQuery();
+
+  const {
+    data: logs = [],
+    isError: isAuditError,
+  } = useAuditLogsQuery();
+
+  const summary = data ?? EMPTY_SUMMARY;
 
   return (
     <AnimatedPage>
@@ -43,10 +64,10 @@ export default function DashboardPage() {
           />
         ) : null}
 
-        {!isLoading && !isError && data ? (
+        {!isLoading && !isError ? (
           <div className="content-stack">
-            <DashboardHero summary={data} />
-            <DashboardMetricsStrip summary={data} />
+            <DashboardHero summary={summary} />
+            <DashboardMetricsStrip summary={summary} />
 
             <SectionCard
               title="Hızlı Aksiyonlar"
@@ -59,36 +80,43 @@ export default function DashboardPage() {
               title="Öne Çıkan Metrikler"
               description="En önemli genel performans göstergeleri"
             >
-              <DashboardHighlights summary={data} />
+              <DashboardHighlights summary={summary} />
             </SectionCard>
 
             <SectionCard
               title="Genel Özet"
               description="Satış, ürün, kullanıcı ve ciro metrikleri"
             >
-              <DashboardStats summary={data} />
+              <DashboardStats summary={summary} />
             </SectionCard>
 
             <SectionCard
               title="Durum Özeti"
               description="Kritik sayıların kısa görünümü"
             >
-              <DashboardStatusOverview summary={data} />
+              <DashboardStatusOverview summary={summary} />
             </SectionCard>
 
             <SectionCard
               title="Son Aktiviteler"
               description="Panelde gerçekleşen son işlemler"
             >
-              <RecentActivityFeed logs={logs} />
+              {isAuditError ? (
+                <ErrorState
+                  title="Aktivite akışı alınamadı"
+                  description="Audit log verileri şu anda yüklenemiyor."
+                />
+              ) : (
+                <RecentActivityFeed logs={logs} />
+              )}
             </SectionCard>
 
             <SectionCard
               title="Son Satış Hareketleri"
               description="En son eklenen satış kayıtları"
             >
-              {data.recentSales?.length ? (
-                <RecentSalesList sales={data.recentSales} />
+              {summary.recentSales?.length ? (
+                <RecentSalesList sales={summary.recentSales} />
               ) : (
                 <EmptyState
                   title="Henüz satış yok"
@@ -96,6 +124,13 @@ export default function DashboardPage() {
                 />
               )}
             </SectionCard>
+
+            {!data ? (
+              <ErrorState
+                title="Dashboard verisi boş döndü"
+                description="Query hata vermedi ama veri gelmedi. Büyük ihtimalle repository veya RLS tarafında eksik veri var."
+              />
+            ) : null}
           </div>
         ) : null}
       </Card>

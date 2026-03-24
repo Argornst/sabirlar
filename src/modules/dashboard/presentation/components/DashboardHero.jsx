@@ -2,13 +2,14 @@ import { formatCurrency } from "../../../../shared/utils/currency";
 
 export default function DashboardHero({ summary }) {
   return (
-    <div className="dashboard-hero dashboard-hero--premium">
+    <div className="dashboard-hero dashboard-hero--ultra">
       <div className="dashboard-hero__main">
-        <span className="dashboard-hero__eyebrow">Bugünün Görünümü</span>
+        <span className="dashboard-hero__eyebrow">Live Performance</span>
         <h2>Satış operasyonlarının canlı özeti</h2>
         <p>
-          Toplam ciro, kullanıcı yoğunluğu ve satış performansı tek bakışta
-          görünür. Ana metrikler ve kritik sinyaller burada öne çıkar.
+          Toplam ciro, aktif kullanıcı hacmi ve satış yoğunluğu bu panelde tek
+          bakışta okunur. Kritik metrikler, yoğunluk ve operasyon ritmi burada
+          öne çıkar.
         </p>
 
         <div className="dashboard-hero__metrics">
