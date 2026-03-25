@@ -9,7 +9,7 @@ export default function DashboardMetricsStrip({ summary }) {
             )
           : 0
       }%`,
-      helper: "Ödenmiş / toplam satış",
+      helper: "Ödenmiş / toplam",
     },
     {
       label: "Bekleyen Yoğunluk",
@@ -20,7 +20,7 @@ export default function DashboardMetricsStrip({ summary }) {
             )
           : 0
       }%`,
-      helper: "Bekleyen / toplam satış",
+      helper: "Bekleyen oran",
     },
     {
       label: "Ürün Başına Satış",
@@ -29,21 +29,21 @@ export default function DashboardMetricsStrip({ summary }) {
           ? (summary.totalSalesCount / summary.totalProductsCount).toFixed(1)
           : "0.0"
       }`,
-      helper: "Satış / ürün oranı",
+      helper: "Satış / ürün",
     },
     {
-      label: "Kullanıcı Başına Satış",
+      label: "Kullanıcı Başına",
       value: `${
         summary.totalUsersCount
           ? (summary.totalSalesCount / summary.totalUsersCount).toFixed(1)
           : "0.0"
       }`,
-      helper: "Satış / kullanıcı oranı",
+      helper: "Satış / kullanıcı",
     },
   ];
 
   return (
-    <div className="dashboard-metrics-strip dashboard-metrics-strip--ultra">
+    <div className="dashboard-metrics-strip dashboard-metrics-strip--ultra dashboard-metrics-strip--premium">
       {items.map((item) => (
         <div key={item.label} className="dashboard-metrics-strip__item">
           <span>{item.label}</span>

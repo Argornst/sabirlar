@@ -1,31 +1,49 @@
 import { Link } from "react-router-dom";
-import Button from "../../../../shared/components/ui/Button";
 import { ROUTES } from "../../../../shared/constants/routes";
 
 export default function DashboardQuickActions() {
+  const actions = [
+    {
+      label: "Yeni Satış",
+      desc: "Hızlı satış oluştur",
+      to: ROUTES.NEW_SALE,
+      primary: true,
+    },
+    {
+      label: "Ürünler",
+      desc: "Ürünleri yönet",
+      to: ROUTES.PRODUCTS,
+    },
+    {
+      label: "Kullanıcılar",
+      desc: "Ekip yönetimi",
+      to: ROUTES.USERS,
+    },
+    {
+      label: "Raporlar",
+      desc: "Analizleri görüntüle",
+      to: ROUTES.REPORTS,
+    },
+  ];
+
   return (
-    <div className="dashboard-quick-actions">
-      <Link to={ROUTES.NEW_SALE}>
-        <Button className="dashboard-quick-actions__button">Yeni Satış</Button>
-      </Link>
+    <div className="dashboard-quick-actions dashboard-quick-actions--premium">
+      {actions.map((action) => (
+        <Link
+          key={action.label}
+          to={action.to}
+          className={`dashboard-action-card ${
+            action.primary ? "dashboard-action-card--primary" : ""
+          }`}
+        >
+          <div className="dashboard-action-card__content">
+            <strong>{action.label}</strong>
+            <span>{action.desc}</span>
+          </div>
 
-      <Link to={ROUTES.PRODUCTS}>
-        <Button variant="secondary" className="dashboard-quick-actions__button">
-          Ürünleri Yönet
-        </Button>
-      </Link>
-
-      <Link to={ROUTES.USERS}>
-        <Button variant="secondary" className="dashboard-quick-actions__button">
-          Kullanıcılar
-        </Button>
-      </Link>
-
-      <Link to={ROUTES.REPORTS}>
-        <Button variant="ghost" className="dashboard-quick-actions__button">
-          Raporları Aç
-        </Button>
-      </Link>
+          <span className="dashboard-action-card__arrow">→</span>
+        </Link>
+      ))}
     </div>
   );
 }

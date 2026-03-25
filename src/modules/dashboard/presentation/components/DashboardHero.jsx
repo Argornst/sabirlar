@@ -2,50 +2,69 @@ import { formatCurrency } from "../../../../shared/utils/currency";
 
 export default function DashboardHero({ summary }) {
   return (
-    <div className="dashboard-hero dashboard-hero--ultra">
+    <div className="dashboard-hero dashboard-hero--ultra dashboard-hero--premium">
       <div className="dashboard-hero__main">
-        <span className="dashboard-hero__eyebrow">Live Performance</span>
-        <h2>Satış operasyonlarının canlı özeti</h2>
+        <span className="dashboard-hero__eyebrow">
+          <span className="dashboard-hero__eyebrow-dot" />
+          Live Performance
+        </span>
+
+        <h2>
+          Satış operasyonlarının <span>canlı özeti</span>
+        </h2>
+
         <p>
-          Toplam ciro, aktif kullanıcı hacmi ve satış yoğunluğu bu panelde tek
-          bakışta okunur. Kritik metrikler, yoğunluk ve operasyon ritmi burada
-          öne çıkar.
+          Tüm satış akışı, kullanıcı yoğunluğu ve gelir performansı tek panelde
+          okunabilir hale getirildi. Kritik metrikler artık daha görünür ve
+          daha hızlı yorumlanabilir.
         </p>
 
         <div className="dashboard-hero__metrics">
-          <div className="dashboard-hero__metric dashboard-hero__metric--featured">
-            <span>Toplam Ciro</span>
-            <strong>{formatCurrency(summary.totalRevenue ?? 0, "TRY")}</strong>
-          </div>
+          <Metric
+            label="Toplam Ciro"
+            value={formatCurrency(summary.totalRevenue ?? 0, "TRY")}
+            featured
+          />
 
-          <div className="dashboard-hero__metric">
-            <span>Toplam Satış</span>
-            <strong>{summary.totalSalesCount ?? 0}</strong>
-          </div>
+          <Metric
+            label="Toplam Satış"
+            value={summary.totalSalesCount ?? 0}
+          />
 
-          <div className="dashboard-hero__metric">
-            <span>Bekleyen</span>
-            <strong>{summary.pendingSalesCount ?? 0}</strong>
-          </div>
+          <Metric
+            label="Bekleyen"
+            value={summary.pendingSalesCount ?? 0}
+          />
         </div>
       </div>
 
       <div className="dashboard-hero__side">
-        <div className="dashboard-hero__mini-card">
-          <span>Kullanıcılar</span>
-          <strong>{summary.totalUsersCount ?? 0}</strong>
-        </div>
-
-        <div className="dashboard-hero__mini-card">
-          <span>Ürünler</span>
-          <strong>{summary.totalProductsCount ?? 0}</strong>
-        </div>
-
-        <div className="dashboard-hero__mini-card">
-          <span>Ödenmiş Satış</span>
-          <strong>{summary.paidSalesCount ?? 0}</strong>
-        </div>
+        <MiniCard label="Kullanıcılar" value={summary.totalUsersCount ?? 0} />
+        <MiniCard label="Ürünler" value={summary.totalProductsCount ?? 0} />
+        <MiniCard label="Ödenmiş" value={summary.paidSalesCount ?? 0} />
       </div>
+    </div>
+  );
+}
+
+function Metric({ label, value, featured }) {
+  return (
+    <div
+      className={`dashboard-hero__metric ${
+        featured ? "dashboard-hero__metric--featured" : ""
+      }`}
+    >
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function MiniCard({ label, value }) {
+  return (
+    <div className="dashboard-hero__mini-card dashboard-hero__mini-card--premium">
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }

@@ -29,13 +29,18 @@ export default function DashboardStatusOverview({ summary }) {
   ];
 
   return (
-    <div className="dashboard-status-grid">
+    <div className="dashboard-status-grid dashboard-status-grid--premium">
       {items.map((item) => (
-        <div key={item.key} className="dashboard-status-card">
+        <div key={item.key} className="dashboard-status-card dashboard-status-card--premium">
           <div className="dashboard-status-card__top">
             <StatusBadge tone={item.tone}>{item.label}</StatusBadge>
           </div>
+
           <strong>{item.value}</strong>
+
+          <span className="dashboard-status-card__hint">
+            {item.label} durumu
+          </span>
         </div>
       ))}
     </div>
