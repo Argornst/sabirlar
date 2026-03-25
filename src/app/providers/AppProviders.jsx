@@ -29,12 +29,34 @@ export function useAuth() {
   return context;
 }
 
+function timeout(ms) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(null), ms);
+  });
+}
+
+async function getSessionSafely() {
+  try {
+    const result = await Promise.race([
+      authRepository.getSession(),
+      timeout(2500),
+    ]);
+
+    return result ?? null;
+  } catch (error) {
+    console.error("getSessionSafely error:", error);
+    return null;
+  }
+}
+
 export default function AppProviders({ children }) {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [activeOrganization, setActiveOrganization] = useState(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  const [isSessionReady, setIsSessionReady] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
 
   async function loadProfile(userId) {
     if (!userId) {
@@ -43,8 +65,19 @@ export default function AppProviders({ children }) {
       return null;
     }
 
+    setIsProfileLoading(true);
+
     try {
-      const nextProfile = await usersRepository.getProfileByUserId(userId);
+      const nextProfile = await Promise.race([
+        usersRepository.getProfileByUserId(userId),
+        timeout(2500),
+      ]);
+
+      if (!nextProfile) {
+        setProfile(null);
+        setActiveOrganization(null);
+        return null;
+      }
 
       setProfile(nextProfile);
       setActiveOrganization(
@@ -63,6 +96,8 @@ export default function AppProviders({ children }) {
       setProfile(null);
       setActiveOrganization(null);
       return null;
+    } finally {
+      setIsProfileLoading(false);
     }
   }
 
@@ -70,34 +105,19 @@ export default function AppProviders({ children }) {
     let mounted = true;
 
     async function bootstrap() {
-      setIsAuthLoading(true);
+      const currentSession = await getSessionSafely();
 
-      try {
-        const currentSession = await authRepository.getSession();
+      if (!mounted) return;
 
-        if (!mounted) return;
+      setSession(currentSession ?? null);
+      setUser(currentSession?.user ?? null);
+      setIsSessionReady(true);
 
-        setSession(currentSession ?? null);
-        setUser(currentSession?.user ?? null);
-
-        if (currentSession?.user?.id) {
-          await loadProfile(currentSession.user.id);
-        } else {
-          setProfile(null);
-          setActiveOrganization(null);
-        }
-      } catch (error) {
-        console.error("Auth bootstrap error:", error);
-
-        if (!mounted) return;
-        setSession(null);
-        setUser(null);
+      if (currentSession?.user?.id) {
+        await loadProfile(currentSession.user.id);
+      } else {
         setProfile(null);
         setActiveOrganization(null);
-      } finally {
-        if (mounted) {
-          setIsAuthLoading(false);
-        }
       }
     }
 
@@ -108,24 +128,15 @@ export default function AppProviders({ children }) {
     } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       if (!mounted) return;
 
-      try {
-        setSession(nextSession ?? null);
-        setUser(nextSession?.user ?? null);
+      setSession(nextSession ?? null);
+      setUser(nextSession?.user ?? null);
+      setIsSessionReady(true);
 
-        if (nextSession?.user?.id) {
-          await loadProfile(nextSession.user.id);
-        } else {
-          setProfile(null);
-          setActiveOrganization(null);
-        }
-      } catch (error) {
-        console.error("onAuthStateChange error:", error);
+      if (nextSession?.user?.id) {
+        await loadProfile(nextSession.user.id);
+      } else {
         setProfile(null);
         setActiveOrganization(null);
-      } finally {
-        if (mounted) {
-          setIsAuthLoading(false);
-        }
       }
     });
 
@@ -142,30 +153,25 @@ export default function AppProviders({ children }) {
       profile,
       activeOrganization,
       isAuthenticated: Boolean(session?.user),
-      isAuthLoading,
+      isAuthLoading: !isSessionReady,
+      isProfileLoading,
       refreshSession: async () => {
-        setIsAuthLoading(true);
+        setIsSessionReady(false);
 
-        try {
-          const currentSession = await authRepository.getSession();
+        const currentSession = await getSessionSafely();
 
-          setSession(currentSession ?? null);
-          setUser(currentSession?.user ?? null);
+        setSession(currentSession ?? null);
+        setUser(currentSession?.user ?? null);
+        setIsSessionReady(true);
 
-          if (currentSession?.user?.id) {
-            await loadProfile(currentSession.user.id);
-          } else {
-            setProfile(null);
-            setActiveOrganization(null);
-          }
-
-          return currentSession ?? null;
-        } catch (error) {
-          console.error("refreshSession error:", error);
-          return null;
-        } finally {
-          setIsAuthLoading(false);
+        if (currentSession?.user?.id) {
+          await loadProfile(currentSession.user.id);
+        } else {
+          setProfile(null);
+          setActiveOrganization(null);
         }
+
+        return currentSession ?? null;
       },
       signOut: async () => {
         await authRepository.signOut();
@@ -173,10 +179,11 @@ export default function AppProviders({ children }) {
         setUser(null);
         setProfile(null);
         setActiveOrganization(null);
-        setIsAuthLoading(false);
+        setIsSessionReady(true);
+        setIsProfileLoading(false);
       },
     }),
-    [session, user, profile, activeOrganization, isAuthLoading]
+    [session, user, profile, activeOrganization, isSessionReady, isProfileLoading]
   );
 
   return (
