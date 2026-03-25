@@ -11,5 +11,6 @@ export function useSalesListQuery() {
     queryFn: () => getSalesList({ salesRepository }),
     enabled: !isAuthLoading && isAuthenticated,
     retry: 0,
+    staleTime: 1000 * 60 * 2,
   });
 }

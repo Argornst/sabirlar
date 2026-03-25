@@ -18,24 +18,16 @@ const PRODUCTS_SELECT = buildSelect([
 
 export const productsRepository = {
   async getAll() {
-    console.log("[productsRepository.getAll] select:", PRODUCTS_SELECT);
-
     const { data, error } = await supabase
       .from(DB_TABLES.PRODUCTS)
       .select(PRODUCTS_SELECT)
       .order(PRODUCTS_COLUMNS.ID, { ascending: true });
 
-    console.log("[productsRepository.getAll] raw data:", data);
-    console.log("[productsRepository.getAll] raw error:", error);
-
     if (error) {
       throw new Error(error.message || "Ürünler alınamadı.");
     }
 
-    const normalized = safeArray(data).map(normalizeProduct);
-    console.log("[productsRepository.getAll] normalized:", normalized);
-
-    return normalized;
+    return safeArray(data).map(normalizeProduct);
   },
 
   async create(payload) {

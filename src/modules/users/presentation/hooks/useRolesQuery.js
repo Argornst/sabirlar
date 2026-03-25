@@ -10,5 +10,6 @@ export function useRolesQuery() {
     queryFn: () => usersRepository.listRoles(),
     enabled: !isAuthLoading && isAuthenticated,
     retry: 0,
+    staleTime: 1000 * 60 * 10,
   });
 }
