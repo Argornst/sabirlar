@@ -2,6 +2,8 @@ import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import AppShell from "../layouts/AppShell";
 import { useAuth } from "../providers/AppProviders";
 import { ROUTES } from "../../shared/constants/routes";
+import { AnimatePresence, motion } from "framer-motion";
+import { useLocation } from "react-router-dom";
 
 import LoginPage from "../../modules/auth/presentation/pages/LoginPage";
 import DashboardPage from "../../modules/dashboard/presentation/pages/DashboardPage";
@@ -48,24 +50,28 @@ function PublicOnlyRoute() {
 }
 
 export default function AppRouter() {
+  const location = useLocation();
+
   return (
-    <Routes>
-      <Route element={<PublicOnlyRoute />}>
-        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-      </Route>
-
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppShell />}>
-          <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
-          <Route path={ROUTES.SALES} element={<SalesPage />} />
-          <Route path={ROUTES.NEW_SALE} element={<NewSalePage />} />
-          <Route path={ROUTES.PRODUCTS} element={<ProductsPage />} />
-          <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
-          <Route path={ROUTES.USERS} element={<UsersPage />} />
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route element={<PublicOnlyRoute />}>
+          <Route path={ROUTES.LOGIN} element={<LoginPage />} />
         </Route>
-      </Route>
 
-      <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-    </Routes>
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppShell />}>
+            <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+            <Route path={ROUTES.SALES} element={<SalesPage />} />
+            <Route path={ROUTES.NEW_SALE} element={<NewSalePage />} />
+            <Route path={ROUTES.PRODUCTS} element={<ProductsPage />} />
+            <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
+            <Route path={ROUTES.USERS} element={<UsersPage />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+      </Routes>
+    </AnimatePresence>
   );
 }
