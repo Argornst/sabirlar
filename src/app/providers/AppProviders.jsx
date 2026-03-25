@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { authRepository } from "../../modules/auth/infrastructure/authRepository";
 import { usersRepository } from "../../modules/users/infrastructure/repositories/usersRepository";
 import { supabase } from "../../shared/lib/supabaseClient";
 
@@ -68,11 +69,39 @@ export default function AppProviders({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    const hardFallback = setTimeout(() => {
-      if (mounted) {
-        setIsAuthLoading(false);
+    async function bootstrap() {
+      setIsAuthLoading(true);
+
+      try {
+        const currentSession = await authRepository.getSession();
+
+        if (!mounted) return;
+
+        setSession(currentSession ?? null);
+        setUser(currentSession?.user ?? null);
+
+        if (currentSession?.user?.id) {
+          await loadProfile(currentSession.user.id);
+        } else {
+          setProfile(null);
+          setActiveOrganization(null);
+        }
+      } catch (error) {
+        console.error("Auth bootstrap error:", error);
+
+        if (!mounted) return;
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setActiveOrganization(null);
+      } finally {
+        if (mounted) {
+          setIsAuthLoading(false);
+        }
       }
-    }, 6000);
+    }
+
+    bootstrap();
 
     const {
       data: { subscription },
@@ -100,47 +129,8 @@ export default function AppProviders({ children }) {
       }
     });
 
-    async function bootstrap() {
-      try {
-        const {
-          data: { session: currentSession },
-          error,
-        } = await supabase.auth.getSession();
-
-        if (error) {
-          throw error;
-        }
-
-        if (!mounted) return;
-
-        setSession(currentSession ?? null);
-        setUser(currentSession?.user ?? null);
-
-        if (currentSession?.user?.id) {
-          await loadProfile(currentSession.user.id);
-        } else {
-          setProfile(null);
-          setActiveOrganization(null);
-        }
-      } catch (error) {
-        console.error("Auth bootstrap error:", error);
-        if (!mounted) return;
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setActiveOrganization(null);
-      } finally {
-        if (mounted) {
-          setIsAuthLoading(false);
-        }
-      }
-    }
-
-    bootstrap();
-
     return () => {
       mounted = false;
-      clearTimeout(hardFallback);
       subscription.unsubscribe();
     };
   }, []);
@@ -157,14 +147,7 @@ export default function AppProviders({ children }) {
         setIsAuthLoading(true);
 
         try {
-          const {
-            data: { session: currentSession },
-            error,
-          } = await supabase.auth.getSession();
-
-          if (error) {
-            throw error;
-          }
+          const currentSession = await authRepository.getSession();
 
           setSession(currentSession ?? null);
           setUser(currentSession?.user ?? null);
@@ -185,7 +168,7 @@ export default function AppProviders({ children }) {
         }
       },
       signOut: async () => {
-        await supabase.auth.signOut();
+        await authRepository.signOut();
         setSession(null);
         setUser(null);
         setProfile(null);

@@ -4,9 +4,9 @@ import AppPage from "../presentation/components/ui/AppPage";
 import PageHero from "../presentation/components/ui/PageHero";
 import PremiumStatsRow from "../presentation/components/ui/PremiumStatsRow";
 import SectionCard from "../presentation/components/ui/SectionCard";
-import { supabase } from "../infrastructure/supabase/client";
+import { supabase } from "../shared/lib/supabaseClient";
 import { useToast } from "../presentation/hooks/useToast";
-import { useAuth } from "../presentation/hooks/useAuth";
+import { useAuth } from "../providers/AppProviders";
 
 function formatMoney(value) {
   return new Intl.NumberFormat("tr-TR", {

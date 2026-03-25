@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../../app/providers/AppProviders";
+import { getSalesList } from "../../application/use-cases/getSalesList";
 import { salesRepository } from "../../infrastructure/repositories/salesRepository";
 
 export function useSalesListQuery() {
@@ -7,7 +8,7 @@ export function useSalesListQuery() {
 
   return useQuery({
     queryKey: ["sales"],
-    queryFn: () => salesRepository.getAll(),
+    queryFn: () => getSalesList({ salesRepository }),
     enabled: !isAuthLoading && isAuthenticated,
     retry: 0,
   });
