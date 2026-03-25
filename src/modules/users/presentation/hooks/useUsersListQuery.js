@@ -1,10 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { getUsersList } from "../../application/use-cases/getUsersList";
+import { useAuth } from "../../../../app/providers/AppProviders";
 import { usersRepository } from "../../infrastructure/repositories/usersRepository";
 
 export function useUsersListQuery() {
+  const { isAuthLoading, isAuthenticated } = useAuth();
+
   return useQuery({
     queryKey: ["users"],
-    queryFn: () => getUsersList({ usersRepository }),
+    queryFn: () => usersRepository.getAll(),
+    enabled: !isAuthLoading && isAuthenticated,
+    retry: 0,
   });
 }

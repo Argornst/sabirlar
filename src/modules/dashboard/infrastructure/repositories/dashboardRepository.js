@@ -1,54 +1,57 @@
-import { supabase } from "../../../../shared/lib/supabaseClient";
+import { productsRepository } from "../../../products/infrastructure/repositories/productsRepository";
+import { salesRepository } from "../../../sales/infrastructure/repositories/salesRepository";
+import { usersRepository } from "../../../users/infrastructure/repositories/usersRepository";
+
+function sumBy(list = [], selector) {
+  return list.reduce((total, item) => total + Number(selector(item) ?? 0), 0);
+}
 
 export const dashboardRepository = {
   async getSummary() {
-    try {
-      console.log("📊 dashboard summary (minimal)");
+    const [salesResult, productsResult, usersResult] = await Promise.allSettled([
+      salesRepository.getAll(),
+      productsRepository.getAll(),
+      usersRepository.getAll(),
+    ]);
 
-      // SADECE sales çek → diğerlerini geçici kaldır
-      const { data: sales, error } = await supabase
-        .from("sales")
-        .select("*");
+    const sales =
+      salesResult.status === "fulfilled" && Array.isArray(salesResult.value)
+        ? salesResult.value
+        : [];
 
-      if (error) {
-        console.error("sales error:", error);
-      }
+    const products =
+      productsResult.status === "fulfilled" && Array.isArray(productsResult.value)
+        ? productsResult.value
+        : [];
 
-      const safeSales = Array.isArray(sales) ? sales : [];
+    const users =
+      usersResult.status === "fulfilled" && Array.isArray(usersResult.value)
+        ? usersResult.value
+        : [];
 
-      const totalRevenue = safeSales.reduce(
-        (sum, s) => sum + Number(s.total_amount || 0),
-        0
-      );
+    const totalRevenue = sumBy(sales, (sale) => sale.totalAmount);
+    const totalSalesCount = sales.length;
+    const pendingSalesCount = sales.filter((sale) => sale.status === "beklemede").length;
+    const paidSalesCount = sales.filter(
+      (sale) => sale.status === "odendi" || sale.status === "odendi_faturalandi"
+    ).length;
 
-      return {
-        totalRevenue,
-        totalSalesCount: safeSales.length,
-        pendingSalesCount: safeSales.filter(
-          (s) => s.status === "beklemede"
-        ).length,
-        paidSalesCount: safeSales.filter(
-          (s) => s.status === "odendi"
-        ).length,
+    const recentSales = [...sales]
+      .sort((a, b) => {
+        const left = new Date(b.createdAt || b.saleDate || 0).getTime();
+        const right = new Date(a.createdAt || a.saleDate || 0).getTime();
+        return left - right;
+      })
+      .slice(0, 5);
 
-        // geçici sabit
-        totalUsersCount: 0,
-        totalProductsCount: 0,
-
-        recentSales: safeSales.slice(0, 5),
-      };
-    } catch (err) {
-      console.error("dashboard error:", err);
-
-      return {
-        totalRevenue: 0,
-        totalSalesCount: 0,
-        pendingSalesCount: 0,
-        paidSalesCount: 0,
-        totalUsersCount: 0,
-        totalProductsCount: 0,
-        recentSales: [],
-      };
-    }
+    return {
+      totalRevenue,
+      totalSalesCount,
+      pendingSalesCount,
+      paidSalesCount,
+      totalUsersCount: users.length,
+      totalProductsCount: products.length,
+      recentSales,
+    };
   },
 };

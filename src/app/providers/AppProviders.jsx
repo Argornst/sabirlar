@@ -1,8 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../../shared/constants/audit";
-import { logActivity } from "../../shared/lib/audit/logActivity";
-import { authRepository } from "../../modules/auth/infrastructure/authRepository";
 import { usersRepository } from "../../modules/users/infrastructure/repositories/usersRepository";
 import { supabase } from "../../shared/lib/supabaseClient";
 
@@ -12,7 +9,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 1,
+      retry: 0,
       staleTime: 1000 * 30,
     },
     mutations: {
@@ -37,7 +34,6 @@ export default function AppProviders({ children }) {
   const [profile, setProfile] = useState(null);
   const [activeOrganization, setActiveOrganization] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [authBootstrapError, setAuthBootstrapError] = useState("");
 
   async function loadProfile(userId) {
     if (!userId) {
@@ -72,12 +68,48 @@ export default function AppProviders({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    async function bootstrapAuth() {
-      setIsAuthLoading(true);
-      setAuthBootstrapError("");
+    const hardFallback = setTimeout(() => {
+      if (mounted) {
+        setIsAuthLoading(false);
+      }
+    }, 6000);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      if (!mounted) return;
 
       try {
-        const currentSession = await authRepository.getSession();
+        setSession(nextSession ?? null);
+        setUser(nextSession?.user ?? null);
+
+        if (nextSession?.user?.id) {
+          await loadProfile(nextSession.user.id);
+        } else {
+          setProfile(null);
+          setActiveOrganization(null);
+        }
+      } catch (error) {
+        console.error("onAuthStateChange error:", error);
+        setProfile(null);
+        setActiveOrganization(null);
+      } finally {
+        if (mounted) {
+          setIsAuthLoading(false);
+        }
+      }
+    });
+
+    async function bootstrap() {
+      try {
+        const {
+          data: { session: currentSession },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (error) {
+          throw error;
+        }
 
         if (!mounted) return;
 
@@ -92,16 +124,11 @@ export default function AppProviders({ children }) {
         }
       } catch (error) {
         console.error("Auth bootstrap error:", error);
-
-        if (mounted) {
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          setActiveOrganization(null);
-          setAuthBootstrapError(
-            error?.message || "Oturum başlatılırken beklenmeyen bir hata oluştu."
-          );
-        }
+        if (!mounted) return;
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setActiveOrganization(null);
       } finally {
         if (mounted) {
           setIsAuthLoading(false);
@@ -109,31 +136,11 @@ export default function AppProviders({ children }) {
       }
     }
 
-    bootstrapAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!mounted) return;
-
-      setSession(nextSession ?? null);
-      setUser(nextSession?.user ?? null);
-
-      if (nextSession?.user?.id) {
-        loadProfile(nextSession.user.id).finally(() => {
-          if (mounted) {
-            setIsAuthLoading(false);
-          }
-        });
-      } else {
-        setProfile(null);
-        setActiveOrganization(null);
-        setIsAuthLoading(false);
-      }
-    });
+    bootstrap();
 
     return () => {
       mounted = false;
+      clearTimeout(hardFallback);
       subscription.unsubscribe();
     };
   }, []);
@@ -146,11 +153,18 @@ export default function AppProviders({ children }) {
       activeOrganization,
       isAuthenticated: Boolean(session?.user),
       isAuthLoading,
-      authBootstrapError,
       refreshSession: async () => {
         setIsAuthLoading(true);
+
         try {
-          const currentSession = await authRepository.getSession();
+          const {
+            data: { session: currentSession },
+            error,
+          } = await supabase.auth.getSession();
+
+          if (error) {
+            throw error;
+          }
 
           setSession(currentSession ?? null);
           setUser(currentSession?.user ?? null);
@@ -162,24 +176,16 @@ export default function AppProviders({ children }) {
             setActiveOrganization(null);
           }
 
-          return currentSession;
+          return currentSession ?? null;
+        } catch (error) {
+          console.error("refreshSession error:", error);
+          return null;
         } finally {
           setIsAuthLoading(false);
         }
       },
       signOut: async () => {
-        try {
-          await logActivity({
-            action: AUDIT_ACTIONS.LOGOUT,
-            entityType: AUDIT_ENTITY_TYPES.AUTH,
-            actorUserId: user?.id ?? null,
-            actorEmail: user?.email ?? null,
-          });
-        } catch (error) {
-          console.error("Logout audit error:", error);
-        }
-
-        await authRepository.signOut();
+        await supabase.auth.signOut();
         setSession(null);
         setUser(null);
         setProfile(null);
@@ -187,7 +193,7 @@ export default function AppProviders({ children }) {
         setIsAuthLoading(false);
       },
     }),
-    [session, user, profile, activeOrganization, isAuthLoading, authBootstrapError]
+    [session, user, profile, activeOrganization, isAuthLoading]
   );
 
   return (

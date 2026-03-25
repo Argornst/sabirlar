@@ -20,24 +20,15 @@ const EMPTY_SUMMARY = {
   totalRevenue: 0,
   totalSalesCount: 0,
   pendingSalesCount: 0,
+  paidSalesCount: 0,
   totalUsersCount: 0,
   totalProductsCount: 0,
-  paidSalesCount: 0,
   recentSales: [],
 };
 
 export default function DashboardPage() {
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-  } = useDashboardSummaryQuery();
-
-  const {
-    data: logs = [],
-    isError: isAuditError,
-  } = useAuditLogsQuery();
+  const { data, isLoading, isError, error } = useDashboardSummaryQuery();
+  const { data: logs = [], isError: isAuditError } = useAuditLogsQuery();
 
   const summary = data ?? EMPTY_SUMMARY;
 
@@ -124,13 +115,6 @@ export default function DashboardPage() {
                 />
               )}
             </SectionCard>
-
-            {!data ? (
-              <ErrorState
-                title="Dashboard verisi boş döndü"
-                description="Query hata vermedi ama veri gelmedi. Büyük ihtimalle repository veya RLS tarafında eksik veri var."
-              />
-            ) : null}
           </div>
         ) : null}
       </Card>

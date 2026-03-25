@@ -1,101 +1,18 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { ROUTES } from "../../shared/constants/routes";
 import { PAGE_KEYS } from "../../shared/constants/permissions";
-import {
-  canAccessPage,
-  getFirstAccessibleRoute,
-} from "../../shared/lib/permissions";
-import {
-  getOrganizationDisplayName,
-  getOrganizationDisplaySubtitle,
-} from "../../shared/lib/tenant";
+import { getFirstAccessibleRoute } from "../../shared/lib/permissions";
+import { getOrganizationDisplayName } from "../../shared/lib/tenant";
 import { useAuth } from "../providers/AppProviders";
-
-function IconDashboard() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
-      <path d="M4 13h7V4H4v9Zm0 7h7v-5H4v5Zm9 0h7V11h-7v9Zm0-18v7h7V2h-7Z" />
-    </svg>
-  );
-}
-
-function IconSales() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
-      <path d="M4 19h16M7 16l3-4 3 2 4-6" />
-    </svg>
-  );
-}
-
-function IconNewSale() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function IconProducts() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
-      <path d="M12 3 4 7l8 4 8-4-8-4ZM4 12l8 4 8-4M4 17l8 4 8-4" />
-    </svg>
-  );
-}
-
-function IconReports() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
-      <path d="M5 19V9M12 19V5M19 19v-8" />
-    </svg>
-  );
-}
-
-function IconUsers() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="nav-icon">
-      <path d="M16 19a4 4 0 0 0-8 0M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8 7a4 4 0 0 0-3-3.87M17 4.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
+import { canAccessPage } from "../../shared/lib/permissions";
 
 const navigationItems = [
-  {
-    label: "Dashboard",
-    path: ROUTES.DASHBOARD,
-    pageKey: PAGE_KEYS.DASHBOARD,
-    icon: <IconDashboard />,
-  },
-  {
-    label: "Sales",
-    path: ROUTES.SALES,
-    pageKey: PAGE_KEYS.SALES,
-    icon: <IconSales />,
-  },
-  {
-    label: "New Sale",
-    path: ROUTES.NEW_SALE,
-    pageKey: PAGE_KEYS.NEW_SALE,
-    icon: <IconNewSale />,
-  },
-  {
-    label: "Products",
-    path: ROUTES.PRODUCTS,
-    pageKey: PAGE_KEYS.PRODUCTS,
-    icon: <IconProducts />,
-  },
-  {
-    label: "Reports",
-    path: ROUTES.REPORTS,
-    pageKey: PAGE_KEYS.REPORTS,
-    icon: <IconReports />,
-  },
-  {
-    label: "Users",
-    path: ROUTES.USERS,
-    pageKey: PAGE_KEYS.USERS,
-    icon: <IconUsers />,
-  },
+  { label: "Dashboard", path: ROUTES.DASHBOARD, pageKey: PAGE_KEYS.DASHBOARD },
+  { label: "Sales", path: ROUTES.SALES, pageKey: PAGE_KEYS.SALES },
+  { label: "New Sale", path: ROUTES.NEW_SALE, pageKey: PAGE_KEYS.NEW_SALE },
+  { label: "Products", path: ROUTES.PRODUCTS, pageKey: PAGE_KEYS.PRODUCTS },
+  { label: "Reports", path: ROUTES.REPORTS, pageKey: PAGE_KEYS.REPORTS },
+  { label: "Users", path: ROUTES.USERS, pageKey: PAGE_KEYS.USERS },
 ];
 
 function getPageTitle(pathname) {
@@ -107,11 +24,17 @@ export default function AppShell() {
   const { user, profile, activeOrganization, signOut } = useAuth();
   const location = useLocation();
 
-  const visibleNavigationItems = navigationItems.filter((item) =>
-    canAccessPage(profile, item.pageKey)
-  );
+const visibleNavigationItems =
+  profile == null
+    ? navigationItems
+    : navigationItems.filter((item) =>
+        canAccessPage(profile, item.pageKey)
+      );
 
   const fallbackRoute = getFirstAccessibleRoute(profile, ROUTES);
+  const displayName = profile?.fullName || user?.email || "Bilinmeyen kullanıcı";
+  const roleName = profile?.roleName || "Kullanıcı";
+  const organizationName = getOrganizationDisplayName(activeOrganization, profile);
 
   async function handleSignOut() {
     try {
@@ -121,100 +44,130 @@ export default function AppShell() {
     }
   }
 
-  const displayName = profile?.fullName || user?.email || "Bilinmeyen kullanıcı";
-  const roleName = profile?.roleName || "Kullanıcı";
-  const avatarLetter = displayName.slice(0, 1).toUpperCase();
-  const organizationName = getOrganizationDisplayName(activeOrganization, profile);
-  const organizationSubtitle = getOrganizationDisplaySubtitle(
-    activeOrganization,
-    profile
-  );
-
   return (
-    <div className="app-shell app-shell--ultra">
-      <aside className="sidebar sidebar--ultra">
-        <div className="sidebar__ambient sidebar__ambient--one" />
-        <div className="sidebar__ambient sidebar__ambient--two" />
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "280px 1fr",
+        minHeight: "100vh",
+        background: "#07101d",
+        color: "#ecf2ff",
+      }}
+    >
+      <aside
+        style={{
+          borderRight: "1px solid rgba(255,255,255,0.08)",
+          padding: "20px",
+          background: "#0a1426",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+        }}
+      >
+        <div
+          style={{
+            padding: "16px",
+            borderRadius: "18px",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <div style={{ fontSize: "20px", fontWeight: 800 }}>Sabırlar</div>
+          <div style={{ marginTop: "6px", color: "#90a0be", fontSize: "14px" }}>
+            {organizationName}
+          </div>
+        </div>
 
-        <div className="sidebar__inner">
-          <div className="sidebar__top">
-            <div className="sidebar__brand sidebar__brand--ultra">
-              <div className="sidebar__logo sidebar__logo--ultra">S</div>
+        <div style={{ color: "#90a0be", fontSize: "12px", fontWeight: 700 }}>
+          Navigation
+        </div>
 
-              <div className="sidebar__brand-text">
-                <h1>Sabırlar</h1>
-                <p>{organizationName}</p>
-              </div>
+        <nav style={{ display: "grid", gap: "8px" }}>
+          {visibleNavigationItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              style={({ isActive }) => ({
+                display: "block",
+                padding: "12px 14px",
+                borderRadius: "12px",
+                background: isActive ? "rgba(59,130,246,0.18)" : "transparent",
+                border: isActive
+                  ? "1px solid rgba(96,165,250,0.24)"
+                  : "1px solid transparent",
+                color: "#ecf2ff",
+              })}
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div style={{ marginTop: "auto", display: "grid", gap: "12px" }}>
+          <div
+            style={{
+              padding: "14px",
+              borderRadius: "14px",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <div style={{ fontWeight: 700 }}>{displayName}</div>
+            <div style={{ marginTop: "4px", color: "#90a0be", fontSize: "13px" }}>
+              {roleName}
             </div>
-
-            <div className="sidebar__workspace-card">
-              <span className="sidebar__workspace-label">Workspace</span>
-              <strong>{organizationName}</strong>
-              <small>{organizationSubtitle}</small>
-            </div>
-
-            <div className="sidebar__section-label">Navigation</div>
-
-            <nav className="sidebar__nav">
-              {visibleNavigationItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    isActive
-                      ? "sidebar__link sidebar__link--active"
-                      : "sidebar__link"
-                  }
-                >
-                  <span className="sidebar__link-icon">{item.icon}</span>
-                  <span className="sidebar__link-label">{item.label}</span>
-                </NavLink>
-              ))}
-            </nav>
           </div>
 
-          <div className="sidebar__footer">
-            <div className="sidebar__user-card sidebar__user-card--ultra">
-              <div className="sidebar__user-avatar sidebar__user-avatar--ultra">
-                {avatarLetter}
-              </div>
+          {!visibleNavigationItems.length ? (
+            <NavLink
+              to={fallbackRoute}
+              style={{
+                display: "block",
+                padding: "12px 14px",
+                borderRadius: "12px",
+                background: "rgba(59,130,246,0.18)",
+                border: "1px solid rgba(96,165,250,0.24)",
+                color: "#ecf2ff",
+              }}
+            >
+              Uygulamaya Dön
+            </NavLink>
+          ) : null}
 
-              <div className="sidebar__user-meta">
-                <strong>{displayName}</strong>
-                <span>{roleName}</span>
-              </div>
-            </div>
-
-            {!visibleNavigationItems.length ? (
-              <NavLink
-                to={fallbackRoute}
-                className="sidebar__link sidebar__link--active"
-              >
-                <span className="sidebar__link-label">Uygulamaya Dön</span>
-              </NavLink>
-            ) : null}
-
-            <button type="button" className="danger-button" onClick={handleSignOut}>
-              Çıkış Yap
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            style={{
+              minHeight: "44px",
+              borderRadius: "12px",
+              border: "none",
+              background: "linear-gradient(135deg, #ef4444, #f87171)",
+              color: "white",
+              fontWeight: 700,
+            }}
+          >
+            Çıkış Yap
+          </button>
         </div>
       </aside>
 
-      <div className="content-area content-area--ultra">
-        <header className="topbar topbar--ultra">
-          <div className="topbar__left">
-            <h2>{getPageTitle(location.pathname)}</h2>
-            <p>{organizationName} paneli</p>
+      <div style={{ minWidth: 0 }}>
+        <header
+          style={{
+            padding: "20px 28px",
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            background: "#0b1424",
+          }}
+        >
+          <div style={{ fontSize: "28px", fontWeight: 800 }}>
+            {getPageTitle(location.pathname)}
           </div>
-
-          <div className="topbar__right">
-            <div className="topbar__organization-chip">{organizationName}</div>
-            <div className="topbar__pill topbar__pill--ultra">{roleName}</div>
+          <div style={{ marginTop: "8px", color: "#90a0be", fontSize: "14px" }}>
+            {organizationName} paneli
           </div>
         </header>
 
-        <main className="page-content page-content--ultra">
+        <main style={{ padding: "28px" }}>
           <Outlet />
         </main>
       </div>

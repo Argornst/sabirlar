@@ -1,9 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { organizationsRepository } from "../../infrastructure/repositories/organizationsRepository";
+import { useAuth } from "../../../../app/providers/AppProviders";
+import { usersRepository } from "../../../users/infrastructure/repositories/usersRepository";
 
 export function useOrganizationsListQuery() {
+  const { isAuthLoading, isAuthenticated } = useAuth();
+
   return useQuery({
-    queryKey: ["organizations-list"],
-    queryFn: () => organizationsRepository.getAll(),
+    queryKey: ["organizations"],
+    queryFn: () => usersRepository.listOrganizations(),
+    enabled: !isAuthLoading && isAuthenticated,
+    retry: 0,
   });
 }

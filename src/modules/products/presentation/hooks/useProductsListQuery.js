@@ -1,10 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { getProductsList } from "../../application/use-cases/getProductsList";
+import { useAuth } from "../../../../app/providers/AppProviders";
 import { productsRepository } from "../../infrastructure/repositories/productsRepository";
 
 export function useProductsListQuery() {
+  const { isAuthLoading, isAuthenticated } = useAuth();
+
   return useQuery({
     queryKey: ["products"],
-    queryFn: () => getProductsList({ productsRepository }),
+    queryFn: () => productsRepository.getAll(),
+    enabled: !isAuthLoading && isAuthenticated,
+    retry: 0,
   });
 }

@@ -1620,6 +1620,7 @@ input[type="number"]::-webkit-inner-spin-button {
   .data-table {
     min-width: 760px;
   }
+}
   /* =========================
    STEP 36 - ULTRA PREMIUM
    ========================= */
@@ -1937,5 +1938,4 @@ input[type="number"]::-webkit-inner-spin-button {
   .reports-hero--ultra .reports-hero__content h2 {
     font-size: 34px;
   }
-}
 }

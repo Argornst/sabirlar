@@ -28,16 +28,24 @@ const SALES_SELECT = buildSelect([
 
 export const salesRepository = {
   async getAll() {
+    console.log("[salesRepository.getAll] select:", SALES_SELECT);
+
     const { data, error } = await supabase
       .from(DB_TABLES.SALES)
       .select(SALES_SELECT)
       .order(SALES_COLUMNS.ID, { ascending: false });
 
+    console.log("[salesRepository.getAll] raw data:", data);
+    console.log("[salesRepository.getAll] raw error:", error);
+
     if (error) {
       throw new Error(error.message || "Satışlar alınamadı.");
     }
 
-    return safeArray(data).map(normalizeSale);
+    const normalized = safeArray(data).map(normalizeSale);
+    console.log("[salesRepository.getAll] normalized:", normalized);
+
+    return normalized;
   },
 
   async create(payload) {

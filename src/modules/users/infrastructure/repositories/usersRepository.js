@@ -38,16 +38,24 @@ export const usersRepository = {
   },
 
   async getAll() {
+    console.log("[usersRepository.getAll] select:", USERS_SELECT);
+
     const { data, error } = await supabase
       .from(DB_TABLES.USERS)
       .select(USERS_SELECT)
       .order(USERS_COLUMNS.CREATED_AT, { ascending: false });
 
+    console.log("[usersRepository.getAll] raw data:", data);
+    console.log("[usersRepository.getAll] raw error:", error);
+
     if (error) {
       throw new Error(error.message || "Kullanıcılar alınamadı.");
     }
 
-    return safeArray(data).map(normalizeUser);
+    const normalized = safeArray(data).map(normalizeUser);
+    console.log("[usersRepository.getAll] normalized:", normalized);
+
+    return normalized;
   },
 
   async listRoles() {

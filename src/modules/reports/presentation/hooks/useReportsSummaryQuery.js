@@ -1,17 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { getReportsSummary } from "../../application/use-cases/getReportsSummary";
-import { salesRepository } from "../../../sales/infrastructure/repositories/salesRepository";
-import { productsRepository } from "../../../products/infrastructure/repositories/productsRepository";
-import { usersRepository } from "../../../users/infrastructure/repositories/usersRepository";
+import { useAuth } from "../../../../app/providers/AppProviders";
 
 export function useReportsSummaryQuery() {
+  const { isAuthLoading, isAuthenticated } = useAuth();
+
   return useQuery({
     queryKey: ["reports-summary"],
-    queryFn: () =>
-      getReportsSummary({
-        salesRepository,
-        productsRepository,
-        usersRepository,
-      }),
+    queryFn: async () => {
+      // geçici boş veri
+      return {
+        totalSales: 0,
+        totalRevenue: 0,
+        totalProducts: 0,
+        totalUsers: 0,
+      };
+    },
+    enabled: !isAuthLoading && isAuthenticated,
+    retry: 0,
   });
 }
