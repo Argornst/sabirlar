@@ -3551,3 +3551,218 @@ input[type="number"]::-webkit-inner-spin-button {
     rgba(248, 250, 252, 0.86)
   );
 }
+/* ===== SNAPPY UI PATCH ===== */
+
+/* global interaction speed */
+.sidebar__link,
+.ui-button,
+.command-palette__item,
+.command-palette__item-icon,
+.scroll-to-top,
+.topbar,
+.topbar--soft,
+.ui-card,
+.ui-section-card,
+.sales-record-card,
+.dashboard-highlight-card,
+.dashboard-status-card,
+.dashboard-metrics-strip__item,
+.ui-stat-card {
+  transition-duration: 0.14s !important;
+  transition-timing-function: ease-out !important;
+}
+
+/* slightly reduce expensive blur usage */
+.topbar,
+.topbar--ultra,
+.topbar--soft,
+.sidebar__header-card,
+.sidebar__brand,
+.sidebar__workspace-card,
+.sidebar__user-card,
+.command-palette,
+.scroll-to-top,
+.ui-section-card,
+.sales-record-card,
+.dashboard-highlight-card,
+.dashboard-status-card,
+.dashboard-metrics-strip__item,
+.ui-stat-card {
+  backdrop-filter: blur(10px);
+}
+
+/* lighter shadows for better perceived performance */
+.topbar--soft {
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.1),
+    0 6px 18px rgba(59, 130, 246, 0.04),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.ui-card,
+.ui-section-card,
+.sales-record-card,
+.dashboard-highlight-card,
+.dashboard-status-card,
+.dashboard-metrics-strip__item,
+.ui-stat-card,
+.command-palette {
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* reduce hover travel distance */
+.sidebar__link:hover {
+  transform: translateX(1px);
+}
+
+.ui-card:hover,
+.ui-section-card:hover,
+.sales-record-card:hover,
+.dashboard-highlight-card:hover,
+.dashboard-status-card:hover,
+.dashboard-metrics-strip__item:hover,
+.ui-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 16px 30px rgba(0, 0, 0, 0.18),
+    0 0 18px rgba(59, 130, 246, 0.04);
+}
+
+/* command palette should feel crisp, not floaty */
+.command-palette::before {
+  opacity: 0.55;
+  filter: blur(18px);
+}
+
+.command-palette__results {
+  padding: 8px;
+}
+
+.command-palette__item {
+  transform: none;
+}
+
+.command-palette__item:hover,
+.command-palette__item--active {
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.12),
+    0 0 10px rgba(59, 130, 246, 0.05);
+}
+
+.command-palette__item-icon {
+  transform: none;
+}
+
+.command-palette__item:hover .command-palette__item-icon,
+.command-palette__item--active .command-palette__item-icon {
+  transform: scale(1.03);
+  box-shadow:
+    0 0 10px rgba(59, 130, 246, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* footer stays clean */
+.command-palette__footer::before {
+  opacity: 0.45;
+}
+
+/* scroll button should pop fast */
+.scroll-to-top:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 18px 32px rgba(0, 0, 0, 0.22),
+    0 0 18px rgba(59, 130, 246, 0.14);
+}
+
+/* light theme optimization */
+:root[data-theme="light"] .topbar--soft {
+  box-shadow:
+    0 10px 20px rgba(15, 23, 42, 0.07),
+    0 6px 16px rgba(37, 99, 235, 0.04),
+    inset 0 -1px 0 rgba(15, 23, 42, 0.04);
+}
+
+:root[data-theme="light"] .ui-card,
+:root[data-theme="light"] .ui-section-card,
+:root[data-theme="light"] .sales-record-card,
+:root[data-theme="light"] .dashboard-highlight-card,
+:root[data-theme="light"] .dashboard-status-card,
+:root[data-theme="light"] .dashboard-metrics-strip__item,
+:root[data-theme="light"] .ui-stat-card,
+:root[data-theme="light"] .command-palette {
+  box-shadow:
+    0 10px 22px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:root[data-theme="light"] .command-palette::before {
+  opacity: 0.45;
+  filter: blur(16px);
+}
+
+:root[data-theme="light"] .command-palette__item:hover,
+:root[data-theme="light"] .command-palette__item--active {
+  box-shadow:
+    0 8px 14px rgba(15, 23, 42, 0.06),
+    0 0 8px rgba(37, 99, 235, 0.05);
+}
+/* ===== REDUCED MOTION MODE ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .command-palette,
+  .command-palette__item,
+  .command-palette__item-icon,
+  .scroll-to-top,
+  .sidebar__link,
+  .ui-card,
+  .ui-section-card,
+  .sales-record-card,
+  .dashboard-highlight-card,
+  .dashboard-status-card,
+  .dashboard-metrics-strip__item,
+  .ui-stat-card {
+    transform: none !important;
+  }
+
+  .command-palette::before,
+  .topbar--soft::after,
+  .scroll-to-top,
+  .sidebar__background-glow,
+  .sidebar__ambient,
+  .ui-stat-card__glow,
+  .sales-record-card__glow,
+  .ui-section-card__glow {
+    filter: none !important;
+  }
+
+  .command-palette__item:hover,
+  .command-palette__item--active,
+  .ui-card:hover,
+  .ui-section-card:hover,
+  .sales-record-card:hover,
+  .dashboard-highlight-card:hover,
+  .dashboard-status-card:hover,
+  .dashboard-metrics-strip__item:hover,
+  .ui-stat-card:hover,
+  .scroll-to-top:hover,
+  .sidebar__link:hover {
+    transform: none !important;
+  }
+}

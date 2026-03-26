@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+} from "framer-motion";
 import { ROUTES } from "../../shared/constants/routes";
 import { PAGE_KEYS } from "../../shared/constants/permissions";
 import {
@@ -210,6 +214,7 @@ export default function AppShell() {
   const { profile, activeOrganization, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const prefersReducedMotion = useReducedMotion();
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -344,10 +349,10 @@ export default function AppShell() {
 
     const timeoutId = window.setTimeout(() => {
       paletteInputRef.current?.focus();
-    }, 10);
+    }, prefersReducedMotion ? 0 : 10);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isPaletteOpen]);
+  }, [isPaletteOpen, prefersReducedMotion]);
 
   const fallbackRoute = getFirstAccessibleRoute(profile, ROUTES);
 
@@ -379,7 +384,7 @@ export default function AppShell() {
   function scrollToTop() {
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
+      behavior: prefersReducedMotion ? "auto" : "smooth",
     });
   }
 
@@ -409,6 +414,62 @@ export default function AppShell() {
       closePalette();
     }
   }
+
+  const pageTransitionProps = prefersReducedMotion
+    ? {
+        initial: { opacity: 1, y: 0 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 1, y: 0 },
+        transition: { duration: 0 },
+      }
+    : {
+        initial: { opacity: 0, y: 12 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -8 },
+        transition: { duration: 0.18, ease: "easeOut" },
+      };
+
+  const scrollButtonTransitionProps = prefersReducedMotion
+    ? {
+        initial: { opacity: 1, y: 0, scale: 1 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 1, y: 0, scale: 1 },
+        transition: { duration: 0 },
+      }
+    : {
+        initial: { opacity: 0, y: 12, scale: 0.92 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: 12, scale: 0.92 },
+        transition: { duration: 0.14, ease: "easeOut" },
+      };
+
+  const paletteBackdropTransitionProps = prefersReducedMotion
+    ? {
+        initial: { opacity: 1 },
+        animate: { opacity: 1 },
+        exit: { opacity: 1 },
+        transition: { duration: 0 },
+      }
+    : {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.12, ease: "easeOut" },
+      };
+
+  const palettePanelTransitionProps = prefersReducedMotion
+    ? {
+        initial: { opacity: 1, y: 0, scale: 1 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 1, y: 0, scale: 1 },
+        transition: { duration: 0 },
+      }
+    : {
+        initial: { opacity: 0, y: 10, scale: 0.985 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: 8, scale: 0.985 },
+        transition: { duration: 0.14, ease: "easeOut" },
+      };
 
   let runningIndex = -1;
 
@@ -577,13 +638,7 @@ export default function AppShell() {
         </header>
 
         <main className="page-content page-content--ultra">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.28 }}
-          >
+          <motion.div key={location.pathname} {...pageTransitionProps}>
             <Outlet />
           </motion.div>
         </main>
@@ -594,10 +649,7 @@ export default function AppShell() {
               type="button"
               className="scroll-to-top"
               onClick={scrollToTop}
-              initial={{ opacity: 0, y: 12, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.92 }}
-              transition={{ duration: 0.2 }}
+              {...scrollButtonTransitionProps}
               title="Yukarı çık"
               aria-label="Sayfanın en üstüne çık"
             >
@@ -610,17 +662,12 @@ export default function AppShell() {
           {isPaletteOpen ? (
             <motion.div
               className="command-palette-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              {...paletteBackdropTransitionProps}
               onClick={closePalette}
             >
               <motion.div
                 className="command-palette"
-                initial={{ opacity: 0, y: 20, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 16, scale: 0.97 }}
-                transition={{ duration: 0.18 }}
+                {...palettePanelTransitionProps}
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="command-palette__header">
@@ -646,10 +693,7 @@ export default function AppShell() {
                 <div className="command-palette__results">
                   {groupedPaletteResults.length ? (
                     groupedPaletteResults.map((group) => (
-                      <div
-                        key={group.label}
-                        className="command-palette__group"
-                      >
+                      <div key={group.label} className="command-palette__group">
                         <div className="command-palette__group-label">
                           {group.label}
                         </div>
@@ -692,14 +736,6 @@ export default function AppShell() {
                               </button>
                             );
                           })}
-                          <div className="command-palette__footer">
-  <div className="command-palette__shortcuts">
-    <span><kbd>↑</kbd><kbd>↓</kbd> gezin</span>
-    <span><kbd>Enter</kbd> seç</span>
-    <span><kbd>Esc</kbd> kapat</span>
-    <span><kbd>Ctrl</kbd><kbd>K</kbd> aç</span>
-  </div>
-</div>
                         </div>
                       </div>
                     ))
@@ -708,6 +744,29 @@ export default function AppShell() {
                       Sonuç bulunamadı
                     </div>
                   )}
+                </div>
+
+                <div className="command-palette__footer">
+                  <div className="command-palette__shortcuts">
+                    <span>
+                      <kbd>↑</kbd>
+                      <kbd>↓</kbd>
+                      gezin
+                    </span>
+                    <span>
+                      <kbd>Enter</kbd>
+                      seç
+                    </span>
+                    <span>
+                      <kbd>Esc</kbd>
+                      kapat
+                    </span>
+                    <span>
+                      <kbd>Ctrl</kbd>
+                      <kbd>K</kbd>
+                      aç
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
