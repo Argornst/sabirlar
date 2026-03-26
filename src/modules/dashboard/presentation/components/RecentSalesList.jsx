@@ -15,11 +15,11 @@ export default function RecentSalesList({ sales = [] }) {
   }
 
   return (
-    <div className="table-wrap table-wrap--premium">
-      <table className="data-table data-table--premium">
+    <div className="table-wrap table-wrap--premium table-wrap--ultra">
+      <table className="data-table data-table--premium data-table--ultra">
         <thead>
           <tr>
-            <th>ID</th>
+            <th>#</th>
             <th>Tarih</th>
             <th>Müşteri</th>
             <th>Toplam</th>
@@ -30,10 +30,20 @@ export default function RecentSalesList({ sales = [] }) {
         <tbody>
           {sales.map((sale) => (
             <tr key={sale.id}>
-              <td>{sale.id}</td>
-              <td>{formatDateTime(sale.saleDate)}</td>
-              <td>{sale.customerName}</td>
-              <td>{formatCurrency(sale.totalAmount, "TRY")}</td>
+              <td className="data-table__id">#{sale.id}</td>
+
+              <td className="data-table__date">
+                {formatDateTime(sale.saleDate)}
+              </td>
+
+              <td className="data-table__customer">
+                {sale.customerName}
+              </td>
+
+              <td className="data-table__amount">
+                {formatCurrency(sale.totalAmount, "TRY")}
+              </td>
+
               <td>
                 <StatusBadge tone={getTone(sale.status)}>
                   {sale.status}

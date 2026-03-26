@@ -1,19 +1,29 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function StatCard({ label, value, helper = null }) {
+  const prefersReducedMotion = useReducedMotion();
+
+  const hoverProps = prefersReducedMotion
+    ? {}
+    : {
+        whileHover: { y: -2, scale: 1.008 },
+        transition: { duration: 0.14, ease: "easeOut" },
+      };
+
   return (
     <motion.div
       className="ui-stat-card ui-stat-card--premium"
-      whileHover={{ y: -6, scale: 1.02 }}
-      transition={{ duration: 0.2 }}
+      {...hoverProps}
     >
       <div className="ui-stat-card__glow" />
 
-      <span className="ui-stat-card__label">{label}</span>
+      <div className="ui-stat-card__top">
+        <span className="ui-stat-card__label">{label}</span>
+      </div>
 
       <strong className="ui-stat-card__value">{value}</strong>
 
-      {helper && <span className="ui-stat-card__helper">{helper}</span>}
+      {helper ? <span className="ui-stat-card__helper">{helper}</span> : null}
     </motion.div>
   );
 }

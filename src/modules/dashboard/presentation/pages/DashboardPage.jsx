@@ -5,6 +5,7 @@ import SectionCard from "../../../../shared/components/ui/SectionCard";
 import EmptyState from "../../../../shared/components/ui/EmptyState";
 import ErrorState from "../../../../shared/components/ui/ErrorState";
 import LoadingState from "../../../../shared/components/ui/LoadingState";
+
 import DashboardStats from "../components/DashboardStats";
 import DashboardQuickActions from "../components/DashboardQuickActions";
 import DashboardStatusOverview from "../components/DashboardStatusOverview";
@@ -13,8 +14,13 @@ import DashboardHero from "../components/DashboardHero";
 import DashboardMetricsStrip from "../components/DashboardMetricsStrip";
 import RecentActivityFeed from "../components/RecentActivityFeed";
 import RecentSalesList from "../components/RecentSalesList";
+
 import { useAuditLogsQuery } from "../hooks/useAuditLogsQuery";
 import { useDashboardSummaryQuery } from "../hooks/useDashboardSummaryQuery";
+
+const ENABLE_HERO = false;
+const ENABLE_ADVANCED_METRICS = false;
+const ENABLE_ACTIVITY_FEED = false;
 
 const EMPTY_SUMMARY = {
   totalRevenue: 0,
@@ -37,73 +43,44 @@ export default function DashboardPage() {
       <Card>
         <PageHeader
           title="Dashboard"
-          description="Genel performans, hızlı aksiyonlar ve son satış hareketleri."
+          description="Temel durum, hızlı aksiyonlar ve son satış kayıtları."
           badge="Genel Bakış"
         />
 
-        {isLoading ? (
+        {isLoading && (
           <LoadingState
             title="Dashboard yükleniyor"
-            description="Özet metrikler hazırlanıyor."
+            description="Özet veriler hazırlanıyor."
           />
-        ) : null}
+        )}
 
-        {isError ? (
+        {isError && (
           <ErrorState
             title="Dashboard verileri alınamadı"
             description={error?.message || "Bir hata oluştu."}
           />
-        ) : null}
+        )}
 
-        {!isLoading && !isError ? (
-          <div className="content-stack">
-            <DashboardHero summary={summary} />
-            <DashboardMetricsStrip summary={summary} />
-
-            <SectionCard
-              title="Hızlı Aksiyonlar"
-              description="Panel içinde sık kullanılan işlemlere kısa erişim"
-            >
-              <DashboardQuickActions />
-            </SectionCard>
+        {!isLoading && !isError && (
+          <div className="dashboard-layout">
+            {ENABLE_HERO && <DashboardHero summary={summary} />}
 
             <SectionCard
-              title="Öne Çıkan Metrikler"
-              description="En önemli genel performans göstergeleri"
-            >
-              <DashboardHighlights summary={summary} />
-            </SectionCard>
-
-            <SectionCard
-              title="Genel Özet"
-              description="Satış, ürün, kullanıcı ve ciro metrikleri"
-            >
-              <DashboardStats summary={summary} />
-            </SectionCard>
-
-            <SectionCard
-              title="Durum Özeti"
-              description="Kritik sayıların kısa görünümü"
+              title="Durum"
+              description="Sistemin temel görünümü"
             >
               <DashboardStatusOverview summary={summary} />
             </SectionCard>
 
             <SectionCard
-              title="Son Aktiviteler"
-              description="Panelde gerçekleşen son işlemler"
+              title="Hızlı Aksiyonlar"
+              description="Panel içinde sık kullanılan işlemler"
             >
-              {isAuditError ? (
-                <ErrorState
-                  title="Aktivite akışı alınamadı"
-                  description="Audit log verileri şu anda yüklenemiyor."
-                />
-              ) : (
-                <RecentActivityFeed logs={logs} />
-              )}
+              <DashboardQuickActions />
             </SectionCard>
 
             <SectionCard
-              title="Son Satış Hareketleri"
+              title="Son Satışlar"
               description="En son eklenen satış kayıtları"
             >
               {summary.recentSales?.length ? (
@@ -115,8 +92,46 @@ export default function DashboardPage() {
                 />
               )}
             </SectionCard>
+
+            {ENABLE_ADVANCED_METRICS && (
+              <>
+                <DashboardMetricsStrip summary={summary} />
+
+                <div className="dashboard-grid-2">
+                  <SectionCard
+                    title="Öne Çıkan Metrikler"
+                    description="Genel performans göstergeleri"
+                  >
+                    <DashboardHighlights summary={summary} />
+                  </SectionCard>
+
+                  <SectionCard
+                    title="Genel Özet"
+                    description="Satış, ürün, kullanıcı ve ciro metrikleri"
+                  >
+                    <DashboardStats summary={summary} />
+                  </SectionCard>
+                </div>
+              </>
+            )}
+
+            {ENABLE_ACTIVITY_FEED && (
+              <SectionCard
+                title="Son Aktiviteler"
+                description="Panelde gerçekleşen son işlemler"
+              >
+                {isAuditError ? (
+                  <ErrorState
+                    title="Aktivite akışı alınamadı"
+                    description="Audit log verileri şu anda yüklenemiyor."
+                  />
+                ) : (
+                  <RecentActivityFeed logs={logs} />
+                )}
+              </SectionCard>
+            )}
           </div>
-        ) : null}
+        )}
       </Card>
     </AnimatedPage>
   );
