@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ROUTES } from "../../shared/constants/routes";
 import { PAGE_KEYS } from "../../shared/constants/permissions";
@@ -13,39 +13,101 @@ import { useAuth } from "../providers/AppProviders";
 const navigationItems = [
   {
     label: "Panel",
+    description: "Dashboard ve genel görünüm",
     path: ROUTES.DASHBOARD,
     pageKey: PAGE_KEYS.DASHBOARD,
     icon: DashboardIcon,
+    keywords: ["dashboard", "panel", "genel", "anasayfa"],
   },
   {
     label: "Satışlar",
+    description: "Satış kayıtlarını görüntüle",
     path: ROUTES.SALES,
     pageKey: PAGE_KEYS.SALES,
     icon: SalesIcon,
+    keywords: ["satis", "satış", "sales", "kayit", "liste"],
   },
   {
     label: "Yeni Satış",
+    description: "Yeni satış oluştur",
     path: ROUTES.NEW_SALE,
     pageKey: PAGE_KEYS.NEW_SALE,
     icon: PlusSquareIcon,
+    keywords: ["yeni", "satis", "satış", "ekle", "olustur", "oluştur"],
   },
   {
     label: "Ürünler",
+    description: "Ürünleri yönet",
     path: ROUTES.PRODUCTS,
     pageKey: PAGE_KEYS.PRODUCTS,
     icon: BoxIcon,
+    keywords: ["urun", "ürün", "products", "stok"],
   },
   {
     label: "Raporlar",
+    description: "Rapor ve analiz ekranı",
     path: ROUTES.REPORTS,
     pageKey: PAGE_KEYS.REPORTS,
     icon: ChartIcon,
+    keywords: ["rapor", "reports", "analiz"],
   },
   {
     label: "Kullanıcılar",
+    description: "Kullanıcı ve yetki yönetimi",
     path: ROUTES.USERS,
     pageKey: PAGE_KEYS.USERS,
     icon: UsersIcon,
+    keywords: ["kullanici", "kullanıcı", "users", "yetki"],
+  },
+];
+
+const actionItems = [
+  {
+    id: "action-new-sale",
+    type: "action",
+    label: "Yeni satış oluştur",
+    description: "Yeni satış ekranını aç",
+    icon: PlusSquareIcon,
+    keywords: ["yeni", "satış", "oluştur", "ekle", "new sale"],
+    run: ({ navigate }) => navigate(ROUTES.NEW_SALE),
+  },
+  {
+    id: "action-toggle-theme",
+    type: "action",
+    label: "Temayı değiştir",
+    description: "Koyu ve açık tema arasında geçiş yap",
+    icon: ThemeIcon,
+    keywords: ["tema", "theme", "dark", "light", "mod"],
+    run: ({ toggleTheme }) => toggleTheme(),
+  },
+  {
+    id: "action-toggle-sidebar",
+    type: "action",
+    label: "Menüyü daralt / genişlet",
+    description: "Sidebar görünümünü değiştir",
+    icon: SidebarIcon,
+    keywords: ["sidebar", "menü", "menu", "daralt", "genişlet"],
+    run: ({ toggleSidebar }) => toggleSidebar(),
+  },
+  {
+    id: "action-scroll-top",
+    type: "action",
+    label: "Sayfanın başına git",
+    description: "Ekranı yumuşak şekilde yukarı kaydır",
+    icon: ArrowUpIcon,
+    keywords: ["yukarı", "başa", "scroll", "top"],
+    run: ({ scrollToTop }) => scrollToTop(),
+  },
+  {
+    id: "action-sign-out",
+    type: "action",
+    label: "Çıkış yap",
+    description: "Oturumu kapat",
+    icon: LogoutIcon,
+    keywords: ["çıkış", "logout", "sign out", "oturumu kapat"],
+    run: async ({ handleSignOut }) => {
+      await handleSignOut();
+    },
   },
 ];
 
@@ -66,15 +128,99 @@ function getInitials(value) {
   return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
 }
 
+function normalizeForSearch(value) {
+  return String(value || "")
+    .toLocaleLowerCase("tr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ı/g, "i")
+    .replace(/ğ/g, "g")
+    .replace(/ü/g, "u")
+    .replace(/ş/g, "s")
+    .replace(/ö/g, "o")
+    .replace(/ç/g, "c")
+    .trim();
+}
+
+function fuzzyMatchScore(query, text) {
+  const q = normalizeForSearch(query);
+  const t = normalizeForSearch(text);
+
+  if (!q) return 1;
+  if (!t) return -1;
+
+  if (t.includes(q)) {
+    return 1000 - t.indexOf(q) * 2 - (t.length - q.length);
+  }
+
+  let qi = 0;
+  let lastMatchIndex = -1;
+  let score = 0;
+  let consecutive = 0;
+
+  for (let ti = 0; ti < t.length && qi < q.length; ti += 1) {
+    if (t[ti] === q[qi]) {
+      score += 10;
+
+      if (lastMatchIndex === ti - 1) {
+        consecutive += 1;
+        score += 8 + consecutive * 2;
+      } else {
+        consecutive = 0;
+      }
+
+      if (ti === 0 || " /-_".includes(t[ti - 1])) {
+        score += 12;
+      }
+
+      lastMatchIndex = ti;
+      qi += 1;
+    }
+  }
+
+  if (qi !== q.length) return -1;
+
+  score -= Math.max(0, t.length - q.length);
+  return score;
+}
+
+function getPaletteScore(query, item) {
+  const fields = [
+    { value: item.label, weight: 1.4 },
+    { value: item.description, weight: 1.0 },
+    ...((item.keywords || []).map((keyword) => ({
+      value: keyword,
+      weight: 1.15,
+    }))),
+  ];
+
+  let best = -1;
+
+  for (const field of fields) {
+    const fieldScore = fuzzyMatchScore(query, field.value);
+    if (fieldScore >= 0) {
+      best = Math.max(best, fieldScore * field.weight);
+    }
+  }
+
+  return best;
+}
+
 export default function AppShell() {
   const { profile, activeOrganization, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem("theme") || "dark";
   });
+
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState("");
+  const [activeCommandIndex, setActiveCommandIndex] = useState(0);
+  const paletteInputRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -98,6 +244,110 @@ export default function AppShell() {
     if (profile == null) return navigationItems;
     return navigationItems.filter((item) => canAccessPage(profile, item.pageKey));
   }, [profile]);
+
+  const groupedPaletteResults = useMemo(() => {
+    const routeItems = visibleNavigationItems.map((item) => ({
+      ...item,
+      type: "route",
+      group: "Sayfalar",
+    }));
+
+    const quickActionItems = actionItems.map((item) => ({
+      ...item,
+      group: "Hızlı İşlemler",
+    }));
+
+    const combinedItems = [...routeItems, ...quickActionItems];
+    const normalizedQuery = normalizeForSearch(paletteQuery);
+
+    const filteredItems = !normalizedQuery
+      ? combinedItems
+      : combinedItems
+          .map((item) => ({
+            item,
+            score: getPaletteScore(normalizedQuery, item),
+          }))
+          .filter((entry) => entry.score >= 0)
+          .sort((a, b) => b.score - a.score)
+          .map((entry) => entry.item);
+
+    const groups = [
+      {
+        label: "Sayfalar",
+        items: filteredItems.filter((item) => item.group === "Sayfalar"),
+      },
+      {
+        label: "Hızlı İşlemler",
+        items: filteredItems.filter((item) => item.group === "Hızlı İşlemler"),
+      },
+    ].filter((group) => group.items.length > 0);
+
+    return groups;
+  }, [paletteQuery, visibleNavigationItems]);
+
+  const flatPaletteItems = useMemo(() => {
+    return groupedPaletteResults.flatMap((group) => group.items);
+  }, [groupedPaletteResults]);
+
+  useEffect(() => {
+    setActiveCommandIndex(0);
+  }, [paletteQuery, isPaletteOpen]);
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      const isOpenShortcut =
+        (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
+
+      if (isOpenShortcut) {
+        event.preventDefault();
+        setIsPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      if (!isPaletteOpen) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closePalette();
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setActiveCommandIndex((prev) =>
+          Math.min(prev + 1, Math.max(flatPaletteItems.length - 1, 0))
+        );
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setActiveCommandIndex((prev) => Math.max(prev - 1, 0));
+        return;
+      }
+
+      if (event.key === "Enter") {
+        if (!flatPaletteItems.length) return;
+        event.preventDefault();
+        runPaletteCommand(flatPaletteItems[activeCommandIndex]);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPaletteOpen, activeCommandIndex, flatPaletteItems]);
+
+  useEffect(() => {
+    if (!isPaletteOpen) return;
+
+    const timeoutId = window.setTimeout(() => {
+      paletteInputRef.current?.focus();
+    }, 10);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isPaletteOpen]);
 
   const fallbackRoute = getFirstAccessibleRoute(profile, ROUTES);
 
@@ -132,6 +382,35 @@ export default function AppShell() {
       behavior: "smooth",
     });
   }
+
+  function closePalette() {
+    setIsPaletteOpen(false);
+    setPaletteQuery("");
+    setActiveCommandIndex(0);
+  }
+
+  async function runPaletteCommand(item) {
+    if (!item) return;
+
+    if (item.type === "route" && item.path) {
+      navigate(item.path);
+      closePalette();
+      return;
+    }
+
+    if (item.type === "action" && typeof item.run === "function") {
+      await item.run({
+        navigate,
+        toggleTheme,
+        toggleSidebar,
+        scrollToTop,
+        handleSignOut,
+      });
+      closePalette();
+    }
+  }
+
+  let runningIndex = -1;
 
   return (
     <div
@@ -268,6 +547,18 @@ export default function AppShell() {
           </div>
 
           <div className="topbar__right">
+            <button
+              type="button"
+              className="command-palette-trigger"
+              onClick={() => setIsPaletteOpen(true)}
+              title="Komut paleti"
+              aria-label="Komut paleti"
+            >
+              <SearchIcon />
+              <span>Hızlı Git</span>
+              <kbd>Ctrl K</kbd>
+            </button>
+
             <div className="topbar__organization-chip">{organizationName}</div>
             <div className="topbar__pill topbar__pill--ultra">{roleName}</div>
 
@@ -314,8 +605,125 @@ export default function AppShell() {
             </motion.button>
           ) : null}
         </AnimatePresence>
+
+        <AnimatePresence>
+          {isPaletteOpen ? (
+            <motion.div
+              className="command-palette-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closePalette}
+            >
+              <motion.div
+                className="command-palette"
+                initial={{ opacity: 0, y: 20, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 16, scale: 0.97 }}
+                transition={{ duration: 0.18 }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="command-palette__header">
+                  <SearchIcon />
+                  <input
+                    ref={paletteInputRef}
+                    type="text"
+                    value={paletteQuery}
+                    onChange={(event) => setPaletteQuery(event.target.value)}
+                    placeholder="Sayfa veya işlem ara..."
+                    className="command-palette__input"
+                  />
+                  <button
+                    type="button"
+                    className="command-palette__close"
+                    onClick={closePalette}
+                    aria-label="Komut paletini kapat"
+                  >
+                    ESC
+                  </button>
+                </div>
+
+                <div className="command-palette__results">
+                  {groupedPaletteResults.length ? (
+                    groupedPaletteResults.map((group) => (
+                      <div
+                        key={group.label}
+                        className="command-palette__group"
+                      >
+                        <div className="command-palette__group-label">
+                          {group.label}
+                        </div>
+
+                        <div className="command-palette__group-items">
+                          {group.items.map((item) => {
+                            runningIndex += 1;
+                            const currentIndex = runningIndex;
+                            const Icon = item.icon;
+                            const isActive = currentIndex === activeCommandIndex;
+                            const itemKey =
+                              item.type === "route"
+                                ? item.path
+                                : item.id || `${item.label}-${currentIndex}`;
+
+                            return (
+                              <button
+                                key={itemKey}
+                                type="button"
+                                className={`command-palette__item${
+                                  isActive ? " command-palette__item--active" : ""
+                                }`}
+                                onMouseEnter={() =>
+                                  setActiveCommandIndex(currentIndex)
+                                }
+                                onClick={() => runPaletteCommand(item)}
+                              >
+                                <span className="command-palette__item-icon">
+                                  <Icon />
+                                </span>
+
+                                <span className="command-palette__item-content">
+                                  <strong>{item.label}</strong>
+                                  <span>{item.description}</span>
+                                </span>
+
+                                <span className="command-palette__item-hint">
+                                  {item.type === "action" ? "Çalıştır" : "Git"}
+                                </span>
+                              </button>
+                            );
+                          })}
+                          <div className="command-palette__footer">
+  <div className="command-palette__shortcuts">
+    <span><kbd>↑</kbd><kbd>↓</kbd> gezin</span>
+    <span><kbd>Enter</kbd> seç</span>
+    <span><kbd>Esc</kbd> kapat</span>
+    <span><kbd>Ctrl</kbd><kbd>K</kbd> aç</span>
+  </div>
+</div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="command-palette__empty">
+                      Sonuç bulunamadı
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="11" cy="11" r="6" />
+      <path d="m20 20-4.2-4.2" />
+    </svg>
   );
 }
 
@@ -336,6 +744,33 @@ function ChevronIcon({ collapsed }) {
       ) : (
         <path d="m15 6-6 6 6 6" />
       )}
+    </svg>
+  );
+}
+
+function ThemeIcon() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z" />
+    </svg>
+  );
+}
+
+function SidebarIcon() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3.5" y="4" width="6" height="16" rx="2" />
+      <rect x="11.5" y="4" width="9" height="16" rx="2" />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M10 20H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h3" />
+      <path d="M15 8.5 19 12l-4 3.5" />
+      <path d="M19 12H9" />
     </svg>
   );
 }
