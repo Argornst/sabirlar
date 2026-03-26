@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ROUTES } from "../../shared/constants/routes";
 import { PAGE_KEYS } from "../../shared/constants/permissions";
 import {
@@ -67,9 +67,32 @@ function getInitials(value) {
 }
 
 export default function AppShell() {
-  const { user, profile, activeOrganization, signOut } = useAuth();
+  const { profile, activeOrganization, signOut } = useAuth();
   const location = useLocation();
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("theme") || "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    function handleScroll() {
+      setShowScrollTop(window.scrollY > 280);
+    }
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   const visibleNavigationItems = useMemo(() => {
     if (profile == null) return navigationItems;
@@ -77,7 +100,12 @@ export default function AppShell() {
   }, [profile]);
 
   const fallbackRoute = getFirstAccessibleRoute(profile, ROUTES);
-  const displayName = profile?.fullName || user?.email || "Bilinmeyen kullanıcı";
+
+  const displayName =
+    profile?.fullName ||
+    `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim() ||
+    "Kullanıcı";
+
   const roleName = profile?.roleName || "Kullanıcı";
   const organizationName = getOrganizationDisplayName(activeOrganization, profile);
   const initials = getInitials(displayName);
@@ -92,6 +120,17 @@ export default function AppShell() {
 
   function toggleSidebar() {
     setIsSidebarCollapsed((prev) => !prev);
+  }
+
+  function toggleTheme() {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  }
+
+  function scrollToTop() {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   return (
@@ -222,7 +261,7 @@ export default function AppShell() {
       </aside>
 
       <div className="content-area">
-        <header className="topbar topbar--ultra">
+        <header className="topbar topbar--ultra topbar--soft">
           <div className="topbar__left">
             <h2>{getPageTitle(location.pathname)}</h2>
             <p>{organizationName} paneli</p>
@@ -231,6 +270,18 @@ export default function AppShell() {
           <div className="topbar__right">
             <div className="topbar__organization-chip">{organizationName}</div>
             <div className="topbar__pill topbar__pill--ultra">{roleName}</div>
+
+            <button
+              type="button"
+              className="ui-button ui-button--ghost theme-toggle"
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
+              aria-label={
+                theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"
+              }
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
           </div>
         </header>
 
@@ -245,8 +296,35 @@ export default function AppShell() {
             <Outlet />
           </motion.div>
         </main>
+
+        <AnimatePresence>
+          {showScrollTop ? (
+            <motion.button
+              type="button"
+              className="scroll-to-top"
+              onClick={scrollToTop}
+              initial={{ opacity: 0, y: 12, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.92 }}
+              transition={{ duration: 0.2 }}
+              title="Yukarı çık"
+              aria-label="Sayfanın en üstüne çık"
+            >
+              <ArrowUpIcon />
+            </motion.button>
+          ) : null}
+        </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+function ArrowUpIcon() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 19V5" />
+      <path d="m6 11 6-6 6 6" />
+    </svg>
   );
 }
 
