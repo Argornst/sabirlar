@@ -20,10 +20,17 @@ const SALES_SELECT = buildSelect([
   SALES_COLUMNS.TOTAL_AMOUNT,
   SALES_COLUMNS.STATUS,
   SALES_COLUMNS.NOTE,
+
   SALES_COLUMNS.CREATED_BY,
   SALES_COLUMNS.UPDATED_BY,
+
   SALES_COLUMNS.PRODUCT_ID,
+
   "products ( name )",
+
+  // 👇 YENİ EKLENENLER
+  "created_by_user:users!sales_created_by_fkey ( full_name )",
+  "updated_by_user:users!sales_updated_by_fkey ( full_name )",
 ]);
 
 export const salesRepository = {

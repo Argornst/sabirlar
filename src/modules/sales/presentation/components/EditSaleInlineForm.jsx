@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "../../../../shared/components/ui/Button";
@@ -7,8 +7,33 @@ import { formatCurrency } from "../../../../shared/utils/currency";
 import { updateSaleSchema } from "../../application/dto/updateSaleSchema";
 import { useUpdateSale } from "../hooks/useUpdateSale";
 
+function getSaleFlags(status) {
+  switch (status) {
+    case "odendi":
+    case "paid":
+      return { paid: true, invoiced: false };
+    case "faturalandi":
+      return { paid: false, invoiced: true };
+    case "odendi_faturalandi":
+      return { paid: true, invoiced: true };
+    case "beklemede":
+    case "pending":
+    default:
+      return { paid: false, invoiced: false };
+  }
+}
+
+function buildSaleStatus({ paid, invoiced }) {
+  if (paid && invoiced) return "odendi_faturalandi";
+  if (paid) return "odendi";
+  if (invoiced) return "faturalandi";
+  return "beklemede";
+}
+
 export default function EditSaleInlineForm({ sale, onCancel, onSuccess }) {
   const mutation = useUpdateSale();
+
+  const initialFlags = useMemo(() => getSaleFlags(sale?.status), [sale?.status]);
 
   const form = useForm({
     resolver: zodResolver(updateSaleSchema),
@@ -16,7 +41,8 @@ export default function EditSaleInlineForm({ sale, onCancel, onSuccess }) {
       saleDate: sale?.saleDate ? String(sale.saleDate).slice(0, 10) : "",
       customerName: sale?.customerName ?? "",
       quantity: sale?.quantity ?? 1,
-      status: sale?.status ?? "beklemede",
+      paymentStatus: initialFlags.paid ? "odendi" : "beklemede",
+      invoiceStatus: initialFlags.invoiced ? "faturalandi" : "faturalanmadi",
       note: sale?.note ?? "",
     },
   });
@@ -30,28 +56,44 @@ export default function EditSaleInlineForm({ sale, onCancel, onSuccess }) {
   } = form;
 
   useEffect(() => {
+    const flags = getSaleFlags(sale?.status);
+
     reset({
       saleDate: sale?.saleDate ? String(sale.saleDate).slice(0, 10) : "",
       customerName: sale?.customerName ?? "",
       quantity: sale?.quantity ?? 1,
-      status: sale?.status ?? "beklemede",
+      paymentStatus: flags.paid ? "odendi" : "beklemede",
+      invoiceStatus: flags.invoiced ? "faturalandi" : "faturalanmadi",
       note: sale?.note ?? "",
     });
   }, [sale, reset]);
 
   const quantity = Number(watch("quantity") ?? 0);
+  const paymentStatus = watch("paymentStatus");
+  const invoiceStatus = watch("invoiceStatus");
+
   const unitPrice = Number(sale?.unitPrice ?? 0);
-  const vatRate = Number(sale?.vatRate ?? 0);
-  const vatType = sale?.vatType ?? "HARIC";
-  const subtotal = quantity * unitPrice;
-  const vatAmount = vatType === "HARIC" ? subtotal * (vatRate / 100) : 0;
-  const totalAmount = vatType === "HARIC" ? subtotal + vatAmount : subtotal;
+  const totalAmount = Number(sale?.totalAmount ?? 0);
+
+  const derivedStatus = buildSaleStatus({
+    paid: paymentStatus === "odendi",
+    invoiced: invoiceStatus === "faturalandi",
+  });
 
   const onSubmit = handleSubmit(async (values) => {
     try {
       await mutation.mutateAsync({
         sale,
-        values,
+        values: {
+          saleDate: values.saleDate,
+          customerName: values.customerName,
+          quantity: values.quantity,
+          status: buildSaleStatus({
+            paid: values.paymentStatus === "odendi",
+            invoiced: values.invoiceStatus === "faturalandi",
+          }),
+          note: values.note,
+        },
       });
 
       onSuccess?.();
@@ -100,20 +142,43 @@ export default function EditSaleInlineForm({ sale, onCancel, onSuccess }) {
       </Field>
 
       <Field
-        label="Durum"
-        htmlFor={`edit-status-${sale.id}`}
-        error={errors.status?.message}
+        label="Ödeme Durumu"
+        htmlFor={`edit-payment-status-${sale.id}`}
       >
         <select
-          id={`edit-status-${sale.id}`}
+          id={`edit-payment-status-${sale.id}`}
           className="form-select"
-          {...register("status")}
+          {...register("paymentStatus")}
         >
-          <option value="beklemede">beklemede</option>
-          <option value="odendi">odendi</option>
-          <option value="faturalandi">faturalandi</option>
-          <option value="odendi_faturalandi">odendi_faturalandi</option>
+          <option value="beklemede">Beklemede</option>
+          <option value="odendi">Ödendi</option>
         </select>
+      </Field>
+
+      <Field
+        label="Faturalama Durumu"
+        htmlFor={`edit-invoice-status-${sale.id}`}
+      >
+        <select
+          id={`edit-invoice-status-${sale.id}`}
+          className="form-select"
+          {...register("invoiceStatus")}
+        >
+          <option value="faturalanmadi">Faturalanmadı</option>
+          <option value="faturalandi">Faturalandı</option>
+        </select>
+      </Field>
+
+      <Field
+        label="Sistem Durumu"
+        htmlFor={`edit-derived-status-${sale.id}`}
+      >
+        <input
+          id={`edit-derived-status-${sale.id}`}
+          type="text"
+          value={derivedStatus}
+          readOnly
+        />
       </Field>
 
       <Field
@@ -135,22 +200,7 @@ export default function EditSaleInlineForm({ sale, onCancel, onSuccess }) {
           <span>Birim Fiyat</span>
           <strong>{formatCurrency(unitPrice, "TRY")}</strong>
         </div>
-        <div className="summary-item">
-          <span>KDV Tipi</span>
-          <strong>{vatType}</strong>
-        </div>
-        <div className="summary-item">
-          <span>KDV Oranı</span>
-          <strong>%{vatRate}</strong>
-        </div>
-        <div className="summary-item">
-          <span>Ara Toplam</span>
-          <strong>{formatCurrency(subtotal, "TRY")}</strong>
-        </div>
-        <div className="summary-item">
-          <span>KDV</span>
-          <strong>{formatCurrency(vatAmount, "TRY")}</strong>
-        </div>
+
         <div className="summary-item summary-item--highlight">
           <span>Genel Toplam</span>
           <strong>{formatCurrency(totalAmount, "TRY")}</strong>

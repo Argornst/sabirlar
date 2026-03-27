@@ -17,8 +17,8 @@ export function normalizeSale(raw) {
     totalAmount: Number(raw[SALES_COLUMNS.TOTAL_AMOUNT] ?? 0),
     status: raw[SALES_COLUMNS.STATUS] ?? "beklemede",
     note: raw[SALES_COLUMNS.NOTE] ?? "",
-    createdBy: raw[SALES_COLUMNS.CREATED_BY] ?? null,
-    updatedBy: raw[SALES_COLUMNS.UPDATED_BY] ?? null,
+    createdBy: raw.created_by_user?.full_name ?? raw.created_by,
+    updatedBy: raw.updated_by_user?.full_name ?? raw.updated_by,
     productId: raw[SALES_COLUMNS.PRODUCT_ID] ?? null,
     productName: raw?.products?.name ?? "-",
   };

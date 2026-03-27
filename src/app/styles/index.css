@@ -4771,3 +4771,138 @@ input[type="number"]::-webkit-inner-spin-button {
     grid-template-columns: 1fr;
   }
 }
+.sale-details-item__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sales-record-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* ===== SALES STATE TOGGLES ===== */
+
+.sales-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sales-state-toggle {
+  position: relative;
+  overflow: hidden;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(8, 16, 30, 0.3);
+  color: var(--text);
+  font-weight: 700;
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  transition:
+    transform 0.14s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    background 0.14s ease,
+    color 0.14s ease,
+    opacity 0.14s ease;
+}
+
+.sales-state-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(96, 165, 250, 0.24);
+}
+
+.sales-state-toggle:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.sales-state-toggle--active {
+  color: #ffffff;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.18),
+    0 0 18px rgba(59, 130, 246, 0.08);
+}
+
+.sales-state-toggle--success {
+  background:
+    linear-gradient(135deg, rgba(34, 197, 94, 0.22), rgba(74, 222, 128, 0.08)),
+    rgba(8, 16, 30, 0.34);
+  border-color: rgba(74, 222, 128, 0.28);
+  color: #dcfce7;
+}
+
+.sales-state-toggle--info {
+  background:
+    linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(96, 165, 250, 0.08)),
+    rgba(8, 16, 30, 0.34);
+  border-color: rgba(96, 165, 250, 0.28);
+  color: #dbeafe;
+}
+
+/* ===== SALE DETAIL TOGGLE / SECONDARY BUTTON LIGHT THEME FIX ===== */
+
+:root[data-theme="light"] .secondary-button,
+:root[data-theme="light"] .ui-button--secondary {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.92)),
+    rgba(255, 255, 255, 0.92);
+  color: #1e3a8a;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  box-shadow:
+    0 8px 18px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:root[data-theme="light"] .secondary-button:hover,
+:root[data-theme="light"] .ui-button--secondary:hover {
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(219, 234, 254, 0.92)),
+    rgba(255, 255, 255, 0.94);
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.22);
+  box-shadow:
+    0 12px 22px rgba(37, 99, 235, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+:root[data-theme="light"] .sales-state-toggle {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92)),
+    rgba(255, 255, 255, 0.92);
+  color: #334155;
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 8px 18px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:root[data-theme="light"] .sales-state-toggle:hover {
+  color: #0f172a;
+  border-color: rgba(37, 99, 235, 0.16);
+}
+
+:root[data-theme="light"] .sales-state-toggle--success {
+  background:
+    linear-gradient(135deg, rgba(34, 197, 94, 0.16), rgba(74, 222, 128, 0.06)),
+    rgba(255, 255, 255, 0.94);
+  border-color: rgba(34, 197, 94, 0.2);
+  color: #15803d;
+}
+
+:root[data-theme="light"] .sales-state-toggle--info {
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(59, 130, 246, 0.06)),
+    rgba(255, 255, 255, 0.94);
+  border-color: rgba(37, 99, 235, 0.2);
+  color: #1d4ed8;
+}

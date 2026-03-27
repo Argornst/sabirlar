@@ -2,28 +2,36 @@ import { formatCurrency } from "../../../../shared/utils/currency";
 import { formatDateTime } from "../../../../shared/utils/date";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 
-function getSaleStatusTone(status) {
+function getSaleFlags(status) {
   switch (status) {
     case "odendi":
     case "paid":
+      return { paid: true, invoiced: false };
+    case "faturalandi":
+      return { paid: false, invoiced: true };
     case "odendi_faturalandi":
-      return "success";
-    case "cancelled":
-    case "iptal":
-      return "danger";
+      return { paid: true, invoiced: true };
     case "beklemede":
     case "pending":
-    case "faturalandi":
-      return "warning";
     default:
-      return "default";
+      return { paid: false, invoiced: false };
   }
+}
+
+function getPaymentTone(isPaid) {
+  return isPaid ? "success" : "warning";
+}
+
+function getInvoiceTone(isInvoiced) {
+  return isInvoiced ? "success" : "default";
 }
 
 export default function SaleDetailsPanel({ sale }) {
   if (!sale) {
     return null;
   }
+
+  const flags = getSaleFlags(sale.status);
 
   return (
     <div className="sale-details-panel">
@@ -63,36 +71,25 @@ export default function SaleDetailsPanel({ sale }) {
           <strong>{formatCurrency(sale.unitPrice ?? 0, "TRY")}</strong>
         </div>
 
-        <div className="sale-details-item">
-          <span>KDV Tipi</span>
-          <strong>{sale.vatType || "-"}</strong>
-        </div>
-
-        <div className="sale-details-item">
-          <span>KDV Oranı</span>
-          <strong>%{sale.vatRate ?? 0}</strong>
-        </div>
-
-        <div className="sale-details-item">
-          <span>Ara Toplam</span>
-          <strong>{formatCurrency(sale.subtotal ?? 0, "TRY")}</strong>
-        </div>
-
-        <div className="sale-details-item">
-          <span>KDV Tutarı</span>
-          <strong>{formatCurrency(sale.vatAmount ?? 0, "TRY")}</strong>
-        </div>
-
-        <div className="sale-details-item">
+        <div className="sale-details-item sale-details-item--highlight">
           <span>Genel Toplam</span>
           <strong>{formatCurrency(sale.totalAmount ?? 0, "TRY")}</strong>
         </div>
 
         <div className="sale-details-item">
-          <span>Durum</span>
-          <div>
-            <StatusBadge tone={getSaleStatusTone(sale.status)}>
-              {sale.status || "-"}
+          <span>Ödeme Durumu</span>
+          <div className="sale-details-item__badges">
+            <StatusBadge tone={getPaymentTone(flags.paid)}>
+              {flags.paid ? "Ödendi" : "Beklemede"}
+            </StatusBadge>
+          </div>
+        </div>
+
+        <div className="sale-details-item">
+          <span>Faturalama Durumu</span>
+          <div className="sale-details-item__badges">
+            <StatusBadge tone={getInvoiceTone(flags.invoiced)}>
+              {flags.invoiced ? "Faturalandı" : "Faturalanmadı"}
             </StatusBadge>
           </div>
         </div>
