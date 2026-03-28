@@ -24,7 +24,9 @@ export function useUpdateUserOrganization() {
         },
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
+      await queryClient.invalidateQueries({
+  predicate: (query) => query.queryKey.includes("users"),
+});
       await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
     },
   });

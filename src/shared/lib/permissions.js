@@ -55,19 +55,20 @@ export function getDefaultPagePermissionsByRoleName(roleName) {
 }
 
 export function normalizePagePermissions(input) {
-  const raw = input && typeof input === "object" && !Array.isArray(input) ? input : {};
+  const raw =
+    input && typeof input === "object" && !Array.isArray(input) ? input : {};
 
   return ALL_PAGE_KEYS.reduce((acc, key) => {
-    acc[key] = Boolean(raw[key]);
+    if (Object.prototype.hasOwnProperty.call(raw, key)) {
+      acc[key] = Boolean(raw[key]);
+    } else {
+      acc[key] = false;
+    }
     return acc;
   }, {});
 }
 
 export function getSafePagePermissions(profile) {
-  if (isAdminProfile(profile)) {
-    return getDefaultPagePermissionsByRoleName("admin");
-  }
-
   const raw = profile?.pagePermissions;
 
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {

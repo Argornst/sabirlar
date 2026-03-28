@@ -7,6 +7,14 @@ import {
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
 import { usersRepository } from "../../infrastructure/repositories/usersRepository";
 
+function patchUsersList(oldUsers, userId, patch) {
+  if (!Array.isArray(oldUsers)) return oldUsers;
+
+  return oldUsers.map((user) =>
+    user.id === userId ? { ...user, ...patch } : user
+  );
+}
+
 export function useUpdateUserOrganization() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -14,6 +22,19 @@ export function useUpdateUserOrganization() {
   return useMutation({
     mutationFn: async ({ userId, organizationId }) =>
       usersRepository.updateOrganization(userId, organizationId),
+
+    onMutate: async ({ userId, organizationId }) => {
+      await queryClient.cancelQueries({ queryKey: ["users"] });
+
+      const previousUsers = queryClient.getQueryData(["users"]);
+
+      queryClient.setQueryData(["users"], (old) =>
+        patchUsersList(old, userId, { organizationId })
+      );
+
+      return { previousUsers };
+    },
+
     onSuccess: async (updatedUser) => {
       await logActivity({
         action: AUDIT_ACTIONS.USER_UPDATED,
@@ -26,8 +47,17 @@ export function useUpdateUserOrganization() {
           organization_name: updatedUser?.organizationName ?? null,
         },
       });
+    },
 
+    onError: (_error, _variables, context) => {
+      if (context?.previousUsers) {
+        queryClient.setQueryData(["users"], context.previousUsers);
+      }
+    },
+
+    onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
+      await queryClient.invalidateQueries({ queryKey: ["organizations"] });
       await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
     },
   });

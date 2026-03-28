@@ -23,24 +23,35 @@ export default function UserPermissionsEditor({ userItem }) {
   const currentPermissions = getSafePagePermissions(userItem);
 
   async function handleToggle(pageKey) {
-    if (!userItem?.id) {
-      return;
-    }
+  console.log("toggle clicked", {
+    userId: userItem?.id,
+    pageKey,
+    currentPermissions,
+  });
 
-    const nextPermissions = normalizePagePermissions({
-      ...currentPermissions,
-      [pageKey]: !currentPermissions[pageKey],
+  if (!userItem?.id) {
+    console.log("userId yok!");
+    return;
+  }
+
+  const nextPermissions = normalizePagePermissions({
+    ...currentPermissions,
+    [pageKey]: !currentPermissions[pageKey],
+  });
+
+  try {
+    const result = await mutation.mutateAsync({
+      userId: userItem.id,
+      pagePermissions: nextPermissions,
     });
 
-    try {
-      await mutation.mutateAsync({
-        userId: userItem.id,
-        pagePermissions: nextPermissions,
-      });
-    } catch (error) {
-      console.error("Permission update error:", error);
-    }
+    console.log("mutation sonucu", result);
+    console.log("gönderilen nextPermissions", nextPermissions);
+  } catch (error) {
+    console.error("Permission update error:", error);
   }
+
+}
 
   return (
     <div className="permissions-editor">

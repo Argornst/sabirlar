@@ -5,19 +5,19 @@ import SectionCard from "../../../../shared/components/ui/SectionCard";
 import EmptyState from "../../../../shared/components/ui/EmptyState";
 import ErrorState from "../../../../shared/components/ui/ErrorState";
 import LoadingState from "../../../../shared/components/ui/LoadingState";
-import { useOrganizationsListQuery } from "../../../organizations/presentation/hooks/useOrganizationsListQuery";
 import CreateUserForm from "../components/CreateUserForm";
 import UsersFilters from "../components/UsersFilters";
 import UsersSummaryCards from "../components/UsersSummaryCards";
 import UsersTable from "../components/UsersTable";
 import { useUsersListQuery } from "../hooks/useUsersListQuery";
 import { useRolesQuery } from "../hooks/useRolesQuery";
+import { useOrganizationsQuery } from "../hooks/useOrganizationsQuery";
 import { useUsersFilters } from "../hooks/useUsersFilters";
 
 export default function UsersPage() {
   const { data, isLoading, isError, error } = useUsersListQuery();
   const { data: roles = [] } = useRolesQuery();
-  const { data: organizations = [] } = useOrganizationsListQuery();
+  const { data: organizations = [] } = useOrganizationsQuery();
   const users = data ?? [];
 
   const {

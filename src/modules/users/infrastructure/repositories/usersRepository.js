@@ -18,9 +18,52 @@ const USERS_SELECT = buildSelect([
   USERS_COLUMNS.ORGANIZATION_ID,
   USERS_COLUMNS.CREATED_AT,
   USERS_COLUMNS.UPDATED_AT,
-  "roles ( id, name, description )",
-  "organizations ( id, name, slug, is_active )",
 ]);
+
+async function fetchRolesMap() {
+  const { data, error } = await supabase
+    .from(DB_TABLES.ROLES)
+    .select("id, name, description")
+    .order("id", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message || "Roller alınamadı.");
+  }
+
+  return safeArray(data).reduce((acc, role) => {
+    acc[String(role.id)] = role;
+    return acc;
+  }, {});
+}
+
+async function fetchOrganizationsMap() {
+  const { data, error } = await supabase
+    .from(DB_TABLES.ORGANIZATIONS)
+    .select("id, name, slug, is_active")
+    .order("id", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message || "Organizasyonlar alınamadı.");
+  }
+
+  return safeArray(data).reduce((acc, organization) => {
+    acc[String(organization.id)] = organization;
+    return acc;
+  }, {});
+}
+
+function attachRelations(user, rolesMap, organizationsMap) {
+  const role = rolesMap[String(user?.[USERS_COLUMNS.ROLE_ID])] ?? null;
+  const organization =
+    organizationsMap[String(user?.[USERS_COLUMNS.ORGANIZATION_ID])] ?? null;
+
+  return {
+    ...user,
+    role_name: role?.name ?? "-",
+    organization_name: organization?.name ?? "-",
+    organization_slug: organization?.slug ?? null,
+  };
+}
 
 export const usersRepository = {
   async getProfileByUserId(userId) {
@@ -34,7 +77,12 @@ export const usersRepository = {
       throw new Error(error.message || "Profil alınamadı.");
     }
 
-    return normalizeUser(data);
+    const [rolesMap, organizationsMap] = await Promise.all([
+      fetchRolesMap(),
+      fetchOrganizationsMap(),
+    ]);
+
+    return normalizeUser(attachRelations(data, rolesMap, organizationsMap));
   },
 
   async getAll() {
@@ -47,7 +95,14 @@ export const usersRepository = {
       throw new Error(error.message || "Kullanıcılar alınamadı.");
     }
 
-    return safeArray(data).map(normalizeUser);
+    const [rolesMap, organizationsMap] = await Promise.all([
+      fetchRolesMap(),
+      fetchOrganizationsMap(),
+    ]);
+
+    return safeArray(data).map((user) =>
+      normalizeUser(attachRelations(user, rolesMap, organizationsMap))
+    );
   },
 
   async listRoles() {
@@ -117,7 +172,12 @@ export const usersRepository = {
       throw new Error(error.message || "Kullanıcı izinleri güncellenemedi.");
     }
 
-    return normalizeUser(data);
+    const [rolesMap, organizationsMap] = await Promise.all([
+      fetchRolesMap(),
+      fetchOrganizationsMap(),
+    ]);
+
+    return normalizeUser(attachRelations(data, rolesMap, organizationsMap));
   },
 
   async updateActiveStatus(userId, isActive) {
@@ -134,7 +194,12 @@ export const usersRepository = {
       throw new Error(error.message || "Kullanıcı durumu güncellenemedi.");
     }
 
-    return normalizeUser(data);
+    const [rolesMap, organizationsMap] = await Promise.all([
+      fetchRolesMap(),
+      fetchOrganizationsMap(),
+    ]);
+
+    return normalizeUser(attachRelations(data, rolesMap, organizationsMap));
   },
 
   async updateRole(userId, roleId) {
@@ -151,7 +216,12 @@ export const usersRepository = {
       throw new Error(error.message || "Kullanıcı rolü güncellenemedi.");
     }
 
-    return normalizeUser(data);
+    const [rolesMap, organizationsMap] = await Promise.all([
+      fetchRolesMap(),
+      fetchOrganizationsMap(),
+    ]);
+
+    return normalizeUser(attachRelations(data, rolesMap, organizationsMap));
   },
 
   async updateOrganization(userId, organizationId) {
@@ -168,6 +238,11 @@ export const usersRepository = {
       throw new Error(error.message || "Kullanıcı organizasyonu güncellenemedi.");
     }
 
-    return normalizeUser(data);
+    const [rolesMap, organizationsMap] = await Promise.all([
+      fetchRolesMap(),
+      fetchOrganizationsMap(),
+    ]);
+
+    return normalizeUser(attachRelations(data, rolesMap, organizationsMap));
   },
 };

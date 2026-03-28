@@ -19,17 +19,22 @@ export function useUsersFilters(users = []) {
       const matchesRole =
         !role || String(user.roleName || "").toLowerCase() === role.toLowerCase();
 
+      // 🔥 FIX BURASI
       const matchesOrganization =
         !organization ||
-        String(user.organizationName || "").toLowerCase() ===
-          organization.toLowerCase();
+        String(user.organizationId ?? "") === String(organization);
 
       const matchesStatus =
         !status ||
         (status === "active" && user.isActive) ||
         (status === "inactive" && !user.isActive);
 
-      return matchesSearch && matchesRole && matchesOrganization && matchesStatus;
+      return (
+        matchesSearch &&
+        matchesRole &&
+        matchesOrganization &&
+        matchesStatus
+      );
     });
   }, [users, search, role, organization, status]);
 

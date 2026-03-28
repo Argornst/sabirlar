@@ -9,63 +9,49 @@ export default function UserManagementActions({ userItem }) {
   const resetPermissionsMutation = useResetUserPermissions();
 
   async function handleToggleActive() {
-    try {
-      await toggleMutation.mutateAsync({
-        userId: userItem.id,
-        nextIsActive: !userItem.isActive,
-      });
-    } catch (error) {
-      console.error("User active toggle error:", error);
-    }
+  console.log("toggle active clicked", {
+    userId: userItem?.id,
+    current: userItem?.isActive,
+    next: !userItem?.isActive,
+  });
+
+  if (!userItem?.id) {
+    console.log("userId yok!");
+    return;
   }
+
+  try {
+    await toggleMutation.mutateAsync({
+      userId: userItem.id,
+      nextIsActive: !userItem.isActive,
+    });
+
+    console.log("active mutation gönderildi");
+  } catch (error) {
+    console.error("User active toggle error:", error);
+  }
+}
 
   async function handleResetPermissions() {
-    try {
-      await resetPermissionsMutation.mutateAsync({
-        userId: userItem.id,
-        roleName: userItem.roleName,
-      });
-    } catch (error) {
-      console.error("User permission reset error:", error);
-    }
+  console.log("reset permissions clicked", {
+    userId: userItem?.id,
+    roleName: userItem?.roleName,
+  });
+
+  if (!userItem?.id) {
+    console.log("userId yok!");
+    return;
   }
 
-  return (
-    <div className="user-management-actions">
-      <UserRoleSelect userItem={userItem} />
-      <UserOrganizationSelect userItem={userItem} />
+  try {
+    await resetPermissionsMutation.mutateAsync({
+      userId: userItem.id,
+      roleName: userItem.roleName,
+    });
 
-      <div className="row-actions">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={handleToggleActive}
-          disabled={toggleMutation.isPending || resetPermissionsMutation.isPending}
-        >
-          {userItem.isActive ? "Pasifleştir" : "Aktifleştir"}
-        </Button>
-
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={handleResetPermissions}
-          disabled={toggleMutation.isPending || resetPermissionsMutation.isPending}
-        >
-          İzinleri Sıfırla
-        </Button>
-      </div>
-
-      {toggleMutation.error ? (
-        <div className="error-text">
-          {toggleMutation.error.message || "Durum güncellenemedi."}
-        </div>
-      ) : null}
-
-      {resetPermissionsMutation.error ? (
-        <div className="error-text">
-          {resetPermissionsMutation.error.message || "İzinler sıfırlanamadı."}
-        </div>
-      ) : null}
-    </div>
-  );
+    console.log("reset permissions mutation gönderildi");
+  } catch (error) {
+    console.error("User permission reset error:", error);
+  }
+}
 }
