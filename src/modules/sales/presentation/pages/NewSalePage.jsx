@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { useFieldArray } from "react-hook-form";
 import Card from "../../../../shared/components/ui/Card";
 import Field from "../../../../shared/components/ui/Field";
 import PageHeader from "../../../../shared/components/ui/PageHeader";
@@ -6,9 +8,34 @@ import Button from "../../../../shared/components/ui/Button";
 import { useProductsListQuery } from "../../../products/presentation/hooks/useProductsListQuery";
 import { useCreateSaleForm } from "../hooks/useCreateSaleForm";
 import { formatCurrency } from "../../../../shared/utils/currency";
+import SaleItemsEditor from "../components/SaleItemsEditor";
+
+function calculateTotals(items, products) {
+  return (items ?? []).reduce(
+    (acc, item) => {
+      const product = products.find(
+        (entry) => String(entry.id) === String(item?.productId)
+      );
+
+      const quantity = Number(item?.quantity ?? 0);
+      const unitPrice = Number(product?.unitPrice ?? product?.unit_price ?? 0);
+      const totalAmount = quantity * unitPrice;
+
+      acc.totalAmount += totalAmount;
+      acc.itemCount += quantity;
+
+      return acc;
+    },
+    {
+      totalAmount: 0,
+      itemCount: 0,
+    }
+  );
+}
 
 export default function NewSalePage() {
   const {
+    control,
     register,
     onSubmit,
     watch,
@@ -18,36 +45,37 @@ export default function NewSalePage() {
   } = useCreateSaleForm();
 
   const { data: products = [], isLoading: productsLoading } = useProductsListQuery();
-  const selectedProductId = watch("productId");
-  const selectedProduct = products.find(
-    (product) => String(product.id) === String(selectedProductId)
-  );
 
-  const quantity = Number(watch("quantity") ?? 0);
-  const subtotal = quantity * Number(selectedProduct?.unitPrice ?? 0);
-  const vatAmount =
-    selectedProduct?.vatType === "HARIC"
-      ? subtotal * (Number(selectedProduct?.vatRate ?? 0) / 100)
-      : 0;
-  const total =
-    selectedProduct?.vatType === "HARIC" ? subtotal + vatAmount : subtotal;
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "items",
+  });
+
+  const watchedItems = watch("items") ?? [];
+  const paymentStatus = watch("paymentStatus");
+  const invoiceStatus = watch("invoiceStatus");
+
+  const totals = useMemo(
+    () => calculateTotals(watchedItems, products),
+    [watchedItems, products]
+  );
 
   return (
     <Card>
       <PageHeader
-        title="New Sale"
-        description="Ürün seçerek yeni satış kaydı oluşturun. Tutarlar otomatik hesaplanır."
-        badge="Yeni Kayıt"
+        title="Yeni Sipariş"
+        description="Bir sipariş içine birden fazla ürün ekleyin. Tutarlar otomatik hesaplanır."
+        badge="Sipariş Oluştur"
       />
 
       <div className="content-stack">
         <SectionCard
-          title="Satış Formu"
-          description="Temel satış bilgilerini girin"
+          title="Sipariş Bilgileri"
+          description="Temel sipariş alanlarını doldurun"
         >
           <form className="form-grid form-grid--two-columns" onSubmit={onSubmit}>
             <Field
-              label="Satış Tarihi"
+              label="Sipariş Tarihi"
               htmlFor="saleDate"
               error={errors.saleDate?.message}
             >
@@ -68,40 +96,32 @@ export default function NewSalePage() {
             </Field>
 
             <Field
-              label="Ürün"
-              htmlFor="productId"
-              error={errors.productId?.message}
+              label="Ödeme Durumu"
+              htmlFor="paymentStatus"
+              error={errors.paymentStatus?.message}
             >
-              <select id="productId" className="form-select" {...register("productId")}>
-                <option value="">
-                  {productsLoading ? "Ürünler yükleniyor..." : "Ürün seçin"}
-                </option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                  </option>
-                ))}
+              <select
+                id="paymentStatus"
+                className="form-select"
+                {...register("paymentStatus")}
+              >
+                <option value="beklemede">Beklemede</option>
+                <option value="odendi">Ödendi</option>
               </select>
             </Field>
 
             <Field
-              label="Adet"
-              htmlFor="quantity"
-              error={errors.quantity?.message}
+              label="Faturalama Durumu"
+              htmlFor="invoiceStatus"
+              error={errors.invoiceStatus?.message}
             >
-              <input id="quantity" type="number" min="1" {...register("quantity")} />
-            </Field>
-
-            <Field
-              label="Durum"
-              htmlFor="status"
-              error={errors.status?.message}
-            >
-              <select id="status" className="form-select" {...register("status")}>
-                <option value="beklemede">beklemede</option>
-                <option value="odendi">odendi</option>
-                <option value="faturalandi">faturalandi</option>
-                <option value="odendi_faturalandi">odendi_faturalandi</option>
+              <select
+                id="invoiceStatus"
+                className="form-select"
+                {...register("invoiceStatus")}
+              >
+                <option value="faturalanmadi">Faturalanmadı</option>
+                <option value="faturalandi">Faturalandı</option>
               </select>
             </Field>
 
@@ -114,54 +134,61 @@ export default function NewSalePage() {
               />
             </Field>
 
+            <div className="ui-field--full">
+              <SaleItemsEditor
+                fields={fields}
+                products={products}
+                productsLoading={productsLoading}
+                register={register}
+                errors={errors}
+                watch={watch}
+                append={append}
+                remove={remove}
+              />
+            </div>
+
             {submitError ? <div className="error-text">{submitError}</div> : null}
 
             <div className="form-actions">
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Kaydediliyor..." : "Satışı Kaydet"}
+                {isSubmitting ? "Kaydediliyor..." : "Siparişi Kaydet"}
               </Button>
             </div>
           </form>
         </SectionCard>
 
         <SectionCard
-          title="Hesap Özeti"
-          description="Seçilen ürüne göre hesaplanan tutarlar"
+          title="Sipariş Özeti"
+          description="Seçilen ürünlere göre hesaplanan toplamlar"
         >
           <div className="summary-grid">
             <div className="summary-item">
-              <span>Birim</span>
-              <strong>{selectedProduct?.unit ?? "-"}</strong>
+              <span>Kalem Sayısı</span>
+              <strong>{fields.length}</strong>
             </div>
 
             <div className="summary-item">
-              <span>Birim Fiyat</span>
-              <strong>{formatCurrency(selectedProduct?.unitPrice ?? 0, "TRY")}</strong>
+              <span>Toplam Adet</span>
+              <strong>{totals.itemCount}</strong>
             </div>
 
             <div className="summary-item">
-              <span>KDV Tipi</span>
-              <strong>{selectedProduct?.vatType ?? "-"}</strong>
+              <span>Ödeme</span>
+              <strong>{paymentStatus === "odendi" ? "Ödendi" : "Beklemede"}</strong>
             </div>
 
             <div className="summary-item">
-              <span>KDV Oranı</span>
-              <strong>%{selectedProduct?.vatRate ?? 0}</strong>
-            </div>
-
-            <div className="summary-item">
-              <span>Ara Toplam</span>
-              <strong>{formatCurrency(subtotal, "TRY")}</strong>
-            </div>
-
-            <div className="summary-item">
-              <span>KDV</span>
-              <strong>{formatCurrency(vatAmount, "TRY")}</strong>
+              <span>Fatura</span>
+              <strong>
+                {invoiceStatus === "faturalandi"
+                  ? "Faturalandı"
+                  : "Faturalanmadı"}
+              </strong>
             </div>
 
             <div className="summary-item summary-item--highlight">
               <span>Genel Toplam</span>
-              <strong>{formatCurrency(total, "TRY")}</strong>
+              <strong>{formatCurrency(totals.totalAmount, "TRY")}</strong>
             </div>
           </div>
         </SectionCard>

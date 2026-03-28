@@ -2,47 +2,27 @@ import { formatCurrency } from "../../../../shared/utils/currency";
 import { formatDateTime } from "../../../../shared/utils/date";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 
-function getSaleFlags(status) {
-  switch (status) {
-    case "odendi":
-    case "paid":
-      return { paid: true, invoiced: false };
-    case "faturalandi":
-      return { paid: false, invoiced: true };
-    case "odendi_faturalandi":
-      return { paid: true, invoiced: true };
-    case "beklemede":
-    case "pending":
-    default:
-      return { paid: false, invoiced: false };
-  }
+function getPaymentTone(status) {
+  return status === "odendi" ? "success" : "warning";
 }
 
-function getPaymentTone(isPaid) {
-  return isPaid ? "success" : "warning";
-}
-
-function getInvoiceTone(isInvoiced) {
-  return isInvoiced ? "success" : "default";
+function getInvoiceTone(status) {
+  return status === "faturalandi" ? "success" : "default";
 }
 
 export default function SaleDetailsPanel({ sale }) {
-  if (!sale) {
-    return null;
-  }
-
-  const flags = getSaleFlags(sale.status);
+  if (!sale) return null;
 
   return (
     <div className="sale-details-panel">
       <div className="sale-details-grid">
         <div className="sale-details-item">
-          <span>Satış ID</span>
-          <strong>{sale.id || "-"}</strong>
+          <span>Sipariş No</span>
+          <strong>#{sale.id}</strong>
         </div>
 
         <div className="sale-details-item">
-          <span>Satış Tarihi</span>
+          <span>Tarih</span>
           <strong>{formatDateTime(sale.saleDate)}</strong>
         </div>
 
@@ -52,46 +32,28 @@ export default function SaleDetailsPanel({ sale }) {
         </div>
 
         <div className="sale-details-item">
-          <span>Ürün</span>
-          <strong>{sale.productName || "-"}</strong>
-        </div>
-
-        <div className="sale-details-item">
-          <span>Adet</span>
-          <strong>{sale.quantity ?? 0}</strong>
-        </div>
-
-        <div className="sale-details-item">
-          <span>Birim</span>
-          <strong>{sale.unit || "-"}</strong>
-        </div>
-
-        <div className="sale-details-item">
-          <span>Birim Fiyat</span>
-          <strong>{formatCurrency(sale.unitPrice ?? 0, "TRY")}</strong>
-        </div>
-
-        <div className="sale-details-item sale-details-item--highlight">
-          <span>Genel Toplam</span>
-          <strong>{formatCurrency(sale.totalAmount ?? 0, "TRY")}</strong>
-        </div>
-
-        <div className="sale-details-item">
-          <span>Ödeme Durumu</span>
+          <span>Ödeme</span>
           <div className="sale-details-item__badges">
-            <StatusBadge tone={getPaymentTone(flags.paid)}>
-              {flags.paid ? "Ödendi" : "Beklemede"}
+            <StatusBadge tone={getPaymentTone(sale.paymentStatus)}>
+              {sale.paymentStatus === "odendi" ? "Ödendi" : "Beklemede"}
             </StatusBadge>
           </div>
         </div>
 
         <div className="sale-details-item">
-          <span>Faturalama Durumu</span>
+          <span>Fatura</span>
           <div className="sale-details-item__badges">
-            <StatusBadge tone={getInvoiceTone(flags.invoiced)}>
-              {flags.invoiced ? "Faturalandı" : "Faturalanmadı"}
+            <StatusBadge tone={getInvoiceTone(sale.invoiceStatus)}>
+              {sale.invoiceStatus === "faturalandi"
+                ? "Faturalandı"
+                : "Faturalanmadı"}
             </StatusBadge>
           </div>
+        </div>
+
+        <div className="sale-details-item">
+          <span>Kalem Sayısı</span>
+          <strong>{sale.items?.length ?? 0}</strong>
         </div>
 
         <div className="sale-details-item">
@@ -104,9 +66,51 @@ export default function SaleDetailsPanel({ sale }) {
           <strong>{sale.updatedBy || "-"}</strong>
         </div>
 
+        <div className="sale-details-item sale-details-item--highlight">
+          <span>Genel Toplam</span>
+          <strong>{formatCurrency(sale.totalAmount ?? 0, "TRY")}</strong>
+        </div>
+
         <div className="sale-details-item sale-details-item--full">
           <span>Not</span>
           <strong>{sale.note || "Not bulunmuyor."}</strong>
+        </div>
+      </div>
+
+      <div className="sale-items-table">
+        <div className="sale-items-table__header">
+          <strong>Sipariş Kalemleri</strong>
+        </div>
+
+        <div className="sale-items-table__list">
+          {(sale.items ?? []).map((item, index) => (
+            <div key={item.id ?? index} className="sale-items-table__row">
+              <div className="sale-items-table__cell sale-items-table__cell--product">
+                <span>Ürün</span>
+                <strong>{item.productName}</strong>
+              </div>
+
+              <div className="sale-items-table__cell">
+                <span>Adet</span>
+                <strong>{item.quantity}</strong>
+              </div>
+
+              <div className="sale-items-table__cell">
+                <span>Birim</span>
+                <strong>{item.unit}</strong>
+              </div>
+
+              <div className="sale-items-table__cell">
+                <span>Birim Fiyat</span>
+                <strong>{formatCurrency(item.unitPrice, "TRY")}</strong>
+              </div>
+
+              <div className="sale-items-table__cell sale-items-table__cell--highlight">
+                <span>Toplam</span>
+                <strong>{formatCurrency(item.totalAmount, "TRY")}</strong>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

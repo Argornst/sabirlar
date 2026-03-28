@@ -1,59 +1,64 @@
-import { SALES_COLUMNS } from "../../../../shared/constants/database";
+import { createSaleEntity } from "../../domain/entities/sale.entity";
+import {
+  SALES_COLUMNS,
+  SALE_ITEMS_COLUMNS,
+} from "../../../../shared/constants/database";
 
-export function mapCreateSaleFormToInsert(
-  values,
-  selectedProduct,
-  userId,
-  organizationId = null
-) {
-  const quantity = Number(values.quantity ?? 0);
-  const unitPrice = Number(selectedProduct?.unitPrice ?? 0);
-  const vatRate = Number(selectedProduct?.vatRate ?? 0);
-  const subtotal = quantity * unitPrice;
-  const vatAmount =
-    selectedProduct?.vatType === "HARIC" ? subtotal * (vatRate / 100) : 0;
-  const totalAmount =
-    selectedProduct?.vatType === "HARIC" ? subtotal + vatAmount : subtotal;
+export function mapSaleRecordToEntity(raw) {
+  return createSaleEntity(raw);
+}
 
+export function mapSalesRecordsToEntities(records) {
+  return Array.isArray(records) ? records.map(mapSaleRecordToEntity) : [];
+}
+
+export function mapCreateSaleHeaderToInsert({
+  saleDate,
+  customerName,
+  paymentStatus,
+  invoiceStatus,
+  subtotal,
+  totalAmount,
+  note,
+  createdBy,
+  organizationId,
+}) {
   return {
-    [SALES_COLUMNS.SALE_DATE]: values.saleDate,
-    [SALES_COLUMNS.CUSTOMER_NAME]: values.customerName,
-    [SALES_COLUMNS.QUANTITY]: quantity,
-    [SALES_COLUMNS.UNIT]: selectedProduct?.unit ?? "adet",
-    [SALES_COLUMNS.UNIT_PRICE]: unitPrice,
-    [SALES_COLUMNS.VAT_TYPE]: selectedProduct?.vatType ?? "HARIC",
-    [SALES_COLUMNS.VAT_RATE]: vatRate,
+    [SALES_COLUMNS.SALE_DATE]: saleDate,
+    [SALES_COLUMNS.CUSTOMER_NAME]: customerName,
+    [SALES_COLUMNS.PAYMENT_STATUS]: paymentStatus,
+    [SALES_COLUMNS.INVOICE_STATUS]: invoiceStatus,
     [SALES_COLUMNS.SUBTOTAL]: subtotal,
-    [SALES_COLUMNS.VAT_AMOUNT]: vatAmount,
     [SALES_COLUMNS.TOTAL_AMOUNT]: totalAmount,
-    [SALES_COLUMNS.STATUS]: values.status,
-    [SALES_COLUMNS.NOTE]: values.note || null,
-    [SALES_COLUMNS.CREATED_BY]: userId ?? null,
-    [SALES_COLUMNS.UPDATED_BY]: userId ?? null,
-    [SALES_COLUMNS.PRODUCT_ID]: Number(values.productId),
-    organization_id: organizationId,
+    [SALES_COLUMNS.NOTE]: note || null,
+    [SALES_COLUMNS.CREATED_BY]: createdBy ?? null,
+    [SALES_COLUMNS.UPDATED_BY]: createdBy ?? null,
+    [SALES_COLUMNS.ORGANIZATION_ID]: organizationId ?? null,
+
+    // legacy compatibility
+    [SALES_COLUMNS.STATUS]:
+      paymentStatus === "odendi" && invoiceStatus === "faturalandi"
+        ? "odendi_faturalandi"
+        : paymentStatus === "odendi"
+          ? "odendi"
+          : invoiceStatus === "faturalandi"
+            ? "faturalandi"
+            : "beklemede",
   };
 }
 
-export function mapUpdateSaleFormToPayload(values, existingSale, userId) {
-  const quantity = Number(values.quantity ?? 0);
-  const unitPrice = Number(existingSale?.unitPrice ?? 0);
-  const vatRate = Number(existingSale?.vatRate ?? 0);
-  const vatType = existingSale?.vatType ?? "HARIC";
-
-  const subtotal = quantity * unitPrice;
-  const vatAmount = vatType === "HARIC" ? subtotal * (vatRate / 100) : 0;
-  const totalAmount = vatType === "HARIC" ? subtotal + vatAmount : subtotal;
-
-  return {
-    [SALES_COLUMNS.SALE_DATE]: values.saleDate,
-    [SALES_COLUMNS.CUSTOMER_NAME]: values.customerName,
-    [SALES_COLUMNS.QUANTITY]: quantity,
-    [SALES_COLUMNS.SUBTOTAL]: subtotal,
-    [SALES_COLUMNS.VAT_AMOUNT]: vatAmount,
-    [SALES_COLUMNS.TOTAL_AMOUNT]: totalAmount,
-    [SALES_COLUMNS.STATUS]: values.status,
-    [SALES_COLUMNS.NOTE]: values.note || null,
-    [SALES_COLUMNS.UPDATED_BY]: userId ?? null,
-  };
+export function mapSaleItemsToInsert({ saleId, items }) {
+  return items.map((item) => ({
+    [SALE_ITEMS_COLUMNS.SALE_ID]: saleId,
+    [SALE_ITEMS_COLUMNS.PRODUCT_ID]: item.productId,
+    [SALE_ITEMS_COLUMNS.PRODUCT_NAME_SNAPSHOT]: item.productName,
+    [SALE_ITEMS_COLUMNS.QUANTITY]: item.quantity,
+    [SALE_ITEMS_COLUMNS.UNIT]: item.unit,
+    [SALE_ITEMS_COLUMNS.UNIT_PRICE]: item.unitPrice,
+    [SALE_ITEMS_COLUMNS.VAT_TYPE]: item.vatType,
+    [SALE_ITEMS_COLUMNS.VAT_RATE]: item.vatRate,
+    [SALE_ITEMS_COLUMNS.SUBTOTAL]: item.subtotal,
+    [SALE_ITEMS_COLUMNS.VAT_AMOUNT]: item.vatAmount,
+    [SALE_ITEMS_COLUMNS.TOTAL_AMOUNT]: item.totalAmount,
+  }));
 }

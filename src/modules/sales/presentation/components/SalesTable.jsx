@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { formatCurrency } from "../../../../shared/utils/currency";
 import { formatDateTime } from "../../../../shared/utils/date";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
@@ -6,32 +6,31 @@ import EditSaleInlineForm from "./EditSaleInlineForm";
 import SaleDetailsPanel from "./SaleDetailsPanel";
 import SaleRowActions from "./SaleRowActions";
 
-function getSaleFlags(status) {
-  switch (status) {
-    case "odendi":
-    case "paid":
-      return { paid: true, invoiced: false };
-    case "faturalandi":
-      return { paid: false, invoiced: true };
-    case "odendi_faturalandi":
-      return { paid: true, invoiced: true };
-    case "beklemede":
-    case "pending":
-    default:
-      return { paid: false, invoiced: false };
-  }
+function getPaymentTone(status) {
+  return status === "odendi" ? "success" : "warning";
 }
 
-export default function SalesTable({ sales = [] }) {
+function getInvoiceTone(status) {
+  return status === "faturalandi" ? "success" : "default";
+}
+
+function getItemPreview(items = []) {
+  if (!items.length) return "Ürün yok";
+  if (items.length === 1) return items[0].productName;
+  return `${items[0].productName} +${items.length - 1} ürün`;
+}
+
+export default function SalesTable({ sales = [], products = [] }) {
   const [expandedSaleId, setExpandedSaleId] = useState(null);
   const [editingSaleId, setEditingSaleId] = useState(null);
 
-  const safeSales = Array.isArray(sales)
-    ? sales.filter((item) => item && item.id)
-    : [];
+  const safeSales = useMemo(
+    () => (Array.isArray(sales) ? sales.filter((item) => item?.id) : []),
+    [sales]
+  );
 
   if (!safeSales.length) {
-    return <div className="helper-text">Henüz satış kaydı bulunmuyor.</div>;
+    return <div className="helper-text">Henüz sipariş kaydı bulunmuyor.</div>;
   }
 
   function toggleExpanded(saleId) {
@@ -43,48 +42,59 @@ export default function SalesTable({ sales = [] }) {
       {safeSales.map((sale) => {
         const isExpanded = expandedSaleId === sale.id;
         const isEditing = editingSaleId === sale.id;
-        const flags = getSaleFlags(sale.status);
 
         return (
-          <div key={sale.id} className="sales-record-card">
+          <div key={sale.id} className="sales-record-card sales-record-card--order">
             <div className="sales-record-card__top">
               <div className="sales-record-card__identity">
                 <h4>{sale.customerName || "-"}</h4>
                 <p>
-                  {sale.productName || "-"} • {formatDateTime(sale.saleDate)}
+                  {formatDateTime(sale.saleDate)} • {getItemPreview(sale.items)}
                 </p>
               </div>
 
               <div className="sales-record-card__badges">
-                <StatusBadge tone={flags.paid ? "success" : "warning"}>
-                  {flags.paid ? "Ödendi" : "Beklemede"}
+                <StatusBadge tone={getPaymentTone(sale.paymentStatus)}>
+                  {sale.paymentStatus === "odendi" ? "Ödendi" : "Beklemede"}
                 </StatusBadge>
 
-                <StatusBadge tone={flags.invoiced ? "success" : "default"}>
-                  {flags.invoiced ? "Faturalandı" : "Faturalanmadı"}
+                <StatusBadge tone={getInvoiceTone(sale.invoiceStatus)}>
+                  {sale.invoiceStatus === "faturalandi"
+                    ? "Faturalandı"
+                    : "Faturalanmadı"}
                 </StatusBadge>
               </div>
             </div>
 
             <div className="sales-record-card__summary">
               <div className="sales-record-card__summary-item">
-                <span>Adet</span>
-                <strong>{sale.quantity ?? 0}</strong>
+                <span>Kalem</span>
+                <strong>{sale.items?.length ?? 0}</strong>
               </div>
 
               <div className="sales-record-card__summary-item">
-                <span>Birim</span>
-                <strong>{sale.unit || "-"}</strong>
-              </div>
-
-              <div className="sales-record-card__summary-item">
-                <span>Toplam</span>
-                <strong>{formatCurrency(sale.totalAmount ?? 0, "TRY")}</strong>
+                <span>Toplam Adet</span>
+                <strong>
+                  {(sale.items ?? []).reduce(
+                    (acc, item) => acc + Number(item.quantity ?? 0),
+                    0
+                  )}
+                </strong>
               </div>
 
               <div className="sales-record-card__summary-item">
                 <span>Oluşturan</span>
                 <strong>{sale.createdBy || "-"}</strong>
+              </div>
+
+              <div className="sales-record-card__summary-item">
+                <span>Güncelleyen</span>
+                <strong>{sale.updatedBy || "-"}</strong>
+              </div>
+
+              <div className="sales-record-card__summary-item summary-item--highlight">
+                <span>Genel Toplam</span>
+                <strong>{formatCurrency(sale.totalAmount ?? 0, "TRY")}</strong>
               </div>
             </div>
 
@@ -107,9 +117,10 @@ export default function SalesTable({ sales = [] }) {
 
             {isEditing ? (
               <div className="sale-details-panel">
-                <h4 className="inline-form-title">Satış Düzenle</h4>
+                <h4 className="inline-form-title">Siparişi Düzenle</h4>
                 <EditSaleInlineForm
                   sale={sale}
+                  products={products}
                   onCancel={() => setEditingSaleId(null)}
                   onSuccess={() => setEditingSaleId(null)}
                 />

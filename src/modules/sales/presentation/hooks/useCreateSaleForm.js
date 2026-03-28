@@ -26,6 +26,7 @@ export function useCreateSaleForm() {
   const form = useForm({
     resolver: zodResolver(createSaleSchema),
     defaultValues: createSaleDefaultValues,
+    mode: "onSubmit",
   });
 
   const mutation = useMutation({
@@ -47,6 +48,7 @@ export function useCreateSaleForm() {
         metadata: {
           customer_name: createdSale?.customerName ?? null,
           total_amount: createdSale?.totalAmount ?? null,
+          item_count: createdSale?.items?.length ?? 0,
         },
       });
 
@@ -54,6 +56,7 @@ export function useCreateSaleForm() {
       await queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
       await queryClient.invalidateQueries({ queryKey: ["reports-summary"] });
       await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+
       navigate(ROUTES.SALES);
     },
   });
@@ -69,7 +72,7 @@ export function useCreateSaleForm() {
     submitError: mutation.error
       ? getReadableErrorMessage(
           mutation.error,
-          "Satış oluşturulurken hata oluştu."
+          "Sipariş oluşturulurken hata oluştu."
         )
       : "",
   };

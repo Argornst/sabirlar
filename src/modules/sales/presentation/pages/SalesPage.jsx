@@ -12,10 +12,12 @@ import { useSalesFilters } from "../hooks/useSalesFilters";
 import SalesExportActions from "../components/SalesExportActions";
 import SalesFilters from "../components/SalesFilters";
 import SalesTable from "../components/SalesTable";
+import { useProductsListQuery } from "../../../products/presentation/hooks/useProductsListQuery";
 
 export default function SalesPage() {
   const { data, isLoading, isError, error } = useSalesListQuery();
   const sales = data ?? [];
+  const { data: products = [] } = useProductsListQuery();
 
   const { search, setSearch, status, setStatus, filteredSales } =
     useSalesFilters(sales);
@@ -66,7 +68,7 @@ export default function SalesPage() {
         ) : null}
 
         {!isLoading && !isError && filteredSales.length ? (
-          <SalesTable sales={filteredSales} />
+          <SalesTable sales={filteredSales} products={products} />
         ) : null}
       </Card>
     </AnimatedPage>
