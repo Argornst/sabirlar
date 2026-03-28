@@ -1,5 +1,7 @@
 import { formatCurrency } from "../../../../shared/utils/currency";
-import { formatDateTime } from "../../../../shared/utils/date";
+import { formatDate
+  
+ } from "../../../../shared/utils/date";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 
 function getPaymentTone(status) {
@@ -23,7 +25,7 @@ export default function SaleDetailsPanel({ sale }) {
 
         <div className="sale-details-item">
           <span>Tarih</span>
-          <strong>{formatDateTime(sale.saleDate)}</strong>
+          <strong>{formatDate(sale.saleDate)}</strong>
         </div>
 
         <div className="sale-details-item">

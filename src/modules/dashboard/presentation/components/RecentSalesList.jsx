@@ -1,5 +1,5 @@
 import { formatCurrency } from "../../../../shared/utils/currency";
-import { formatDateTime } from "../../../../shared/utils/date";
+import { formatDate } from "../../../../shared/utils/date";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 
 function getTone(status) {
@@ -33,7 +33,7 @@ export default function RecentSalesList({ sales = [] }) {
               <td className="data-table__id">#{sale.id}</td>
 
               <td className="data-table__date">
-                {formatDateTime(sale.saleDate)}
+                {formatDate(sale.saleDate)}
               </td>
 
               <td className="data-table__customer">

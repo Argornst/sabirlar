@@ -1,14 +1,10 @@
-export function formatDateTime(value, locale = "tr-TR") {
+export function formatDate(value) {
   if (!value) return "-";
 
-  const date = new Date(value);
+  const raw = String(value).slice(0, 10);
+  const [year, month, day] = raw.split("-");
 
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
+  if (!year || !month || !day) return "-";
 
-  return new Intl.DateTimeFormat(locale, {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
+  return `${day}.${month}.${year}`;
 }

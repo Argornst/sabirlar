@@ -1,4 +1,4 @@
-import { formatDateTime } from "../../../../shared/utils/date";
+import { formatDate } from "../../../../shared/utils/date";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 import UserManagementActions from "./UserManagementActions";
 import UserPermissionsEditor from "./UserPermissionsEditor";
@@ -45,7 +45,7 @@ export default function UsersTable({ users = [] }) {
               <strong>Organizasyon:</strong> {userItem.organizationName || "-"}
             </span>
             <span>
-              <strong>Oluşturulma:</strong> {formatDateTime(userItem.createdAt)}
+              <strong>Oluşturulma:</strong> {formatDate(userItem.createdAt)}
             </span>
           </div>
 

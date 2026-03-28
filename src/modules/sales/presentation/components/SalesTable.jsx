@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { formatCurrency } from "../../../../shared/utils/currency";
-import { formatDateTime } from "../../../../shared/utils/date";
+import { formatDate } from "../../../../shared/utils/date";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 import EditSaleInlineForm from "./EditSaleInlineForm";
 import SaleDetailsPanel from "./SaleDetailsPanel";
@@ -46,12 +46,27 @@ export default function SalesTable({ sales = [], products = [] }) {
         return (
           <div key={sale.id} className="sales-record-card sales-record-card--order">
             <div className="sales-record-card__top">
-              <div className="sales-record-card__identity">
-                <h4>{sale.customerName || "-"}</h4>
-                <p>
-                  {formatDateTime(sale.saleDate)} • {getItemPreview(sale.items)}
-                </p>
-              </div>
+              <div className="sales-record-card__identity sale-header">
+  <h4 className="sale-customer">{sale.customerName || "-"}</h4>
+
+  <p className="sale-meta">
+    <span className="sale-date">
+      {formatDate(sale.saleDate)}
+    </span>
+
+    <span className="sale-meta-separator">•</span>
+
+    <span className="sale-product">
+      {sale.items?.[0]?.productName || "Ürün yok"}
+    </span>
+
+    {sale.items?.length > 1 ? (
+      <span className="sale-more">
+        +{sale.items.length - 1} ürün
+      </span>
+    ) : null}
+  </p>
+</div>
 
               <div className="sales-record-card__badges">
                 <StatusBadge tone={getPaymentTone(sale.paymentStatus)}>

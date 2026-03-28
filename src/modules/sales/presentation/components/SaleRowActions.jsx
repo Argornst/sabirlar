@@ -31,6 +31,11 @@ export default function SaleRowActions({ sale, onEdit }) {
   }
 
   async function handleDelete() {
+    if (!sale?.id) {
+      console.error("Sale delete error: sale.id is missing", sale);
+      return;
+    }
+
     const confirmed = window.confirm(
       "Bu sipariş kaydını silmek istediğine emin misin?"
     );
@@ -97,7 +102,7 @@ export default function SaleRowActions({ sale, onEdit }) {
         type="button"
         variant="danger"
         onClick={handleDelete}
-        disabled={isBusy}
+        disabled={isBusy || !sale?.id}
       >
         {deleteMutation.isPending ? "Siliniyor..." : "Sil"}
       </Button>

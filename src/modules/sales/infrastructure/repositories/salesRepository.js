@@ -300,10 +300,20 @@ async function replaceItems({ saleId, items }) {
 }
 
 async function remove(saleId) {
+  if (saleId == null || saleId === "") {
+    throw new Error("Silinecek sipariş ID bilgisi bulunamadı.");
+  }
+
+  const normalizedSaleId = Number(saleId);
+
+  if (!Number.isFinite(normalizedSaleId)) {
+    throw new Error("Geçersiz sipariş ID.");
+  }
+
   const { error } = await supabase
     .from(DB_TABLES.SALES)
     .delete()
-    .eq(SALES_COLUMNS.ID, saleId);
+    .eq(SALES_COLUMNS.ID, normalizedSaleId);
 
   if (error) {
     throw new Error(error.message);

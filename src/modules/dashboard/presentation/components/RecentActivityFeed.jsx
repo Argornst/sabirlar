@@ -1,4 +1,4 @@
-import { formatDateTime } from "../../../../shared/utils/date";
+import { formatDate } from "../../../../shared/utils/date";
 
 function getReadableAction(action) {
   const map = {
@@ -85,7 +85,7 @@ export default function RecentActivityFeed({ logs = [] }) {
                   <span className="activity-feed__badge">{meta.label}</span>
                 </div>
 
-                <span>{formatDateTime(log.created_at)}</span>
+                <span>{formatDate(log.created_at)}</span>
               </div>
 
               <div className="activity-feed__meta">
