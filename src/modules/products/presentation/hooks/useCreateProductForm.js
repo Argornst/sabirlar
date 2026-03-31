@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../../../app/providers/AppProviders";
+import { useCurrentOrganization } from "../../../users/presentation/hooks/useCurrentOrganization";
 import {
   AUDIT_ACTIONS,
   AUDIT_ENTITY_TYPES,
@@ -17,7 +18,13 @@ import { productsRepository } from "../../infrastructure/repositories/productsRe
 
 export function useCreateProductForm() {
   const queryClient = useQueryClient();
-  const { user, activeOrganization } = useAuth();
+  const { user } = useAuth();
+  const {
+    organization,
+    isLoading: isOrgLoading,
+    isFetching: isOrgFetching,
+    error: organizationError,
+  } = useCurrentOrganization();
 
   const form = useForm({
     resolver: zodResolver(createProductSchema),
@@ -25,12 +32,17 @@ export function useCreateProductForm() {
   });
 
   const mutation = useMutation({
-    mutationFn: (values) =>
-      createProduct({
+    mutationFn: async (values) => {
+      if (!organization?.id) {
+        throw new Error("Organizasyon bilgisi bulunamadı.");
+      }
+
+      return createProduct({
         productsRepository,
         values,
-        organizationId: activeOrganization?.id ?? null,
-      }),
+        organizationId: organization.id,
+      });
+    },
     onSuccess: async (createdProduct) => {
       form.reset(createProductDefaultValues);
 
@@ -53,13 +65,21 @@ export function useCreateProductForm() {
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
+    if (organizationError) {
+      throw new Error("Organizasyon bilgisi alınamadı.");
+    }
+
+    if (!organization?.id) {
+      throw new Error("Organizasyon yükleniyor, lütfen tekrar deneyin.");
+    }
+
     await mutation.mutateAsync(values);
   });
 
   return {
     ...form,
     onSubmit,
-    isSubmitting: mutation.isPending,
+    isSubmitting: mutation.isPending || isOrgLoading || isOrgFetching,
     submitError: mutation.error
       ? getReadableErrorMessage(
           mutation.error,

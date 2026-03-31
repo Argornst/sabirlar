@@ -59,6 +59,7 @@ export function useUpdateUserOrganization() {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       await queryClient.invalidateQueries({ queryKey: ["organizations"] });
       await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
     },
   });
 }

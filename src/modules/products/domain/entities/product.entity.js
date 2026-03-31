@@ -10,6 +10,7 @@ export function normalizeProduct(raw) {
     unitPrice: Number(raw[PRODUCTS_COLUMNS.UNIT_PRICE] ?? 0),
     vatType: raw[PRODUCTS_COLUMNS.VAT_TYPE] ?? "HARIC",
     vatRate: Number(raw[PRODUCTS_COLUMNS.VAT_RATE] ?? 0),
-    isActive: raw[PRODUCTS_COLUMNS.IS_ACTIVE] ?? true,
+    isActive: Boolean(raw[PRODUCTS_COLUMNS.IS_ACTIVE]),
+    organizationId: raw[PRODUCTS_COLUMNS.ORGANIZATION_ID] ?? null,
   };
 }

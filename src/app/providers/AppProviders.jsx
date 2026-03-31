@@ -1,15 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { authRepository } from "../../modules/auth/infrastructure/authRepository";
-import { usersRepository } from "../../modules/users/infrastructure/repositories/usersRepository";
 import { supabase } from "../../shared/lib/supabaseClient";
 
 const AuthContext = createContext(null);
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMount: true,
       retry: 0,
       staleTime: 1000 * 60 * 3,
       gcTime: 1000 * 60 * 10,
@@ -30,95 +31,40 @@ export function useAuth() {
   return context;
 }
 
-function timeout(ms) {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(null), ms);
-  });
-}
-
-async function getSessionSafely() {
-  try {
-    const result = await Promise.race([
-      authRepository.getSession(),
-      timeout(2500),
-    ]);
-
-    return result ?? null;
-  } catch (error) {
-    console.error("getSessionSafely error:", error);
-    return null;
-  }
-}
-
 export default function AppProviders({ children }) {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [activeOrganization, setActiveOrganization] = useState(null);
-
   const [isSessionReady, setIsSessionReady] = useState(false);
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
-
-  async function loadProfile(userId) {
-    if (!userId) {
-      setProfile(null);
-      setActiveOrganization(null);
-      return null;
-    }
-
-    setIsProfileLoading(true);
-
-    try {
-      const nextProfile = await Promise.race([
-        usersRepository.getProfileByUserId(userId),
-        timeout(2500),
-      ]);
-
-      if (!nextProfile) {
-        setProfile(null);
-        setActiveOrganization(null);
-        return null;
-      }
-
-      setProfile(nextProfile);
-      setActiveOrganization(
-        nextProfile?.organizationId
-          ? {
-              id: nextProfile.organizationId,
-              name: nextProfile.organizationName,
-              slug: nextProfile.organizationSlug,
-            }
-          : null
-      );
-
-      return nextProfile;
-    } catch (error) {
-      console.error("Profile load error:", error);
-      setProfile(null);
-      setActiveOrganization(null);
-      return null;
-    } finally {
-      setIsProfileLoading(false);
-    }
-  }
 
   useEffect(() => {
     let mounted = true;
 
     async function bootstrap() {
-      const currentSession = await getSessionSafely();
+      try {
+        const currentSession = await authRepository.getSession();
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      setSession(currentSession ?? null);
-      setUser(currentSession?.user ?? null);
-      setIsSessionReady(true);
+        setSession(currentSession ?? null);
+        setUser(currentSession?.user ?? null);
 
-      if (currentSession?.user?.id) {
-        await loadProfile(currentSession.user.id);
-      } else {
-        setProfile(null);
-        setActiveOrganization(null);
+        if (currentSession?.user?.id) {
+          queryClient.invalidateQueries({ queryKey: ["current-user"] });
+        } else {
+          queryClient.removeQueries({ queryKey: ["current-user"] });
+        }
+      } catch (error) {
+        console.error("Auth bootstrap error:", error);
+
+        if (!mounted) return;
+
+        setSession(null);
+        setUser(null);
+        queryClient.removeQueries({ queryKey: ["current-user"] });
+      } finally {
+        if (mounted) {
+          setIsSessionReady(true);
+        }
       }
     }
 
@@ -134,10 +80,9 @@ export default function AppProviders({ children }) {
       setIsSessionReady(true);
 
       if (nextSession?.user?.id) {
-        await loadProfile(nextSession.user.id);
+        queryClient.invalidateQueries({ queryKey: ["current-user"] });
       } else {
-        setProfile(null);
-        setActiveOrganization(null);
+        queryClient.removeQueries({ queryKey: ["current-user"] });
       }
     });
 
@@ -151,40 +96,39 @@ export default function AppProviders({ children }) {
     () => ({
       session,
       user,
-      profile,
-      activeOrganization,
       isAuthenticated: Boolean(session?.user),
       isAuthLoading: !isSessionReady,
-      isProfileLoading,
       refreshSession: async () => {
-        setIsSessionReady(false);
+        try {
+          const currentSession = await authRepository.getSession();
 
-        const currentSession = await getSessionSafely();
+          setSession(currentSession ?? null);
+          setUser(currentSession?.user ?? null);
 
-        setSession(currentSession ?? null);
-        setUser(currentSession?.user ?? null);
-        setIsSessionReady(true);
+          if (currentSession?.user?.id) {
+            await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+          } else {
+            queryClient.removeQueries({ queryKey: ["current-user"] });
+          }
 
-        if (currentSession?.user?.id) {
-          await loadProfile(currentSession.user.id);
-        } else {
-          setProfile(null);
-          setActiveOrganization(null);
+          return currentSession ?? null;
+        } catch (error) {
+          console.error("Refresh session error:", error);
+          setSession(null);
+          setUser(null);
+          queryClient.removeQueries({ queryKey: ["current-user"] });
+          return null;
         }
-
-        return currentSession ?? null;
       },
       signOut: async () => {
         await authRepository.signOut();
         setSession(null);
         setUser(null);
-        setProfile(null);
-        setActiveOrganization(null);
         setIsSessionReady(true);
-        setIsProfileLoading(false);
+        queryClient.clear();
       },
     }),
-    [session, user, profile, activeOrganization, isSessionReady, isProfileLoading]
+    [session, user, isSessionReady]
   );
 
   return (

@@ -53,6 +53,8 @@ async function fetchOrganizationsMap() {
 }
 
 function attachRelations(user, rolesMap, organizationsMap) {
+  if (!user) return null;
+
   const role = rolesMap[String(user?.[USERS_COLUMNS.ROLE_ID])] ?? null;
   const organization =
     organizationsMap[String(user?.[USERS_COLUMNS.ORGANIZATION_ID])] ?? null;
@@ -67,14 +69,20 @@ function attachRelations(user, rolesMap, organizationsMap) {
 
 export const usersRepository = {
   async getProfileByUserId(userId) {
+    if (!userId) return null;
+
     const { data, error } = await supabase
       .from(DB_TABLES.USERS)
       .select(USERS_SELECT)
       .eq(USERS_COLUMNS.ID, userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       throw new Error(error.message || "Profil alınamadı.");
+    }
+
+    if (!data) {
+      return null;
     }
 
     const [rolesMap, organizationsMap] = await Promise.all([

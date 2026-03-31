@@ -41,6 +41,7 @@ export function useResetUserPermissions() {
 
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
+      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
     },
   });
 }

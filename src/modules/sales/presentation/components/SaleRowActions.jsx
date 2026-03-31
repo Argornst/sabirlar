@@ -1,29 +1,39 @@
 import Button from "../../../../shared/components/ui/Button";
 import { useDeleteSale } from "../hooks/useDeleteSale";
-import { useUpdateSale } from "../hooks/useUpdateSale";
+import { useUpdateSaleStatus } from "../hooks/useUpdateSaleStatus";
+
+function buildNextStatus(nextPaymentStatus, nextInvoiceStatus) {
+  if (nextPaymentStatus === "odendi" && nextInvoiceStatus === "faturalandi") {
+    return "odendi_faturalandi";
+  }
+
+  if (nextPaymentStatus === "odendi") {
+    return "odendi";
+  }
+
+  if (nextInvoiceStatus === "faturalandi") {
+    return "faturalandi";
+  }
+
+  return "beklemede";
+}
 
 export default function SaleRowActions({ sale, onEdit }) {
   const deleteMutation = useDeleteSale();
-  const updateMutation = useUpdateSale();
+  const updateStatusMutation = useUpdateSaleStatus();
 
-  const isBusy = deleteMutation.isPending || updateMutation.isPending;
+  const isBusy = deleteMutation.isPending || updateStatusMutation.isPending;
 
   async function handleToggle(nextPaymentStatus, nextInvoiceStatus) {
     try {
-      await updateMutation.mutateAsync({
-        sale,
-        values: {
-          saleDate: sale.saleDate ? String(sale.saleDate).slice(0, 10) : "",
-          customerName: sale.customerName ?? "",
-          paymentStatus: nextPaymentStatus,
-          invoiceStatus: nextInvoiceStatus,
-          note: sale.note ?? "",
-          items:
-            sale.items?.map((item) => ({
-              productId: String(item.productId),
-              quantity: Number(item.quantity),
-            })) ?? [],
-        },
+      const nextStatus = buildNextStatus(
+        nextPaymentStatus,
+        nextInvoiceStatus
+      );
+
+      await updateStatusMutation.mutateAsync({
+        saleId: sale.id,
+        nextStatus,
       });
     } catch (error) {
       console.error("Sale status update error:", error);
@@ -75,7 +85,7 @@ export default function SaleRowActions({ sale, onEdit }) {
         }
         disabled={isBusy}
       >
-        Ödendi
+        {updateStatusMutation.isPending ? "Güncelleniyor..." : "Ödendi"}
       </button>
 
       <button
@@ -95,7 +105,7 @@ export default function SaleRowActions({ sale, onEdit }) {
         }
         disabled={isBusy}
       >
-        Faturalandı
+        {updateStatusMutation.isPending ? "Güncelleniyor..." : "Faturalandı"}
       </button>
 
       <Button

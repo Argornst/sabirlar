@@ -69,6 +69,7 @@ function normalizeSaleRecord(raw) {
     customerName: raw.customer_name,
     paymentStatus: raw.payment_status ?? "beklemede",
     invoiceStatus: raw.invoice_status ?? "faturalanmadi",
+    status: raw.status ?? "beklemede",
     subtotal: Number(raw.subtotal ?? 0),
     totalAmount: Number(raw.total_amount ?? 0),
     note: raw.note ?? "",
@@ -92,6 +93,34 @@ function buildLegacyStatus(paymentStatus, invoiceStatus) {
     return "faturalandi";
   }
   return "beklemede";
+}
+
+function parseLegacyStatus(status) {
+  if (status === "odendi_faturalandi") {
+    return {
+      paymentStatus: "odendi",
+      invoiceStatus: "faturalandi",
+    };
+  }
+
+  if (status === "odendi") {
+    return {
+      paymentStatus: "odendi",
+      invoiceStatus: "faturalanmadi",
+    };
+  }
+
+  if (status === "faturalandi") {
+    return {
+      paymentStatus: "beklemede",
+      invoiceStatus: "faturalandi",
+    };
+  }
+
+  return {
+    paymentStatus: "beklemede",
+    invoiceStatus: "faturalanmadi",
+  };
 }
 
 function mapCreateSaleHeaderToInsert({
@@ -191,16 +220,17 @@ async function create({
   });
 
   const { data, error } = await supabase
-    .from(DB_TABLES.SALES)
-    .insert(payload)
-    .select(SALES_SELECT)
-    .single();
+  .from(DB_TABLES.SALES)
+  .update(payload)
+  .eq(SALES_COLUMNS.ID, saleId)
+  .select("*")   // 🔥 önemli
+  .single();     // 🔥 önemli
 
-  if (error) {
-    throw new Error(error.message);
-  }
+if (error) {
+  throw new Error(error.message);
+}
 
-  return normalizeSaleRecord(data);
+return normalizeSaleRecord(data);
 }
 
 async function insertItems({ saleId, items }) {
@@ -276,6 +306,37 @@ async function updateHeader({
   }
 }
 
+async function updateStatus(saleId, nextStatus, updatedBy) {
+  if (saleId == null || saleId === "") {
+    throw new Error("Güncellenecek sipariş ID bilgisi bulunamadı.");
+  }
+
+  const { paymentStatus, invoiceStatus } = parseLegacyStatus(nextStatus);
+
+  const payload = {
+    [SALES_COLUMNS.PAYMENT_STATUS]: paymentStatus,
+    [SALES_COLUMNS.INVOICE_STATUS]: invoiceStatus,
+    [SALES_COLUMNS.STATUS]: nextStatus,
+    [SALES_COLUMNS.UPDATED_BY]: updatedBy ?? null,
+  };
+
+  const { error } = await supabase
+    .from(DB_TABLES.SALES)
+    .update(payload)
+    .eq(SALES_COLUMNS.ID, saleId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    id: saleId,
+    status: nextStatus,
+    paymentStatus,
+    invoiceStatus,
+  };
+}
+
 async function deleteItemsBySaleId(saleId) {
   const { error } = await supabase
     .from(DB_TABLES.SALE_ITEMS)
@@ -304,16 +365,10 @@ async function remove(saleId) {
     throw new Error("Silinecek sipariş ID bilgisi bulunamadı.");
   }
 
-  const normalizedSaleId = Number(saleId);
-
-  if (!Number.isFinite(normalizedSaleId)) {
-    throw new Error("Geçersiz sipariş ID.");
-  }
-
   const { error } = await supabase
     .from(DB_TABLES.SALES)
     .delete()
-    .eq(SALES_COLUMNS.ID, normalizedSaleId);
+    .eq(SALES_COLUMNS.ID, saleId);
 
   if (error) {
     throw new Error(error.message);
@@ -325,6 +380,7 @@ export const salesRepository = {
   insertItems,
   getAll,
   updateHeader,
+  updateStatus,
   replaceItems,
   remove,
 };

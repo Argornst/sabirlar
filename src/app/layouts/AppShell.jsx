@@ -13,6 +13,7 @@ import {
 } from "../../shared/lib/permissions";
 import { getOrganizationDisplayName } from "../../shared/lib/tenant";
 import { useAuth } from "../providers/AppProviders";
+import { useCurrentOrganization } from "../../modules/users/presentation/hooks/useCurrentOrganization";
 
 const navigationItems = [
   {
@@ -211,7 +212,13 @@ function getPaletteScore(query, item) {
 }
 
 export default function AppShell() {
-  const { profile, activeOrganization, signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const {
+    profile,
+    organization: activeOrganization,
+    isLoading: isProfileLoading,
+  } = useCurrentOrganization();
+
   const location = useLocation();
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
@@ -246,9 +253,12 @@ export default function AppShell() {
   }, []);
 
   const visibleNavigationItems = useMemo(() => {
-    if (profile == null) return navigationItems;
+    if (isProfileLoading || profile == null) {
+      return navigationItems;
+    }
+
     return navigationItems.filter((item) => canAccessPage(profile, item.pageKey));
-  }, [profile]);
+  }, [profile, isProfileLoading]);
 
   const groupedPaletteResults = useMemo(() => {
     const routeItems = visibleNavigationItems.map((item) => ({
@@ -359,10 +369,13 @@ export default function AppShell() {
   const displayName =
     profile?.fullName ||
     `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim() ||
+    user?.user_metadata?.full_name ||
+    user?.email ||
     "Kullanıcı";
 
   const roleName = profile?.roleName || "Kullanıcı";
-  const organizationName = getOrganizationDisplayName(activeOrganization, profile);
+  const organizationName =
+    getOrganizationDisplayName(activeOrganization, profile) || "Sabırlar";
   const initials = getInitials(displayName);
 
   async function handleSignOut() {

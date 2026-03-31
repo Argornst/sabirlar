@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../../../app/providers/AppProviders";
+import { useCurrentOrganization } from "../../../users/presentation/hooks/useCurrentOrganization";
 import {
   AUDIT_ACTIONS,
   AUDIT_ENTITY_TYPES,
@@ -21,7 +22,13 @@ import { ROUTES } from "../../../../shared/constants/routes";
 export function useCreateSaleForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, activeOrganization } = useAuth();
+  const { user } = useAuth();
+  const {
+    organization,
+    isLoading: isOrganizationLoading,
+    isFetching: isOrganizationFetching,
+    error: organizationError,
+  } = useCurrentOrganization();
 
   const form = useForm({
     resolver: zodResolver(createSaleSchema),
@@ -30,14 +37,19 @@ export function useCreateSaleForm() {
   });
 
   const mutation = useMutation({
-    mutationFn: (values) =>
-      createSale({
+    mutationFn: async (values) => {
+      if (!organization?.id) {
+        throw new Error("Organizasyon bilgisi yüklenemedi.");
+      }
+
+      return createSale({
         salesRepository,
         productsRepository,
         userId: user?.id ?? null,
-        organizationId: activeOrganization?.id ?? null,
+        organizationId: organization.id,
         values,
-      }),
+      });
+    },
     onSuccess: async (createdSale) => {
       await logActivity({
         action: AUDIT_ACTIONS.SALE_CREATED,
@@ -49,6 +61,7 @@ export function useCreateSaleForm() {
           customer_name: createdSale?.customerName ?? null,
           total_amount: createdSale?.totalAmount ?? null,
           item_count: createdSale?.items?.length ?? 0,
+          organization_id: organization?.id ?? null,
         },
       });
 
@@ -62,13 +75,22 @@ export function useCreateSaleForm() {
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
+    if (organizationError) {
+      throw new Error("Organizasyon bilgisi alınamadı.");
+    }
+
+    if (!organization?.id) {
+      throw new Error("Organizasyon yükleniyor, lütfen tekrar deneyin.");
+    }
+
     await mutation.mutateAsync(values);
   });
 
   return {
     ...form,
     onSubmit,
-    isSubmitting: mutation.isPending,
+    isSubmitting:
+      mutation.isPending || isOrganizationLoading || isOrganizationFetching,
     submitError: mutation.error
       ? getReadableErrorMessage(
           mutation.error,

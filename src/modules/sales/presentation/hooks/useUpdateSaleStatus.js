@@ -1,6 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../../app/providers/AppProviders";
-import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../../../../shared/constants/audit";
+import {
+  AUDIT_ACTIONS,
+  AUDIT_ENTITY_TYPES,
+} from "../../../../shared/constants/audit";
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
 import { salesRepository } from "../../infrastructure/repositories/salesRepository";
 
@@ -11,6 +14,7 @@ export function useUpdateSaleStatus() {
   return useMutation({
     mutationFn: async ({ saleId, nextStatus }) =>
       salesRepository.updateStatus(saleId, nextStatus, user?.id ?? null),
+
     onSuccess: async (updatedSale) => {
       await logActivity({
         action: AUDIT_ACTIONS.SALE_STATUS_UPDATED,
@@ -20,6 +24,8 @@ export function useUpdateSaleStatus() {
         actorEmail: user?.email ?? null,
         metadata: {
           status: updatedSale?.status ?? null,
+          payment_status: updatedSale?.paymentStatus ?? null,
+          invoice_status: updatedSale?.invoiceStatus ?? null,
         },
       });
 

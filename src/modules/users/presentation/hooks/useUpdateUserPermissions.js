@@ -36,6 +36,7 @@ export function useUpdateUserPermissions() {
 
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
+      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
     },
   });
 }
