@@ -5219,3 +5219,21 @@ input[type="number"]::-webkit-inner-spin-button {
   border-color: rgba(37, 99, 235, 0.12);
   color: #33517a;
 }
+.sales-status-stack {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.sales-status-stack .ui-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.sales-status-stack .ui-status-badge svg {
+  flex-shrink: 0;
+  opacity: 0.9;
+}

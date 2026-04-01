@@ -29,7 +29,9 @@ export const dashboardRepository = {
       supabase.from("users").select("id", { count: "exact", head: true }),
       supabase
         .from("sales")
-        .select("id, customer_name, total_amount, status, sale_date, created_at")
+        .select(
+          "id, customer_name, total_amount, status, payment_status, invoice_status, sale_date, created_at"
+        )
         .order("created_at", { ascending: false })
         .limit(5),
     ]);
@@ -74,6 +76,8 @@ export const dashboardRepository = {
             customerName: item.customer_name ?? "",
             totalAmount: Number(item.total_amount ?? 0),
             status: item.status ?? "",
+            paymentStatus: item.payment_status ?? "beklemede",
+            invoiceStatus: item.invoice_status ?? "faturalanmadi",
             saleDate: item.sale_date ?? null,
             createdAt: item.created_at ?? null,
           }))

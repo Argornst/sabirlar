@@ -18,6 +18,28 @@ function getTone(status) {
   }
 }
 
+function getReadableSaleStatus(status) {
+  switch (status) {
+    case "odendi_faturalandi":
+      return "Tamamlandı";
+    case "odendi":
+      return "Ödendi • Faturalanmadı";
+    case "faturalandi":
+      return "Faturalandı • Ödenmedi";
+    case "beklemede":
+      return "Beklemede";
+    case "paid":
+      return "Ödendi";
+    case "pending":
+      return "Beklemede";
+    case "cancelled":
+    case "iptal":
+      return "İptal";
+    default:
+      return status || "-";
+  }
+}
+
 export default function ReportsStatusGrid({ salesByStatus = {} }) {
   const entries = Object.entries(salesByStatus);
 
@@ -31,10 +53,9 @@ export default function ReportsStatusGrid({ salesByStatus = {} }) {
         <div key={status} className="reports-status-grid__card">
           <div className="reports-status-grid__badge">
             <StatusBadge tone={getTone(status)}>
-              {status}
+              {getReadableSaleStatus(status)}
             </StatusBadge>
           </div>
-
           <strong>{count}</strong>
           <span>adet kayıt</span>
         </div>

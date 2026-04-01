@@ -28,10 +28,10 @@ export default function SalesFilters({
           onChange={(event) => onStatusChange(event.target.value)}
         >
           <option value="">Tümü</option>
-          <option value="beklemede">beklemede</option>
-          <option value="odendi">odendi</option>
-          <option value="faturalandi">faturalandi</option>
-          <option value="odendi_faturalandi">odendi_faturalandi</option>
+          <option value="beklemede">Beklemede</option>
+          <option value="odendi">Ödendi</option>
+          <option value="faturalandi">Faturalandı</option>
+          <option value="odendi_faturalandi">Tamamlandı</option>
         </select>
       </div>
     </FilterBar>
