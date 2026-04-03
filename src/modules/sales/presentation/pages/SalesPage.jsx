@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import AnimatedPage from "../../../../shared/components/ui/AnimatedPage";
 import Card from "../../../../shared/components/ui/Card";
 import PageHeader from "../../../../shared/components/ui/PageHeader";
@@ -15,12 +16,39 @@ import SalesTable from "../components/SalesTable";
 import { useProductsListQuery } from "../../../products/presentation/hooks/useProductsListQuery";
 
 export default function SalesPage() {
+  const location = useLocation();
   const { data, isLoading, isError, error } = useSalesListQuery();
   const sales = data ?? [];
   const { data: products = [] } = useProductsListQuery();
 
   const { search, setSearch, status, setStatus, filteredSales } =
     useSalesFilters(sales);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const filter = params.get("filter");
+
+    if (!filter) return;
+
+    if (filter === "completed") {
+      setStatus("odendi_faturalandi");
+      return;
+    }
+
+    if (filter === "payment-pending") {
+      setStatus("faturalandi");
+      return;
+    }
+
+    if (filter === "invoicing-pending") {
+      setStatus("odendi");
+      return;
+    }
+
+    if (filter === "waiting") {
+      setStatus("beklemede");
+    }
+  }, [location.search, setStatus]);
 
   return (
     <AnimatedPage>

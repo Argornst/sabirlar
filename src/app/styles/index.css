@@ -5237,3 +5237,60 @@ input[type="number"]::-webkit-inner-spin-button {
   flex-shrink: 0;
   opacity: 0.9;
 }
+.user-management-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.user-management-actions__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: end;
+}
+
+.user-management-actions__buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.user-management-actions__button {
+  width: 100%;
+  justify-content: center;
+}
+
+.user-management-actions__error {
+  margin-top: -8px;
+}
+
+.user-management-select {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.user-management-select__label {
+  min-height: 18px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0.95;
+}
+
+.user-management-select__control {
+  width: 100%;
+}
+
+.user-management-select__error {
+  margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .user-management-actions__grid,
+  .user-management-actions__buttons {
+    grid-template-columns: 1fr;
+  }
+}

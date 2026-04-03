@@ -1,4 +1,6 @@
 import StatCard from "../../../../shared/components/ui/StatCard";
+import StatusBadge from "../../../../shared/components/ui/StatusBadge";
+import { formatRoleName, getRoleTone } from "../../../../shared/lib/formatters";
 
 export default function UsersSummaryCards({ summary }) {
   const roleEntries = Object.entries(summary.byRole || {});
@@ -11,7 +13,11 @@ export default function UsersSummaryCards({ summary }) {
       <StatCard label="Pasif Kullanıcı" value={summary.inactive} />
       <StatCard
         label="En Yaygın Rol"
-        value={topRole ? `${topRole[0]} (${topRole[1]})` : "-"}
+        value={
+          topRole
+            ? `${formatRoleName(topRole[0])} (${topRole[1]})`
+            : "-"
+        }
       />
     </div>
   );

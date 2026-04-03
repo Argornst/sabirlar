@@ -2,6 +2,7 @@ import { formatDate } from "../../../../shared/utils/date";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 import UserManagementActions from "./UserManagementActions";
 import UserPermissionsEditor from "./UserPermissionsEditor";
+import { formatRoleName } from "../../../../shared/lib/formatters";
 
 export default function UsersTable({ users = [] }) {
   const safeUsers = Array.isArray(users)
@@ -26,13 +27,15 @@ export default function UsersTable({ users = [] }) {
 
             <div className="user-management-card__badges">
               <StatusBadge tone="warning">
-                {userItem.roleName || "rol yok"}
+                {formatRoleName(userItem.roleName || "Rol Yok")}
               </StatusBadge>
+
               <StatusBadge tone="default">
-                {userItem.organizationName || "organizasyon yok"}
+                {(userItem.organizationName || "Organizasyon Yok").toUpperCase()}
               </StatusBadge>
+
               <StatusBadge tone={userItem.isActive ? "success" : "danger"}>
-                {userItem.isActive ? "active" : "inactive"}
+                {userItem.isActive ? "Aktif" : "Pasif"}
               </StatusBadge>
             </div>
           </div>

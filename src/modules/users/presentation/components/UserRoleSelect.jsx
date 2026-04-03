@@ -1,5 +1,6 @@
 import { useRolesQuery } from "../hooks/useRolesQuery";
 import { useUpdateUserRole } from "../hooks/useUpdateUserRole";
+import { formatRoleName } from "../../../../shared/lib/formatters";
 
 export default function UserRoleSelect({ userItem }) {
   const { data: roles = [], isLoading } = useRolesQuery();
@@ -23,11 +24,17 @@ export default function UserRoleSelect({ userItem }) {
   }
 
   return (
-    <div className="user-role-select">
-      <label htmlFor={`role-select-${userItem.id}`}>Rol</label>
+    <div className="user-management-select">
+      <label
+        htmlFor={`role-select-${userItem.id}`}
+        className="user-management-select__label"
+      >
+        Rol
+      </label>
+
       <select
         id={`role-select-${userItem.id}`}
-        className="form-select"
+        className="form-select user-management-select__control"
         value={userItem.roleId ?? ""}
         onChange={handleChange}
         disabled={isLoading || mutation.isPending}
@@ -36,14 +43,14 @@ export default function UserRoleSelect({ userItem }) {
           {isLoading ? "Roller yükleniyor..." : "Rol seçin"}
         </option>
         {roles.map((role) => (
-          <option key={role.id} value={role.id}>
-            {role.name}
-          </option>
-        ))}
+  <option key={role.id} value={role.id}>
+    {formatRoleName(role.name)}
+  </option>
+))}
       </select>
 
       {mutation.error ? (
-        <div className="error-text">
+        <div className="error-text user-management-select__error">
           {mutation.error.message || "Rol güncellenemedi."}
         </div>
       ) : null}

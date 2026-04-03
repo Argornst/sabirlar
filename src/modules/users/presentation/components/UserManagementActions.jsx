@@ -9,49 +9,84 @@ export default function UserManagementActions({ userItem }) {
   const resetPermissionsMutation = useResetUserPermissions();
 
   async function handleToggleActive() {
-  console.log("toggle active clicked", {
-    userId: userItem?.id,
-    current: userItem?.isActive,
-    next: !userItem?.isActive,
-  });
+    if (!userItem?.id) {
+      return;
+    }
 
-  if (!userItem?.id) {
-    console.log("userId yok!");
-    return;
+    try {
+      await toggleMutation.mutateAsync({
+        userId: userItem.id,
+        nextIsActive: !userItem.isActive,
+      });
+    } catch (error) {
+      console.error("User active toggle error:", error);
+    }
   }
-
-  try {
-    await toggleMutation.mutateAsync({
-      userId: userItem.id,
-      nextIsActive: !userItem.isActive,
-    });
-
-    console.log("active mutation gönderildi");
-  } catch (error) {
-    console.error("User active toggle error:", error);
-  }
-}
 
   async function handleResetPermissions() {
-  console.log("reset permissions clicked", {
-    userId: userItem?.id,
-    roleName: userItem?.roleName,
-  });
+    if (!userItem?.id) {
+      return;
+    }
 
-  if (!userItem?.id) {
-    console.log("userId yok!");
-    return;
+    try {
+      await resetPermissionsMutation.mutateAsync({
+        userId: userItem.id,
+        roleName: userItem.roleName,
+      });
+    } catch (error) {
+      console.error("User permission reset error:", error);
+    }
   }
 
-  try {
-    await resetPermissionsMutation.mutateAsync({
-      userId: userItem.id,
-      roleName: userItem.roleName,
-    });
+  const isBusy =
+    toggleMutation.isPending || resetPermissionsMutation.isPending;
 
-    console.log("reset permissions mutation gönderildi");
-  } catch (error) {
-    console.error("User permission reset error:", error);
-  }
-}
+  return (
+    <div className="user-management-actions">
+      <div className="user-management-actions__grid">
+        <UserRoleSelect userItem={userItem} />
+        <UserOrganizationSelect userItem={userItem} />
+      </div>
+
+      <div className="user-management-actions__buttons">
+        <Button
+          type="button"
+          variant={userItem?.isActive ? "secondary" : "primary"}
+          onClick={handleToggleActive}
+          disabled={isBusy}
+          className="user-management-actions__button"
+        >
+          {toggleMutation.isPending
+            ? "Güncelleniyor..."
+            : userItem?.isActive
+            ? "Pasife Al"
+            : "Aktif Et"}
+        </Button>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleResetPermissions}
+          disabled={isBusy}
+          className="user-management-actions__button"
+        >
+          {resetPermissionsMutation.isPending
+            ? "Sıfırlanıyor..."
+            : "İzinleri Varsayılan Yap"}
+        </Button>
+      </div>
+
+      {toggleMutation.error ? (
+        <div className="error-text user-management-actions__error">
+          {toggleMutation.error.message || "Kullanıcı durumu güncellenemedi."}
+        </div>
+      ) : null}
+
+      {resetPermissionsMutation.error ? (
+        <div className="error-text user-management-actions__error">
+          {resetPermissionsMutation.error.message || "İzinler sıfırlanamadı."}
+        </div>
+      ) : null}
+    </div>
+  );
 }

@@ -52,7 +52,7 @@ export default function UsersFilters({
         >
           <option value="">Tüm Organizasyonlar</option>
           {organizations.map((organizationItem) => (
-            <option key={organizationItem.id} value={organizationItem.name}>
+            <option key={organizationItem.id} value={organizationItem.id}>
               {organizationItem.name}
             </option>
           ))}

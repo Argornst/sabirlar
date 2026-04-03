@@ -8,22 +8,45 @@ export const dashboardRepository = {
   async getSummary() {
     const [
       salesCountResult,
-      paidSalesResult,
-      pendingSalesResult,
+      completedSalesResult,
+      paymentPendingSalesResult,
+      invoicingPendingSalesResult,
+      waitingSalesResult,
       revenueResult,
       productsCountResult,
       usersCountResult,
       recentSalesResult,
     ] = await Promise.allSettled([
       supabase.from("sales").select("id", { count: "exact", head: true }),
+
+      // TAMAMLANDI → ödenmiş + faturalanmış
       supabase
         .from("sales")
         .select("id", { count: "exact", head: true })
-        .in("status", ["odendi", "odendi_faturalandi"]),
+        .eq("payment_status", "odendi")
+        .eq("invoice_status", "faturalandi"),
+
+      // ÖDEME BEKLEYEN → faturalanmış ama ödenmemiş
       supabase
         .from("sales")
         .select("id", { count: "exact", head: true })
-        .eq("status", "beklemede"),
+        .eq("payment_status", "beklemede")
+        .eq("invoice_status", "faturalandi"),
+
+      // FATURALANACAK → ödenmiş ama faturalanmamış
+      supabase
+        .from("sales")
+        .select("id", { count: "exact", head: true })
+        .eq("payment_status", "odendi")
+        .eq("invoice_status", "faturalanmadi"),
+
+      // BEKLEMEDE → ne ödenmiş ne faturalanmış
+      supabase
+        .from("sales")
+        .select("id", { count: "exact", head: true })
+        .eq("payment_status", "beklemede")
+        .eq("invoice_status", "faturalanmadi"),
+
       supabase.from("sales").select("total_amount"),
       supabase.from("products").select("id", { count: "exact", head: true }),
       supabase.from("users").select("id", { count: "exact", head: true }),
@@ -45,32 +68,50 @@ export const dashboardRepository = {
         : 0;
 
     const totalSalesCount =
-      salesCountResult.status === "fulfilled" && !salesCountResult.value.error
+      salesCountResult.status === "fulfilled" &&
+      !salesCountResult.value.error
         ? Number(salesCountResult.value.count ?? 0)
         : 0;
 
-    const paidSalesCount =
-      paidSalesResult.status === "fulfilled" && !paidSalesResult.value.error
-        ? Number(paidSalesResult.value.count ?? 0)
+    const completedSalesCount =
+      completedSalesResult.status === "fulfilled" &&
+      !completedSalesResult.value.error
+        ? Number(completedSalesResult.value.count ?? 0)
         : 0;
 
-    const pendingSalesCount =
-      pendingSalesResult.status === "fulfilled" && !pendingSalesResult.value.error
-        ? Number(pendingSalesResult.value.count ?? 0)
+    const paymentPendingSalesCount =
+      paymentPendingSalesResult.status === "fulfilled" &&
+      !paymentPendingSalesResult.value.error
+        ? Number(paymentPendingSalesResult.value.count ?? 0)
+        : 0;
+
+    const invoicingPendingSalesCount =
+      invoicingPendingSalesResult.status === "fulfilled" &&
+      !invoicingPendingSalesResult.value.error
+        ? Number(invoicingPendingSalesResult.value.count ?? 0)
+        : 0;
+
+    const waitingSalesCount =
+      waitingSalesResult.status === "fulfilled" &&
+      !waitingSalesResult.value.error
+        ? Number(waitingSalesResult.value.count ?? 0)
         : 0;
 
     const totalProductsCount =
-      productsCountResult.status === "fulfilled" && !productsCountResult.value.error
+      productsCountResult.status === "fulfilled" &&
+      !productsCountResult.value.error
         ? Number(productsCountResult.value.count ?? 0)
         : 0;
 
     const totalUsersCount =
-      usersCountResult.status === "fulfilled" && !usersCountResult.value.error
+      usersCountResult.status === "fulfilled" &&
+      !usersCountResult.value.error
         ? Number(usersCountResult.value.count ?? 0)
         : 0;
 
     const recentSales =
-      recentSalesResult.status === "fulfilled" && !recentSalesResult.value.error
+      recentSalesResult.status === "fulfilled" &&
+      !recentSalesResult.value.error
         ? safeArray(recentSalesResult.value.data).map((item) => ({
             id: item.id,
             customerName: item.customer_name ?? "",
@@ -86,8 +127,16 @@ export const dashboardRepository = {
     return {
       totalRevenue,
       totalSalesCount,
-      pendingSalesCount,
-      paidSalesCount,
+
+      completedSalesCount,
+      paymentPendingSalesCount,
+      invoicingPendingSalesCount,
+      waitingSalesCount,
+
+      // backward compatibility (bozmayalım diye)
+      paidSalesCount: completedSalesCount,
+      pendingSalesCount: waitingSalesCount,
+
       totalUsersCount,
       totalProductsCount,
       recentSales,

@@ -1,39 +1,54 @@
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../../../shared/constants/routes";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 
 export default function DashboardStatusOverview({ summary }) {
+  const navigate = useNavigate();
+
+  function handleClick(type) {
+    navigate(`${ROUTES.SALES}?filter=${type}`);
+  }
+
+  function handleKeyDown(event, type) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleClick(type);
+    }
+  }
+
   const items = [
     {
-      key: "paid",
-      label: "Ödenmiş",
-      value: summary.paidSalesCount ?? 0,
+      key: "completed",
+      label: "Tamamlandı",
+      value: summary.completedSalesCount ?? 0,
       tone: "success",
-      helper: "Tahsilatı tamamlanan satışlar",
-      icon: PaidIcon,
+      helper: "Faturalanmış ve ödenmiş siparişler",
+      icon: CheckCircleIcon,
       featured: true,
     },
     {
-      key: "pending",
-      label: "Bekleyen",
-      value: summary.pendingSalesCount ?? 0,
+      key: "payment-pending",
+      label: "Ödeme Bekleyen",
+      value: summary.paymentPendingSalesCount ?? 0,
       tone: "warning",
-      helper: "İşlemde kalan açık kayıtlar",
-      icon: PendingIcon,
+      helper: "Faturalanmış ama ödenmemiş siparişler",
+      icon: ClockIcon,
     },
     {
-      key: "users",
-      label: "Kullanıcı",
-      value: summary.totalUsersCount ?? 0,
+      key: "invoicing-pending",
+      label: "Faturalanacak",
+      value: summary.invoicingPendingSalesCount ?? 0,
       tone: "default",
-      helper: "Sisteme erişimi olan ekip üyeleri",
-      icon: UsersIcon,
+      helper: "Ödenmiş ama henüz faturalanmamış siparişler",
+      icon: ReceiptIcon,
     },
     {
-      key: "products",
-      label: "Ürün",
-      value: summary.totalProductsCount ?? 0,
+      key: "waiting",
+      label: "Beklemede",
+      value: summary.waitingSalesCount ?? 0,
       tone: "default",
-      helper: "Aktif katalogdaki toplam ürün",
-      icon: ProductsIcon,
+      helper: "Ne ödenmiş ne de faturalanmış siparişler",
+      icon: PackageIcon,
     },
   ];
 
@@ -45,9 +60,16 @@ export default function DashboardStatusOverview({ summary }) {
         return (
           <div
             key={item.key}
+            role="button"
+            tabIndex={0}
+            onClick={() => handleClick(item.key)}
+            onKeyDown={(event) => handleKeyDown(event, item.key)}
             className={`dashboard-status-card dashboard-status-card--premium ${
               item.featured ? "dashboard-status-card--featured" : ""
             } dashboard-status-card--tone-${item.tone}`}
+            style={{ cursor: "pointer" }}
+            aria-label={`${item.label} filtreli satışları göster`}
+            title="Filtreli satışları aç"
           >
             <div className="dashboard-status-card__glow" />
 
@@ -61,9 +83,7 @@ export default function DashboardStatusOverview({ summary }) {
 
             <strong>{item.value}</strong>
 
-            <span className="dashboard-status-card__hint">
-              {item.helper}
-            </span>
+            <span className="dashboard-status-card__hint">{item.helper}</span>
           </div>
         );
       })}
@@ -71,38 +91,41 @@ export default function DashboardStatusOverview({ summary }) {
   );
 }
 
-function PaidIcon() {
+function CheckCircleIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="m5 12 4.2 4.2L19 6.5" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8 12 2.5 2.5L16 9" />
     </svg>
   );
 }
 
-function PendingIcon() {
+function ClockIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="8" />
-      <path d="M12 8v4l2.5 2.5" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
     </svg>
   );
 }
 
-function UsersIcon() {
+function ReceiptIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M16.5 18.5a4.5 4.5 0 0 0-9 0" />
-      <circle cx="12" cy="8.5" r="3.2" />
+      <path d="M7 3.5h10v17l-2.5-1.5-2.5 1.5-2.5-1.5-2.5 1.5v-17Z" />
+      <path d="M10 8h4" />
+      <path d="M10 12h4" />
+      <path d="M10 16h3" />
     </svg>
   );
 }
 
-function ProductsIcon() {
+function PackageIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="m12 21 8-4.5v-8L12 4 4 8.5v8L12 21Z" />
-      <path d="M12 21v-8" />
-      <path d="m4 8.5 8 4.5 8-4.5" />
+      <path d="m12 3 7 4v10l-7 4-7-4V7l7-4Z" />
+      <path d="M12 21V11" />
+      <path d="m5 7 7 4 7-4" />
     </svg>
   );
 }

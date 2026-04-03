@@ -513,7 +513,7 @@ export default function AppShell() {
 
                   {!isSidebarCollapsed ? (
                     <div className="sidebar__brand-text">
-                      <h1>Sabırlar</h1>
+                      <h1>SABIRLAR</h1>
                       <p>{organizationName}</p>
                     </div>
                   ) : null}
@@ -536,7 +536,7 @@ export default function AppShell() {
                 <div className="sidebar__workspace-card sidebar__workspace-card--compact">
                   <span className="sidebar__workspace-label">Çalışma Alanı</span>
                   <strong>{organizationName}</strong>
-                  <small>Premium satış yönetim paneli</small>
+                  <small>Perakende Satış Yönetim Paneli</small>
                 </div>
               ) : null}
             </div>
@@ -553,6 +553,7 @@ export default function AppShell() {
                   <NavLink
                     key={item.path}
                     to={item.path}
+                    end={item.path === ROUTES.SALES}
                     className={({ isActive }) =>
                       `sidebar__link${isActive ? " sidebar__link--active" : ""}`
                     }

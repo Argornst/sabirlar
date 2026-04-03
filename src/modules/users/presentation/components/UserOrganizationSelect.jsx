@@ -6,34 +6,59 @@ export default function UserOrganizationSelect({ userItem }) {
   const mutation = useUpdateUserOrganization();
 
   async function handleChange(event) {
-  const rawValue = event.target.value;
-  const nextOrganizationId = rawValue === "" ? null : Number(rawValue);
+    const rawValue = event.target.value;
+    const nextOrganizationId = rawValue === "" ? null : Number(rawValue);
 
-  console.log("organization change clicked", {
-    userId: userItem?.id,
-    current: userItem?.organizationId,
-    next: nextOrganizationId,
-  });
+    if (!userItem?.id) {
+      return;
+    }
 
-  if (!userItem?.id) {
-    console.log("userId yok!");
-    return;
+    if (nextOrganizationId === Number(userItem.organizationId ?? null)) {
+      return;
+    }
+
+    try {
+      await mutation.mutateAsync({
+        userId: userItem.id,
+        organizationId: nextOrganizationId,
+      });
+    } catch (error) {
+      console.error("User organization update error:", error);
+    }
   }
 
-  if (nextOrganizationId === Number(userItem.organizationId ?? null)) {
-    console.log("aynı organizasyon seçildi, işlem yapılmadı");
-    return;
-  }
+  return (
+    <div className="user-management-select">
+      <label
+        htmlFor={`organization-select-${userItem.id}`}
+        className="user-management-select__label"
+      >
+        Organizasyon
+      </label>
 
-  try {
-    await mutation.mutateAsync({
-      userId: userItem.id,
-      organizationId: nextOrganizationId,
-    });
+      <select
+        id={`organization-select-${userItem.id}`}
+        className="form-select user-management-select__control"
+        value={userItem.organizationId ?? ""}
+        onChange={handleChange}
+        disabled={isLoading || mutation.isPending}
+      >
+        <option value="">
+          {isLoading ? "Organizasyonlar yükleniyor..." : "Organizasyon seçin"}
+        </option>
 
-    console.log("organization mutation gönderildi");
-  } catch (error) {
-    console.error("User organization update error:", error);
-  }
-}
+        {organizations.map((organization) => (
+          <option key={organization.id} value={organization.id}>
+            {organization.name}
+          </option>
+        ))}
+      </select>
+
+      {mutation.error ? (
+        <div className="error-text user-management-select__error">
+          {mutation.error.message || "Organizasyon güncellenemedi."}
+        </div>
+      ) : null}
+    </div>
+  );
 }

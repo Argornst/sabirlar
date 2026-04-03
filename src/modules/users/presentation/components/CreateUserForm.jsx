@@ -3,6 +3,7 @@ import Field from "../../../../shared/components/ui/Field";
 import { useOrganizationsQuery } from "../hooks/useOrganizationsQuery";
 import { useRolesQuery } from "../hooks/useRolesQuery";
 import { useCreateUserForm } from "../hooks/useCreateUserForm";
+import { formatRoleName } from "../../../../shared/lib/formatters";
 
 export default function CreateUserForm() {
   const {
@@ -69,10 +70,10 @@ export default function CreateUserForm() {
             {rolesLoading ? "Roller yükleniyor..." : "Rol seçin"}
           </option>
           {roles.map((role) => (
-            <option key={role.id} value={role.id}>
-              {role.name}
-            </option>
-          ))}
+  <option key={role.id} value={role.id}>
+    {formatRoleName(role.name)}
+  </option>
+))}
         </select>
       </Field>
 
