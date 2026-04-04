@@ -220,17 +220,16 @@ async function create({
   });
 
   const { data, error } = await supabase
-  .from(DB_TABLES.SALES)
-  .update(payload)
-  .eq(SALES_COLUMNS.ID, saleId)
-  .select("*")   // 🔥 önemli
-  .single();     // 🔥 önemli
+    .from(DB_TABLES.SALES)
+    .insert(payload)
+    .select(SALES_SELECT)
+    .single();
 
-if (error) {
-  throw new Error(error.message);
-}
+  if (error) {
+    throw new Error(error.message);
+  }
 
-return normalizeSaleRecord(data);
+  return normalizeSaleRecord(data);
 }
 
 async function insertItems({ saleId, items }) {

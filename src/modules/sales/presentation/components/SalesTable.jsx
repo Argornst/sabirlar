@@ -20,6 +20,17 @@ function getItemPreview(items = []) {
   return `${items[0].productName} +${items.length - 1} ürün`;
 }
 
+function getTotalQuantity(items = []) {
+  return items.reduce((acc, item) => acc + Number(item.quantity ?? 0), 0);
+}
+
+function getPrimaryUnit(items = []) {
+  if (!Array.isArray(items) || !items.length) return "adet";
+
+  const firstUnit = items[0]?.unit;
+  return firstUnit || "adet";
+}
+
 export default function SalesTable({ sales = [], products = [] }) {
   const [expandedSaleId, setExpandedSaleId] = useState(null);
   const [editingSaleId, setEditingSaleId] = useState(null);
@@ -37,115 +48,148 @@ export default function SalesTable({ sales = [], products = [] }) {
     setExpandedSaleId((prev) => (prev === saleId ? null : saleId));
   }
 
+  function toggleEditing(saleId) {
+    setEditingSaleId((prev) => (prev === saleId ? null : saleId));
+  }
+
   return (
-    <div className="sales-list-stack">
-      {safeSales.map((sale) => {
-        const isExpanded = expandedSaleId === sale.id;
-        const isEditing = editingSaleId === sale.id;
+    <div className="sales-table-shell">
+      <div className="sales-table-wrap">
+        <table className="sales-table">
+          <thead>
+            <tr>
+              <th>Müşteri</th>
+              <th>Ürün Bilgisi</th>
+              <th>Tarih</th>
+              <th>Kalem</th>
+              <th>Toplam Adet</th>
+              <th>Genel Toplam</th>
+              <th>Durum</th>
+              <th className="sales-table__actions-col">İşlemler</th>
+            </tr>
+          </thead>
 
-        return (
-          <div key={sale.id} className="sales-record-card sales-record-card--order">
-            <div className="sales-record-card__top">
-              <div className="sales-record-card__identity sale-header">
-  <h4 className="sale-customer">{sale.customerName || "-"}</h4>
+          <tbody>
+            {safeSales.map((sale) => {
+              const isExpanded = expandedSaleId === sale.id;
+              const isEditing = editingSaleId === sale.id;
 
-  <p className="sale-meta">
-    <span className="sale-date">
-      {formatDate(sale.saleDate)}
-    </span>
+              return (
+                <FragmentRow
+                  key={sale.id}
+                  sale={sale}
+                  isExpanded={isExpanded}
+                  isEditing={isEditing}
+                  products={products}
+                  onToggleExpanded={toggleExpanded}
+                  onToggleEditing={toggleEditing}
+                />
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
-    <span className="sale-meta-separator">•</span>
+function FragmentRow({
+  sale,
+  isExpanded,
+  isEditing,
+  products,
+  onToggleExpanded,
+  onToggleEditing,
+}) {
+  const paymentTone = getPaymentTone(sale.paymentStatus);
+  const invoiceTone = getInvoiceTone(sale.invoiceStatus);
 
-    <span className="sale-product">
-      {sale.items?.[0]?.productName || "Ürün yok"}
-    </span>
+  return (
+    <>
+      <tr className="sales-table__row">
+        <td>
+          <div className="sales-table__customer">
+            <strong>{sale.customerName || "-"}</strong>
+            <span>#{sale.id}</span>
+          </div>
+        </td>
 
-    {sale.items?.length > 1 ? (
-      <span className="sale-more">
-        +{sale.items.length - 1} ürün
-      </span>
-    ) : null}
-  </p>
-</div>
+        <td>
+          <div className="sales-table__product">
+            <strong>{getItemPreview(sale.items)}</strong>
+          </div>
+        </td>
 
-              <div className="sales-record-card__badges">
-                <StatusBadge tone={getPaymentTone(sale.paymentStatus)}>
-                  {sale.paymentStatus === "odendi" ? "Ödendi" : "Beklemede"}
-                </StatusBadge>
+        <td>
+          <span className="sales-table__muted">{formatDate(sale.saleDate)}</span>
+        </td>
 
-                <StatusBadge tone={getInvoiceTone(sale.invoiceStatus)}>
-                  {sale.invoiceStatus === "faturalandi"
-                    ? "Faturalandı"
-                    : "Faturalanmadı"}
-                </StatusBadge>
-              </div>
-            </div>
+        <td>
+          <strong>{sale.items?.length ?? 0}</strong>
+        </td>
 
-            <div className="sales-record-card__summary">
-              <div className="sales-record-card__summary-item">
-                <span>Kalem</span>
-                <strong>{sale.items?.length ?? 0}</strong>
-              </div>
+        <td>
+          <div className="sales-table__qty">
+            <strong>{getTotalQuantity(sale.items ?? [])}</strong>
+            <span>{getPrimaryUnit(sale.items)}</span>
+          </div>
+        </td>
 
-              <div className="sales-record-card__summary-item">
-                <span>Toplam Adet</span>
-                <strong>
-                  {(sale.items ?? []).reduce(
-                    (acc, item) => acc + Number(item.quantity ?? 0),
-                    0
-                  )}
-                </strong>
-              </div>
+        <td>
+          <div className="sales-table__amount">
+            <strong>{formatCurrency(sale.totalAmount ?? 0, "TRY")}</strong>
+          </div>
+        </td>
 
-              <div className="sales-record-card__summary-item">
-                <span>Oluşturan</span>
-                <strong>{sale.createdBy || "-"}</strong>
-              </div>
+        <td>
+          <div className="sales-table__badges sales-table__badges--compact">
+            <StatusBadge tone={paymentTone}>
+              {sale.paymentStatus === "odendi" ? "Ödendi" : "Beklemede"}
+            </StatusBadge>
 
-              <div className="sales-record-card__summary-item">
-                <span>Güncelleyen</span>
-                <strong>{sale.updatedBy || "-"}</strong>
-              </div>
+            <StatusBadge tone={invoiceTone}>
+              {sale.invoiceStatus === "faturalandi"
+                ? "Faturalandı"
+                : "Faturalanmadı"}
+            </StatusBadge>
+          </div>
+        </td>
 
-              <div className="sales-record-card__summary-item summary-item--highlight">
-                <span>Genel Toplam</span>
-                <strong>{formatCurrency(sale.totalAmount ?? 0, "TRY")}</strong>
-              </div>
-            </div>
+        <td className="sales-table__actions-col">
+          <SaleRowActions
+            sale={sale}
+            isExpanded={isExpanded}
+            isEditing={isEditing}
+            onToggleExpanded={() => onToggleExpanded(sale.id)}
+            onEdit={() => onToggleEditing(sale.id)}
+          />
+        </td>
+      </tr>
 
-            <div className="sales-record-card__actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => toggleExpanded(sale.id)}
-              >
-                {isExpanded ? "Detayı Kapat" : "Detayı Aç"}
-              </button>
-
-              <SaleRowActions
+      {isEditing ? (
+        <tr className="sales-table__detail-row">
+          <td colSpan={8}>
+            <div className="sales-table__detail-card">
+              <EditSaleInlineForm
                 sale={sale}
-                onEdit={() =>
-                  setEditingSaleId((prev) => (prev === sale.id ? null : sale.id))
-                }
+                products={products}
+                onCancel={() => onToggleEditing(sale.id)}
+                onSuccess={() => onToggleEditing(sale.id)}
               />
             </div>
+          </td>
+        </tr>
+      ) : null}
 
-            {isEditing ? (
-              <div className="sale-details-panel">
-                <h4 className="inline-form-title">Siparişi Düzenle</h4>
-                <EditSaleInlineForm
-                  sale={sale}
-                  products={products}
-                  onCancel={() => setEditingSaleId(null)}
-                  onSuccess={() => setEditingSaleId(null)}
-                />
-              </div>
-            ) : null}
-
-            {isExpanded ? <SaleDetailsPanel sale={sale} /> : null}
-          </div>
-        );
-      })}
-    </div>
+      {isExpanded ? (
+        <tr className="sales-table__detail-row">
+          <td colSpan={8}>
+            <div className="sales-table__detail-card">
+              <SaleDetailsPanel sale={sale} />
+            </div>
+          </td>
+        </tr>
+      ) : null}
+    </>
   );
 }

@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { Plus } from "@phosphor-icons/react";
 import AnimatedPage from "../../../../shared/components/ui/AnimatedPage";
 import Card from "../../../../shared/components/ui/Card";
 import PageHeader from "../../../../shared/components/ui/PageHeader";
@@ -58,12 +59,12 @@ export default function SalesPage() {
           description="Satış kayıtlarını filtreleyin, detaylarını görüntüleyin, dışa aktarın ve yönetin."
           badge="Satış Yönetimi"
           actions={
-            <div className="row-actions">
-              <SalesExportActions sales={filteredSales} />
-              <Link to={ROUTES.NEW_SALE}>
-                <Button>Yeni Satış</Button>
-              </Link>
-            </div>
+            <Link to={ROUTES.NEW_SALE}>
+              <Button className="btn-premium">
+                <Plus size={18} />
+                Yeni Satış
+              </Button>
+            </Link>
           }
         />
 
@@ -72,6 +73,7 @@ export default function SalesPage() {
           onSearchChange={setSearch}
           status={status}
           onStatusChange={setStatus}
+          actions={<SalesExportActions sales={filteredSales} />}
         />
 
         {isLoading ? (

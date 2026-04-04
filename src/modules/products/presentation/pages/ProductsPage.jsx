@@ -33,7 +33,6 @@ export default function ProductsPage() {
           title="Products"
           description="Ürün tanımlarını oluşturun, filtreleyin, dışa aktarın ve mevcut ürünleri yönetin."
           badge="Ürün Yönetimi"
-          actions={<ProductsExportActions products={filteredProducts} />}
         />
 
         <div className="content-stack">
@@ -60,6 +59,7 @@ export default function ProductsPage() {
               onSearchChange={setSearch}
               status={status}
               onStatusChange={setStatus}
+              actions={<ProductsExportActions products={filteredProducts} />}
             />
 
             {isLoading ? (

@@ -121,18 +121,6 @@ function getPageTitle(pathname) {
   return matched?.label ?? "Panel";
 }
 
-function getInitials(value) {
-  const text = String(value || "").trim();
-  if (!text) return "SB";
-
-  const parts = text.split(/\s+/).filter(Boolean);
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase();
-  }
-
-  return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
-}
-
 function normalizeForSearch(value) {
   return String(value || "")
     .toLocaleLowerCase("tr")
@@ -232,6 +220,7 @@ export default function AppShell() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);
+  const [isThemeAnimating, setIsThemeAnimating] = useState(false);
   const paletteInputRef = useRef(null);
 
   useEffect(() => {
@@ -373,10 +362,9 @@ export default function AppShell() {
     user?.email ||
     "Kullanıcı";
 
-  const roleName = profile?.roleName || "Kullanıcı";
+  const roleName = profile?.roleName || "Yönetici";
   const organizationName =
     getOrganizationDisplayName(activeOrganization, profile) || "Sabırlar";
-  const initials = getInitials(displayName);
 
   async function handleSignOut() {
     try {
@@ -391,7 +379,13 @@ export default function AppShell() {
   }
 
   function toggleTheme() {
+    setIsThemeAnimating(true);
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+
+    window.clearTimeout(window.__themeAnimTimeout__);
+    window.__themeAnimTimeout__ = window.setTimeout(() => {
+      setIsThemeAnimating(false);
+    }, 520);
   }
 
   function scrollToTop() {
@@ -536,7 +530,7 @@ export default function AppShell() {
                 <div className="sidebar__workspace-card sidebar__workspace-card--compact">
                   <span className="sidebar__workspace-label">Çalışma Alanı</span>
                   <strong>{organizationName}</strong>
-                  <small>Perakende Satış Yönetim Paneli</small>
+                  <small>Perakende satış yönetim paneli</small>
                 </div>
               ) : null}
             </div>
@@ -572,20 +566,7 @@ export default function AppShell() {
             </nav>
           </div>
 
-          <div className="sidebar__footer">
-            <div className="sidebar__user-card sidebar__user-card--ultra">
-              <div className="sidebar__user-avatar sidebar__user-avatar--ultra">
-                {initials}
-              </div>
-
-              {!isSidebarCollapsed ? (
-                <div className="sidebar__user-meta">
-                  <strong>{displayName}</strong>
-                  <span>{roleName}</span>
-                </div>
-              ) : null}
-            </div>
-
+          <div className="sidebar__footer sidebar__footer--sveta">
             {!visibleNavigationItems.length ? (
               <NavLink
                 to={fallbackRoute}
@@ -605,10 +586,11 @@ export default function AppShell() {
             <button
               type="button"
               onClick={handleSignOut}
-              className="ui-button ui-button--danger"
+              className="sidebar__logout-button"
               title="Çıkış Yap"
             >
-              {isSidebarCollapsed ? "⎋" : "Çıkış Yap"}
+              <LogoutIcon />
+              {!isSidebarCollapsed ? <span>Çıkış Yap</span> : null}
             </button>
           </div>
         </div>
@@ -635,18 +617,26 @@ export default function AppShell() {
             </button>
 
             <div className="topbar__organization-chip">{organizationName}</div>
-            <div className="topbar__pill topbar__pill--ultra">{roleName}</div>
+
+            <div className="topbar__account">
+              <strong>{displayName}</strong>
+              <span>{roleName}</span>
+            </div>
 
             <button
               type="button"
-              className="ui-button ui-button--ghost theme-toggle"
+              className={`ui-button ui-button--ghost theme-toggle ${
+                isThemeAnimating ? "theme-toggle--animating" : ""
+              }`}
               onClick={toggleTheme}
               title={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
               aria-label={
                 theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"
               }
             >
-              {theme === "dark" ? "☀️" : "🌙"}
+              <span className="theme-toggle__icon">
+                {theme === "dark" ? "☀️" : "🌙"}
+              </span>
             </button>
           </div>
         </header>

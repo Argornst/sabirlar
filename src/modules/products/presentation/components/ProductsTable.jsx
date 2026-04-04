@@ -12,59 +12,114 @@ export default function ProductsTable({ products = [] }) {
   }
 
   return (
-    <div className="users-table-stack">
-      {products.map((product) => {
-        const isEditing = editingProductId === product.id;
+    <div className="products-table-shell">
+      <div className="products-table-wrap">
+        <table className="products-table">
+          <thead>
+            <tr>
+              <th>Ürün</th>
+              <th>Birim</th>
+              <th>Birim Fiyat</th>
+              <th>KDV</th>
+              <th>Durum</th>
+              <th className="products-table__actions-col">İşlemler</th>
+            </tr>
+          </thead>
 
-        return (
-          <div key={product.id} className="user-management-card">
-            <div className="user-management-card__header">
-              <div className="user-management-card__identity">
-                <h4>{product.name}</h4>
-                <p>
-                  {product.unit} • {formatCurrency(product.unitPrice, "TRY")}
-                </p>
-              </div>
+          <tbody>
+            {products.map((product) => {
+              const isEditing = editingProductId === product.id;
 
-              <div className="user-management-card__badges">
-                <StatusBadge tone={product.isActive ? "success" : "danger"}>
-                  {product.isActive ? "active" : "inactive"}
-                </StatusBadge>
-                <StatusBadge tone="warning">
-                  {product.vatType} %{product.vatRate}
-                </StatusBadge>
-              </div>
-            </div>
+              return (
+                <FragmentRow
+                  key={product.id}
+                  product={product}
+                  isEditing={isEditing}
+                  onToggleEditing={() =>
+                    setEditingProductId((prev) =>
+                      prev === product.id ? null : product.id
+                    )
+                  }
+                  onCloseEditing={() => setEditingProductId(null)}
+                />
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
-            <div className="user-management-card__meta">
-              <span><strong>ID:</strong> {product.id}</span>
-              <span><strong>Birim:</strong> {product.unit}</span>
-              <span><strong>Fiyat:</strong> {formatCurrency(product.unitPrice, "TRY")}</span>
-            </div>
+function FragmentRow({
+  product,
+  isEditing,
+  onToggleEditing,
+  onCloseEditing,
+}) {
+  return (
+    <>
+      <tr className="products-table__row">
+        <td>
+          <div className="products-table__product">
+            <strong>{product.name}</strong>
+            <span>#{product.id}</span>
+          </div>
+        </td>
 
-            <div className="user-management-card__actions-block">
-              <h5>Ürün Aksiyonları</h5>
-              <ProductRowActions
+        <td>
+          <div className="products-table__unit">
+            <strong>{product.unit || "-"}</strong>
+          </div>
+        </td>
+
+        <td>
+          <div className="products-table__price">
+            <strong>{formatCurrency(product.unitPrice, "TRY")}</strong>
+          </div>
+        </td>
+
+        <td>
+          <div className="products-table__vat">
+            <span className="products-table__vat-type">
+              {product.vatType}
+            </span>
+            <span className="products-table__vat-rate">
+              %{product.vatRate}
+            </span>
+          </div>
+        </td>
+
+        <td>
+          <div className="products-table__badges products-table__badges--compact">
+            <StatusBadge tone={product.isActive ? "success" : "danger"}>
+              {product.isActive ? "Aktif" : "Pasif"}
+            </StatusBadge>
+          </div>
+        </td>
+
+        <td className="products-table__actions-col">
+          <ProductRowActions
+            product={product}
+            isEditing={isEditing}
+            onEdit={onToggleEditing}
+          />
+        </td>
+      </tr>
+
+      {isEditing ? (
+        <tr className="products-table__detail-row">
+          <td colSpan={6}>
+            <div className="products-table__detail-card">
+              <EditProductInlineForm
                 product={product}
-                onEdit={() =>
-                  setEditingProductId((prev) => (prev === product.id ? null : product.id))
-                }
+                onCancel={onCloseEditing}
+                onSuccess={onCloseEditing}
               />
             </div>
-
-            {isEditing ? (
-              <div className="user-management-card__permissions">
-                <h5>Ürün Düzenle</h5>
-                <EditProductInlineForm
-                  product={product}
-                  onCancel={() => setEditingProductId(null)}
-                  onSuccess={() => setEditingProductId(null)}
-                />
-              </div>
-            ) : null}
-          </div>
-        );
-      })}
-    </div>
+          </td>
+        </tr>
+      ) : null}
+    </>
   );
 }
