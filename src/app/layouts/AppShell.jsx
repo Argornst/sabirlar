@@ -12,6 +12,7 @@ import {
   getFirstAccessibleRoute,
 } from "../../shared/lib/permissions";
 import { getOrganizationDisplayName } from "../../shared/lib/tenant";
+import { formatRoleName } from "../../shared/lib/formatters";
 import { useAuth } from "../providers/AppProviders";
 import { useCurrentOrganization } from "../../modules/users/presentation/hooks/useCurrentOrganization";
 
@@ -213,9 +214,7 @@ export default function AppShell() {
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "dark";
-  });
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
 
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
@@ -229,8 +228,16 @@ export default function AppShell() {
   }, [theme]);
 
   useEffect(() => {
+    let ticking = false;
+
     function handleScroll() {
-      setShowScrollTop(window.scrollY > 280);
+      if (ticking) return;
+
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        setShowScrollTop(window.scrollY > 280);
+        ticking = false;
+      });
     }
 
     handleScroll();
@@ -289,9 +296,10 @@ export default function AppShell() {
     return groups;
   }, [paletteQuery, visibleNavigationItems]);
 
-  const flatPaletteItems = useMemo(() => {
-    return groupedPaletteResults.flatMap((group) => group.items);
-  }, [groupedPaletteResults]);
+  const flatPaletteItems = useMemo(
+    () => groupedPaletteResults.flatMap((group) => group.items),
+    [groupedPaletteResults]
+  );
 
   useEffect(() => {
     setActiveCommandIndex(0);
@@ -362,7 +370,7 @@ export default function AppShell() {
     user?.email ||
     "Kullanıcı";
 
-  const roleName = profile?.roleName || "Yönetici";
+  const roleName = formatRoleName(profile?.roleName || "admin");
   const organizationName =
     getOrganizationDisplayName(activeOrganization, profile) || "Sabırlar";
 
@@ -430,10 +438,10 @@ export default function AppShell() {
         transition: { duration: 0 },
       }
     : {
-        initial: { opacity: 0, y: 12 },
+        initial: { opacity: 0, y: 8 },
         animate: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -8 },
-        transition: { duration: 0.18, ease: "easeOut" },
+        exit: { opacity: 0, y: -4 },
+        transition: { duration: 0.12, ease: "easeOut" },
       };
 
   const scrollButtonTransitionProps = prefersReducedMotion
@@ -444,10 +452,10 @@ export default function AppShell() {
         transition: { duration: 0 },
       }
     : {
-        initial: { opacity: 0, y: 12, scale: 0.92 },
+        initial: { opacity: 0, y: 8, scale: 0.96 },
         animate: { opacity: 1, y: 0, scale: 1 },
-        exit: { opacity: 0, y: 12, scale: 0.92 },
-        transition: { duration: 0.14, ease: "easeOut" },
+        exit: { opacity: 0, y: 8, scale: 0.96 },
+        transition: { duration: 0.1, ease: "easeOut" },
       };
 
   const paletteBackdropTransitionProps = prefersReducedMotion
@@ -461,7 +469,7 @@ export default function AppShell() {
         initial: { opacity: 0 },
         animate: { opacity: 1 },
         exit: { opacity: 0 },
-        transition: { duration: 0.12, ease: "easeOut" },
+        transition: { duration: 0.1, ease: "easeOut" },
       };
 
   const palettePanelTransitionProps = prefersReducedMotion
@@ -472,10 +480,10 @@ export default function AppShell() {
         transition: { duration: 0 },
       }
     : {
-        initial: { opacity: 0, y: 10, scale: 0.985 },
+        initial: { opacity: 0, y: 8, scale: 0.99 },
         animate: { opacity: 1, y: 0, scale: 1 },
-        exit: { opacity: 0, y: 8, scale: 0.985 },
-        transition: { duration: 0.14, ease: "easeOut" },
+        exit: { opacity: 0, y: 6, scale: 0.99 },
+        transition: { duration: 0.1, ease: "easeOut" },
       };
 
   let runningIndex = -1;
@@ -496,43 +504,39 @@ export default function AppShell() {
         <span className="sidebar__ambient sidebar__ambient--one" />
         <span className="sidebar__ambient sidebar__ambient--two" />
 
+        <button
+          type="button"
+          className={`sidebar__floating-toggle ${
+            isSidebarCollapsed ? "sidebar__floating-toggle--collapsed" : ""
+          }`}
+          onClick={toggleSidebar}
+          aria-label={
+            isSidebarCollapsed ? "Menüyü genişlet" : "Menüyü daralt"
+          }
+          title={isSidebarCollapsed ? "Genişlet" : "Daralt"}
+        >
+          <ChevronIcon collapsed={isSidebarCollapsed} />
+        </button>
+
         <div className="sidebar__inner">
           <div className="sidebar__top">
-            <div className="sidebar__header-card">
-              <div className="sidebar__brand-row">
-                <div className="sidebar__brand sidebar__brand--ultra">
-                  <div className="sidebar__logo sidebar__logo--ultra">
-                    <span className="sidebar__logo-mark">SB</span>
+            <div className="sidebar__brand-row sidebar__brand-row--clean">
+              <div className="sidebar__brand-block">
+                <img
+                  src="/logo.svg"
+                  alt="Sabırlar"
+                  className="sidebar__brand-logo-image"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                />
+
+                {!isSidebarCollapsed ? (
+                  <div className="sidebar__brand-text-block">
+                    <h1 className="sidebar__brand-title">SABIRLAR</h1>
                   </div>
-
-                  {!isSidebarCollapsed ? (
-                    <div className="sidebar__brand-text">
-                      <h1>SABIRLAR</h1>
-                      <p>{organizationName}</p>
-                    </div>
-                  ) : null}
-                </div>
-
-                <button
-                  type="button"
-                  className="sidebar__collapse-button"
-                  onClick={toggleSidebar}
-                  aria-label={
-                    isSidebarCollapsed ? "Menüyü genişlet" : "Menüyü daralt"
-                  }
-                  title={isSidebarCollapsed ? "Genişlet" : "Daralt"}
-                >
-                  <ChevronIcon collapsed={isSidebarCollapsed} />
-                </button>
+                ) : null}
               </div>
-
-              {!isSidebarCollapsed ? (
-                <div className="sidebar__workspace-card sidebar__workspace-card--compact">
-                  <span className="sidebar__workspace-label">Çalışma Alanı</span>
-                  <strong>{organizationName}</strong>
-                  <small>Perakende satış yönetim paneli</small>
-                </div>
-              ) : null}
             </div>
 
             {!isSidebarCollapsed ? (

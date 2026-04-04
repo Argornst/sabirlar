@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { formatCurrency } from "../../../../shared/utils/currency";
 import { formatDate } from "../../../../shared/utils/date";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
@@ -7,7 +8,20 @@ import {
 } from "../../../../shared/lib/salesStatus";
 
 export default function RecentSalesList({ sales = [] }) {
-  if (!sales.length) {
+  const rows = useMemo(() => {
+    return sales.map((sale) => {
+      const paymentMeta = getPaymentStatusMeta(sale.paymentStatus);
+      const invoiceMeta = getInvoiceStatusMeta(sale.invoiceStatus);
+
+      return {
+        ...sale,
+        paymentMeta,
+        invoiceMeta,
+      };
+    });
+  }, [sales]);
+
+  if (!rows.length) {
     return <div className="helper-text">Satış yok</div>;
   }
 
@@ -25,12 +39,9 @@ export default function RecentSalesList({ sales = [] }) {
         </thead>
 
         <tbody>
-          {sales.map((sale) => {
-            const paymentMeta = getPaymentStatusMeta(sale.paymentStatus);
-            const invoiceMeta = getInvoiceStatusMeta(sale.invoiceStatus);
-
-            const PaymentIcon = paymentMeta.icon;
-            const InvoiceIcon = invoiceMeta.icon;
+          {rows.map((sale) => {
+            const PaymentIcon = sale.paymentMeta.icon;
+            const InvoiceIcon = sale.invoiceMeta.icon;
 
             return (
               <tr key={sale.id}>
@@ -50,14 +61,14 @@ export default function RecentSalesList({ sales = [] }) {
 
                 <td className="data-table__status">
                   <div className="sales-status-stack">
-                    <StatusBadge tone={paymentMeta.tone}>
+                    <StatusBadge tone={sale.paymentMeta.tone}>
                       <PaymentIcon size={14} weight="bold" />
-                      {paymentMeta.label}
+                      {sale.paymentMeta.label}
                     </StatusBadge>
 
-                    <StatusBadge tone={invoiceMeta.tone}>
+                    <StatusBadge tone={sale.invoiceMeta.tone}>
                       <InvoiceIcon size={14} weight="bold" />
-                      {invoiceMeta.label}
+                      {sale.invoiceMeta.label}
                     </StatusBadge>
                   </div>
                 </td>

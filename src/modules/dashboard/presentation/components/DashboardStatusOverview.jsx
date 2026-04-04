@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
 import StatusBadge from "../../../../shared/components/ui/StatusBadge";
@@ -5,52 +6,66 @@ import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 export default function DashboardStatusOverview({ summary }) {
   const navigate = useNavigate();
 
-  function handleClick(type) {
-    navigate(`${ROUTES.SALES}?filter=${type}`);
-  }
+  const handleClick = useCallback(
+    (type) => {
+      navigate(`${ROUTES.SALES}?filter=${type}`);
+    },
+    [navigate]
+  );
 
-  function handleKeyDown(event, type) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      handleClick(type);
-    }
-  }
+  const handleKeyDown = useCallback(
+    (event, type) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handleClick(type);
+      }
+    },
+    [handleClick]
+  );
 
-  const items = [
-    {
-      key: "completed",
-      label: "Tamamlandı",
-      value: summary.completedSalesCount ?? 0,
-      tone: "success",
-      helper: "Faturalanmış ve ödenmiş siparişler",
-      icon: CheckCircleIcon,
-      featured: true,
-    },
-    {
-      key: "payment-pending",
-      label: "Ödeme Bekleyen",
-      value: summary.paymentPendingSalesCount ?? 0,
-      tone: "warning",
-      helper: "Faturalanmış ama ödenmemiş siparişler",
-      icon: ClockIcon,
-    },
-    {
-      key: "invoicing-pending",
-      label: "Faturalanacak",
-      value: summary.invoicingPendingSalesCount ?? 0,
-      tone: "default",
-      helper: "Ödenmiş ama henüz faturalanmamış siparişler",
-      icon: ReceiptIcon,
-    },
-    {
-      key: "waiting",
-      label: "Beklemede",
-      value: summary.waitingSalesCount ?? 0,
-      tone: "default",
-      helper: "Ne ödenmiş ne de faturalanmış siparişler",
-      icon: PackageIcon,
-    },
-  ];
+  const items = useMemo(
+    () => [
+      {
+        key: "completed",
+        label: "Tamamlandı",
+        value: summary.completedSalesCount ?? 0,
+        tone: "success",
+        helper: "Faturalanmış ve ödenmiş siparişler",
+        icon: CheckCircleIcon,
+        featured: true,
+      },
+      {
+        key: "payment-pending",
+        label: "Ödeme Bekleyen",
+        value: summary.paymentPendingSalesCount ?? 0,
+        tone: "warning",
+        helper: "Faturalanmış ama ödenmemiş siparişler",
+        icon: ClockIcon,
+      },
+      {
+        key: "invoicing-pending",
+        label: "Faturalanacak",
+        value: summary.invoicingPendingSalesCount ?? 0,
+        tone: "default",
+        helper: "Ödenmiş ama henüz faturalanmamış siparişler",
+        icon: ReceiptIcon,
+      },
+      {
+        key: "waiting",
+        label: "Beklemede",
+        value: summary.waitingSalesCount ?? 0,
+        tone: "default",
+        helper: "Ne ödenmiş ne de faturalanmış siparişler",
+        icon: PackageIcon,
+      },
+    ],
+    [
+      summary.completedSalesCount,
+      summary.paymentPendingSalesCount,
+      summary.invoicingPendingSalesCount,
+      summary.waitingSalesCount,
+    ]
+  );
 
   return (
     <div className="dashboard-status-grid dashboard-status-grid--premium">

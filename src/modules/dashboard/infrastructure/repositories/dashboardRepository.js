@@ -19,28 +19,24 @@ export const dashboardRepository = {
     ] = await Promise.allSettled([
       supabase.from("sales").select("id", { count: "exact", head: true }),
 
-      // TAMAMLANDI → ödenmiş + faturalanmış
       supabase
         .from("sales")
         .select("id", { count: "exact", head: true })
         .eq("payment_status", "odendi")
         .eq("invoice_status", "faturalandi"),
 
-      // ÖDEME BEKLEYEN → faturalanmış ama ödenmemiş
       supabase
         .from("sales")
         .select("id", { count: "exact", head: true })
         .eq("payment_status", "beklemede")
         .eq("invoice_status", "faturalandi"),
 
-      // FATURALANACAK → ödenmiş ama faturalanmamış
       supabase
         .from("sales")
         .select("id", { count: "exact", head: true })
         .eq("payment_status", "odendi")
         .eq("invoice_status", "faturalanmadi"),
 
-      // BEKLEMEDE → ne ödenmiş ne faturalanmış
       supabase
         .from("sales")
         .select("id", { count: "exact", head: true })
@@ -127,16 +123,12 @@ export const dashboardRepository = {
     return {
       totalRevenue,
       totalSalesCount,
-
       completedSalesCount,
       paymentPendingSalesCount,
       invoicingPendingSalesCount,
       waitingSalesCount,
-
-      // backward compatibility (bozmayalım diye)
       paidSalesCount: completedSalesCount,
       pendingSalesCount: waitingSalesCount,
-
       totalUsersCount,
       totalProductsCount,
       recentSales,

@@ -8,11 +8,11 @@ const AuthContext = createContext(null);
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: true,
-      refetchOnReconnect: true,
-      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
       retry: 0,
-      staleTime: 1000 * 60 * 3,
+      staleTime: 1000 * 60 * 5,
       gcTime: 1000 * 60 * 10,
     },
     mutations: {

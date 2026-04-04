@@ -1,38 +1,42 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../../shared/constants/routes";
 
 export default function DashboardQuickActions() {
-  const actions = [
-    {
-      label: "Yeni Satış",
-      desc: "Hızlı satış oluştur ve akışı başlat",
-      meta: "Satış ekranına git",
-      to: ROUTES.NEW_SALE,
-      primary: true,
-      icon: PlusIcon,
-    },
-    {
-      label: "Ürünler",
-      desc: "Ürün kataloğunu görüntüle ve düzenle",
-      meta: "Ürün yönetimi",
-      to: ROUTES.PRODUCTS,
-      icon: BoxIcon,
-    },
-    {
-      label: "Kullanıcılar",
-      desc: "Ekip üyelerini ve yetkileri yönet",
-      meta: "Kullanıcı yönetimi",
-      to: ROUTES.USERS,
-      icon: UsersIcon,
-    },
-    {
-      label: "Raporlar",
-      desc: "Analizleri ve performans özetini incele",
-      meta: "Rapor ekranı",
-      to: ROUTES.REPORTS,
-      icon: ChartIcon,
-    },
-  ];
+  const actions = useMemo(
+    () => [
+      {
+        label: "Yeni Satış",
+        desc: "Hızlı satış oluştur ve akışı başlat",
+        meta: "Satış ekranına git",
+        to: ROUTES.NEW_SALE,
+        primary: true,
+        icon: PlusIcon,
+      },
+      {
+        label: "Ürünler",
+        desc: "Ürün kataloğunu görüntüle ve düzenle",
+        meta: "Ürün yönetimi",
+        to: ROUTES.PRODUCTS,
+        icon: BoxIcon,
+      },
+      {
+        label: "Kullanıcılar",
+        desc: "Ekip üyelerini ve yetkileri yönet",
+        meta: "Kullanıcı yönetimi",
+        to: ROUTES.USERS,
+        icon: UsersIcon,
+      },
+      {
+        label: "Raporlar",
+        desc: "Analizleri ve performans özetini incele",
+        meta: "Rapor ekranı",
+        to: ROUTES.REPORTS,
+        icon: ChartIcon,
+      },
+    ],
+    []
+  );
 
   return (
     <div className="dashboard-quick-actions dashboard-quick-actions--ultra">

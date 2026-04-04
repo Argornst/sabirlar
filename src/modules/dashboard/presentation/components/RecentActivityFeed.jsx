@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { formatDate } from "../../../../shared/utils/date";
 
 function getReadableAction(action) {
@@ -57,20 +58,27 @@ function getActivityMeta(action) {
 }
 
 export default function RecentActivityFeed({ logs = [] }) {
-  if (!logs.length) {
+  const rows = useMemo(() => {
+    return logs.map((log) => ({
+      ...log,
+      readableAction: getReadableAction(log.action),
+      meta: getActivityMeta(log.action),
+    }));
+  }, [logs]);
+
+  if (!rows.length) {
     return <div className="helper-text">Henüz aktivite yok</div>;
   }
 
   return (
     <div className="activity-feed activity-feed--premium">
-      {logs.map((log) => {
-        const meta = getActivityMeta(log.action);
-        const Icon = meta.icon;
+      {rows.map((log) => {
+        const Icon = log.meta.icon;
 
         return (
           <div
             key={log.id}
-            className={`activity-feed__item activity-feed__item--premium activity-feed__item--tone-${meta.tone}`}
+            className={`activity-feed__item activity-feed__item--premium activity-feed__item--tone-${log.meta.tone}`}
           >
             <div className="activity-feed__line" />
 
@@ -81,8 +89,8 @@ export default function RecentActivityFeed({ logs = [] }) {
             <div className="activity-feed__content">
               <div className="activity-feed__top">
                 <div className="activity-feed__title-block">
-                  <strong>{getReadableAction(log.action)}</strong>
-                  <span className="activity-feed__badge">{meta.label}</span>
+                  <strong>{log.readableAction}</strong>
+                  <span className="activity-feed__badge">{log.meta.label}</span>
                 </div>
 
                 <span>{formatDate(log.created_at)}</span>

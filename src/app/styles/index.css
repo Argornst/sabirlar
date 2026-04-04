@@ -7260,3 +7260,207 @@ input[type="number"]::-webkit-inner-spin-button {
     width: 100%;
   }
 }
+.sidebar__brand-row,
+.sidebar__brand,
+.sidebar__brand--ultra,
+.sidebar__brand-text {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.sidebar__brand::before,
+.sidebar__brand::after,
+.sidebar__brand-row::before,
+.sidebar__brand-row::after {
+  display: none !important;
+  content: none !important;
+}
+/* FLOATING SIDEBAR TOGGLE */
+
+.sidebar__floating-toggle {
+  position: absolute;
+  top: 90px;
+  right: -18px;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+
+  background: rgba(18, 27, 45, 0.95);
+  backdrop-filter: blur(6px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  z-index: 50;
+
+  transition: all 0.2s ease;
+}
+
+.sidebar__floating-toggle:hover {
+  transform: translateX(2px);
+  border-color: rgba(120, 180, 255, 0.4);
+  box-shadow: 0 0 12px rgba(80, 150, 255, 0.25);
+}
+
+.sidebar__floating-toggle.collapsed {
+  right: -14px;
+}
+
+/* ikon biraz netleşsin */
+.sidebar__floating-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+/* ===== SIDEBAR BRAND CLEAN HEADER ===== */
+
+.sidebar {
+  position: relative;
+}
+
+.sidebar__brand-row--clean {
+  padding: 20px 18px 14px;
+  margin-bottom: 10px;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.sidebar__brand-row--clean::before,
+.sidebar__brand-row--clean::after,
+.sidebar__brand-block::before,
+.sidebar__brand-block::after {
+  display: none !important;
+  content: none !important;
+}
+
+.sidebar__brand-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  max-width: calc(100% - 8px);
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.sidebar__brand-logo-image {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+.sidebar__brand-text-block {
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+}
+
+.sidebar__brand-title {
+  margin: 0;
+  color: #f4f7ff;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* ===== FLOATING TOGGLE ===== */
+
+.sidebar__floating-toggle {
+  position: absolute;
+  top: 86px;
+  right: -20px;
+  z-index: 40;
+
+  width: 48px;
+  height: 48px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(19, 30, 50, 0.98);
+  color: #e8efff;
+
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.22),
+    0 0 0 2px rgba(255, 255, 255, 0.04);
+
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.sidebar__floating-toggle:hover {
+  transform: translateX(2px);
+  border-color: rgba(110, 170, 255, 0.4);
+  background: rgba(24, 38, 64, 1);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.26),
+    0 0 18px rgba(74, 144, 255, 0.18);
+}
+
+.sidebar__floating-toggle .nav-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar--collapsed .sidebar__floating-toggle,
+.sidebar__floating-toggle--collapsed {
+  right: -18px;
+}
+
+.sidebar--collapsed .sidebar__brand-row--clean {
+  padding: 18px 12px 12px;
+}
+
+.sidebar--collapsed .sidebar__brand-block {
+  justify-content: center;
+}
+
+.sidebar--collapsed .sidebar__brand-logo-image {
+  width: 60px;
+  height: 60px;
+}
+
+/* light theme */
+:root[data-theme="light"] .sidebar__brand-title {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .sidebar__floating-toggle {
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow:
+    0 10px 22px rgba(15, 23, 42, 0.12),
+    0 0 0 2px rgba(255, 255, 255, 0.8);
+}
+
+:root[data-theme="light"] .sidebar__floating-toggle:hover {
+  border-color: rgba(37, 99, 235, 0.24);
+  box-shadow:
+    0 12px 26px rgba(15, 23, 42, 0.14),
+    0 0 16px rgba(37, 99, 235, 0.12);
+}

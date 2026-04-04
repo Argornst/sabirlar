@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import AnimatedPage from "../../../../shared/components/ui/AnimatedPage";
 import Card from "../../../../shared/components/ui/Card";
 import PageHeader from "../../../../shared/components/ui/PageHeader";
@@ -29,14 +30,24 @@ const EMPTY_SUMMARY = {
   paidSalesCount: 0,
   totalUsersCount: 0,
   totalProductsCount: 0,
+  completedSalesCount: 0,
+  paymentPendingSalesCount: 0,
+  invoicingPendingSalesCount: 0,
+  waitingSalesCount: 0,
   recentSales: [],
 };
 
 export default function DashboardPage() {
   const { data, isLoading, isError, error } = useDashboardSummaryQuery();
-  const { data: logs = [], isError: isAuditError } = useAuditLogsQuery();
+  const {
+    data: logs = [],
+    isError: isAuditError,
+  } = useAuditLogsQuery({
+    enabled: ENABLE_ACTIVITY_FEED,
+  });
 
-  const summary = data ?? EMPTY_SUMMARY;
+  const summary = useMemo(() => data ?? EMPTY_SUMMARY, [data]);
+  const hasRecentSales = summary.recentSales?.length > 0;
 
   return (
     <AnimatedPage>
@@ -47,23 +58,23 @@ export default function DashboardPage() {
           badge="Genel Bakış"
         />
 
-        {isLoading && (
+        {isLoading ? (
           <LoadingState
             title="Dashboard yükleniyor"
             description="Özet veriler hazırlanıyor."
           />
-        )}
+        ) : null}
 
-        {isError && (
+        {isError ? (
           <ErrorState
             title="Dashboard verileri alınamadı"
             description={error?.message || "Bir hata oluştu."}
           />
-        )}
+        ) : null}
 
-        {!isLoading && !isError && (
+        {!isLoading && !isError ? (
           <div className="dashboard-layout">
-            {ENABLE_HERO && <DashboardHero summary={summary} />}
+            {ENABLE_HERO ? <DashboardHero summary={summary} /> : null}
 
             <SectionCard
               title="Durum"
@@ -83,7 +94,7 @@ export default function DashboardPage() {
               title="Son Satışlar"
               description="En son eklenen satış kayıtları"
             >
-              {summary.recentSales?.length ? (
+              {hasRecentSales ? (
                 <RecentSalesList sales={summary.recentSales} />
               ) : (
                 <EmptyState
@@ -93,7 +104,7 @@ export default function DashboardPage() {
               )}
             </SectionCard>
 
-            {ENABLE_ADVANCED_METRICS && (
+            {ENABLE_ADVANCED_METRICS ? (
               <>
                 <DashboardMetricsStrip summary={summary} />
 
@@ -113,9 +124,9 @@ export default function DashboardPage() {
                   </SectionCard>
                 </div>
               </>
-            )}
+            ) : null}
 
-            {ENABLE_ACTIVITY_FEED && (
+            {ENABLE_ACTIVITY_FEED ? (
               <SectionCard
                 title="Son Aktiviteler"
                 description="Panelde gerçekleşen son işlemler"
@@ -129,9 +140,9 @@ export default function DashboardPage() {
                   <RecentActivityFeed logs={logs} />
                 )}
               </SectionCard>
-            )}
+            ) : null}
           </div>
-        )}
+        ) : null}
       </Card>
     </AnimatedPage>
   );

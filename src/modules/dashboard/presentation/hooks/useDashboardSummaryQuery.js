@@ -10,6 +10,9 @@ export function useDashboardSummaryQuery() {
     queryFn: () => dashboardRepository.getSummary(),
     enabled: !isAuthLoading && isAuthenticated,
     retry: 0,
-    staleTime: 1000 * 60 * 3,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 15,
+    refetchInterval: false,
+    placeholderData: (previousData) => previousData,
   });
 }
