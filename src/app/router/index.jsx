@@ -1,9 +1,9 @@
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+
 import AppShell from "../layouts/AppShell";
 import { useAuth } from "../providers/AppProviders";
 import { ROUTES } from "../../shared/constants/routes";
-import { AnimatePresence, motion } from "framer-motion";
-import { useLocation } from "react-router-dom";
 
 import LoginPage from "../../modules/auth/presentation/pages/LoginPage";
 import DashboardPage from "../../modules/dashboard/presentation/pages/DashboardPage";
@@ -13,12 +13,12 @@ import ProductsPage from "../../modules/products/presentation/pages/ProductsPage
 import ReportsPage from "../../modules/reports/presentation/pages/ReportsPage";
 import UsersPage from "../../modules/users/presentation/pages/UsersPage";
 
+import ProductionsPage from "../../modules/productions/presentation/pages/ProductionsPage";
+import NewProductionPage from "../../modules/productions/presentation/pages/NewProductionPage";
+import DispatchPlanPage from "../../modules/productions/presentation/pages/DispatchPlanPage";
+
 function FullPageLoader() {
-  return (
-    <div style={{ padding: 40, color: "white" }}>
-      Uygulama yükleniyor...
-    </div>
-  );
+  return <div className="app-page-loader">Uygulama yükleniyor...</div>;
 }
 
 function ProtectedRoute() {
@@ -67,6 +67,10 @@ export default function AppRouter() {
             <Route path={ROUTES.PRODUCTS} element={<ProductsPage />} />
             <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
             <Route path={ROUTES.USERS} element={<UsersPage />} />
+
+            <Route path={ROUTES.PRODUCTIONS} element={<ProductionsPage />} />
+            <Route path={ROUTES.NEW_PRODUCTION} element={<NewProductionPage />} />
+            <Route path={ROUTES.DISPATCH_PLAN} element={<DispatchPlanPage />} />
           </Route>
         </Route>
 

@@ -26,20 +26,44 @@ const navigationItems = [
     keywords: ["dashboard", "panel", "genel", "anasayfa"],
   },
   {
-    label: "Satışlar",
-    description: "Satış kayıtlarını görüntüle",
+    label: "Perakende Satışlar",
+    description: "Perakende Satış kayıtlarını görüntüle",
     path: ROUTES.SALES,
     pageKey: PAGE_KEYS.SALES,
     icon: SalesIcon,
     keywords: ["satis", "satış", "sales", "kayit", "liste"],
   },
   {
-    label: "Yeni Satış",
+    label: "Yeni Perakende Satış",
     description: "Yeni satış oluştur",
     path: ROUTES.NEW_SALE,
     pageKey: PAGE_KEYS.NEW_SALE,
     icon: PlusSquareIcon,
     keywords: ["yeni", "satis", "satış", "ekle", "olustur", "oluştur"],
+  },
+  {
+    label: "Üretimler",
+    description: "Üretim kayıtlarını görüntüle ve yönet",
+    path: ROUTES.PRODUCTIONS,
+    pageKey: PAGE_KEYS.PRODUCTS,
+    icon: FactoryIcon,
+    keywords: ["uretim", "üretim", "lot", "musteri", "müşteri", "plan"],
+  },
+  {
+    label: "Yeni Üretim",
+    description: "Yeni üretim kaydı oluştur",
+    path: ROUTES.NEW_PRODUCTION,
+    pageKey: PAGE_KEYS.PRODUCTS,
+    icon: ClipboardPlusIcon,
+    keywords: ["yeni", "üretim", "kayit", "kayıt", "olustur", "oluştur"],
+  },
+  {
+    label: "Sevkiyat Planı",
+    description: "Çıkış tarihi atanmış kayıtları takip et",
+    path: ROUTES.DISPATCH_PLAN,
+    pageKey: PAGE_KEYS.PRODUCTS,
+    icon: CalendarPlanIcon,
+    keywords: ["sevkiyat", "dispatch", "plan", "takvim", "cikis", "çıkış"],
   },
   {
     label: "Ürünler",
@@ -76,6 +100,24 @@ const actionItems = [
     icon: PlusSquareIcon,
     keywords: ["yeni", "satış", "oluştur", "ekle", "new sale"],
     run: ({ navigate }) => navigate(ROUTES.NEW_SALE),
+  },
+  {
+    id: "action-new-production",
+    type: "action",
+    label: "Yeni üretim oluştur",
+    description: "Yeni üretim ekranını aç",
+    icon: ClipboardPlusIcon,
+    keywords: ["yeni", "üretim", "olustur", "oluştur", "kayit", "kayıt"],
+    run: ({ navigate }) => navigate(ROUTES.NEW_PRODUCTION),
+  },
+  {
+    id: "action-dispatch-plan",
+    type: "action",
+    label: "Sevkiyat planını aç",
+    description: "Sevkiyat planı ekranını aç",
+    icon: CalendarPlanIcon,
+    keywords: ["sevkiyat", "dispatch", "plan", "takvim"],
+    run: ({ navigate }) => navigate(ROUTES.DISPATCH_PLAN),
   },
   {
     id: "action-toggle-theme",
@@ -551,7 +593,7 @@ export default function AppShell() {
                   <NavLink
                     key={item.path}
                     to={item.path}
-                    end={item.path === ROUTES.SALES}
+                    end={item.path === ROUTES.SALES || item.path === ROUTES.PRODUCTIONS}
                     className={({ isActive }) =>
                       `sidebar__link${isActive ? " sidebar__link--active" : ""}`
                     }
@@ -570,17 +612,11 @@ export default function AppShell() {
             </nav>
           </div>
 
-          <div className="sidebar__footer sidebar__footer--sveta">
+          <div className="sidebar__footer sidebar__footer--sabir">
             {!visibleNavigationItems.length ? (
               <NavLink
                 to={fallbackRoute}
-                className="ui-button ui-button--primary"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textDecoration: "none",
-                }}
+                className="ui-button ui-button--primary ui-button-link-reset"
                 title="Uygulamaya Dön"
               >
                 {isSidebarCollapsed ? "↩" : "Uygulamaya Dön"}
@@ -873,6 +909,43 @@ function PlusSquareIcon() {
       <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
       <path d="M8 12h8" />
       <path d="M12 8v8" />
+    </svg>
+  );
+}
+
+function FactoryIcon() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3.5 20.5h17" />
+      <path d="M5 20.5V9.5l5 3V9l5 3V6.5l4 2v12" />
+      <path d="M8 20.5v-4" />
+      <path d="M12 20.5v-3" />
+      <path d="M16 20.5v-5" />
+    </svg>
+  );
+}
+
+function ClipboardPlusIcon() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="6" y="4.5" width="12" height="16" rx="2.5" />
+      <path d="M9 4.5h6" />
+      <path d="M12 10v6" />
+      <path d="M9 13h6" />
+    </svg>
+  );
+}
+
+function CalendarPlanIcon() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+      <path d="M7.5 3.5v3" />
+      <path d="M16.5 3.5v3" />
+      <path d="M3.5 9.5h17" />
+      <path d="M8 14h3" />
+      <path d="M13 14h3" />
+      <path d="M8 17h3" />
     </svg>
   );
 }
