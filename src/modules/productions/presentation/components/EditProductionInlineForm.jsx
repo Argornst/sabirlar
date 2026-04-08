@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
-import { PRODUCTION_STATUSES, QUANTITY_UNITS } from "../../domain/entities/production.entity";
+import {
+  PRODUCTION_STATUSES,
+  QUANTITY_UNITS,
+} from "../../domain/entities/production.entity";
 import { useUpdateProductionMutation } from "../hooks/useUpdateProductionMutation";
+
+import Field from "../../../../shared/components/ui/Field";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
+import Textarea from "../../../../shared/components/ui/Textarea";
+import Button from "../../../../shared/components/ui/Button";
 
 const STATUS_LABELS = {
   hazirlaniyor: "Hazırlanıyor",
@@ -78,49 +87,39 @@ export default function EditProductionInlineForm({
   return (
     <form className="production-inline-form" onSubmit={handleSubmit}>
       <div className="production-inline-form__grid">
-        <div className="production-field">
-          <label className="production-label">Lot</label>
-          <input
-            className="production-input"
+        <Field label="Lot">
+          <Input
             value={formState.lot_no}
             onChange={(e) => updateField("lot_no", e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div className="production-field">
-          <label className="production-label">Müşteri</label>
-          <input
-            className="production-input"
+        <Field label="Müşteri">
+          <Input
             value={formState.customer_name}
             onChange={(e) => updateField("customer_name", e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div className="production-field production-field--full">
-          <label className="production-label">Ürün</label>
-          <input
-            className="production-input"
+        <Field label="Ürün" className="span-2">
+          <Input
             value={formState.product_name}
             onChange={(e) => updateField("product_name", e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div className="production-field">
-          <label className="production-label">Miktar</label>
-          <input
-            className="production-input"
+        <Field label="Miktar">
+          <Input
             type="number"
             step="0.001"
             min="0"
             value={formState.quantity}
             onChange={(e) => updateField("quantity", e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div className="production-field">
-          <label className="production-label">Birim</label>
-          <select
-            className="production-input"
+        <Field label="Birim">
+          <Select
             value={formState.quantity_unit}
             onChange={(e) => updateField("quantity_unit", e.target.value)}
           >
@@ -129,50 +128,40 @@ export default function EditProductionInlineForm({
                 {unit}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </Field>
 
-        <div className="production-field">
-          <label className="production-label">Paketleme</label>
-          <input
-            className="production-input"
+        <Field label="Paketleme">
+          <Input
             value={formState.packaging_info}
             onChange={(e) => updateField("packaging_info", e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div className="production-field">
-          <label className="production-label">Palet</label>
-          <input
-            className="production-input"
+        <Field label="Palet">
+          <Input
             value={formState.pallet_info}
             onChange={(e) => updateField("pallet_info", e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div className="production-field">
-          <label className="production-label">Araç</label>
-          <input
-            className="production-input"
+        <Field label="Araç">
+          <Input
             value={formState.vehicle_info}
             onChange={(e) => updateField("vehicle_info", e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div className="production-field">
-          <label className="production-label">Çıkış Tarihi</label>
-          <input
-            className="production-input"
+        <Field label="Çıkış Tarihi">
+          <Input
             type="date"
             value={formState.dispatch_date}
             onChange={(e) => updateField("dispatch_date", e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div className="production-field">
-          <label className="production-label">Durum</label>
-          <select
-            className="production-input"
+        <Field label="Durum">
+          <Select
             value={formState.status}
             onChange={(e) => updateField("status", e.target.value)}
           >
@@ -181,37 +170,31 @@ export default function EditProductionInlineForm({
                 {STATUS_LABELS[status] || status}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </Field>
 
-        <div className="production-field production-field--full">
-          <label className="production-label">Not</label>
-          <textarea
-            className="production-textarea"
-            rows="4"
+        <Field label="Not" className="span-2">
+          <Textarea
+            rows={4}
             value={formState.notes}
             onChange={(e) => updateField("notes", e.target.value)}
           />
-        </div>
+        </Field>
       </div>
 
       <div className="production-inline-form__actions">
-        <button
+        <Button
           type="button"
-          className="production-button production-button--ghost"
+          variant="secondary"
           onClick={onCancel}
           disabled={updateMutation.isPending}
         >
           İptal
-        </button>
+        </Button>
 
-        <button
-          type="submit"
-          className="production-button production-button--primary"
-          disabled={updateMutation.isPending}
-        >
+        <Button type="submit" disabled={updateMutation.isPending}>
           {updateMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,11 +1,16 @@
 import { useMemo, useState } from "react";
-import { formatDispatchDateLabel, formatQuantityLabel } from "../../domain/entities/production.entity";
+import {
+  formatDispatchDateLabel,
+  formatQuantityLabel,
+} from "../../domain/entities/production.entity";
 import { ProductionStatusBadge } from "./ProductionStatusBadge";
 import { ProductionRowActions } from "./ProductionRowActions";
 import EditProductionInlineForm from "./EditProductionInlineForm";
+import ProductionDetailsPanel from "./ProductionDetailsPanel";
 
 export function ProductionsTable({ items }) {
   const [editingId, setEditingId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   const safeItems = useMemo(
     () => (Array.isArray(items) ? items.filter((item) => item?.id) : []),
@@ -23,6 +28,10 @@ export function ProductionsTable({ items }) {
 
   function toggleEditing(id) {
     setEditingId((prev) => (prev === id ? null : id));
+  }
+
+  function toggleExpanded(id) {
+    setExpandedId((prev) => (prev === id ? null : id));
   }
 
   return (
@@ -46,6 +55,7 @@ export function ProductionsTable({ items }) {
           <tbody>
             {safeItems.map((item) => {
               const isEditing = editingId === item.id;
+              const isExpanded = expandedId === item.id;
 
               return (
                 <>
@@ -70,7 +80,9 @@ export function ProductionsTable({ items }) {
                     <td className="production-table__actions-col">
                       <ProductionRowActions
                         item={item}
+                        isExpanded={isExpanded}
                         isEditing={isEditing}
+                        onToggleExpanded={() => toggleExpanded(item.id)}
                         onEdit={() => toggleEditing(item.id)}
                       />
                     </td>
@@ -85,6 +97,16 @@ export function ProductionsTable({ items }) {
                             onCancel={() => toggleEditing(item.id)}
                             onSuccess={() => toggleEditing(item.id)}
                           />
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+
+                  {isExpanded ? (
+                    <tr className="production-table__detail-row" key={`${item.id}-details`}>
+                      <td colSpan={9}>
+                        <div className="production-table__detail-card">
+                          <ProductionDetailsPanel item={item} />
                         </div>
                       </td>
                     </tr>

@@ -1,7 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "../productions.css";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, CalendarBlank } from "@phosphor-icons/react";
 
+import AnimatedPage from "../../../../shared/components/ui/AnimatedPage";
+import Card from "../../../../shared/components/ui/Card";
+import PageHeader from "../../../../shared/components/ui/PageHeader";
+import Button from "../../../../shared/components/ui/Button";
+import { ROUTES } from "../../../../shared/constants/routes";
+
+import "../productions.css";
 import { createEmptyProductionForm } from "../../domain/entities/production.entity";
 import { ProductionForm } from "../components/ProductionForm";
 import { useCreateProductionMutation } from "../hooks/useCreateProductionMutation";
@@ -16,7 +23,7 @@ export default function NewProductionPage() {
 
     try {
       await createMutation.mutateAsync(values);
-      navigate("/dispatch-plan");
+      navigate(ROUTES.DISPATCH_PLAN);
     } catch (error) {
       if (error?.type === "validation") {
         setErrors(error.fields || {});
@@ -34,27 +41,43 @@ export default function NewProductionPage() {
   };
 
   return (
-    <div className="production-page">
-      <div className="production-page__header">
-        <div>
-          <h1 className="production-page__title">Yeni Üretim Kaydı</h1>
-          <p className="production-page__subtitle">
-            Lot, müşteri, ürün, miktar, paketleme ve palet bilgilerini gir.
-          </p>
-        </div>
-      </div>
+    <AnimatedPage>
+      <Card>
+        <PageHeader
+          title="Yeni Üretim"
+          description="Lot, müşteri, ürün, miktar, paketleme, palet ve sevkiyat bilgilerini girerek yeni üretim kaydı oluştur."
+          badge="Üretim Girişi"
+          actions={
+            <div className="production-header-actions">
+              <Link to={ROUTES.PRODUCTIONS}>
+                <Button variant="secondary" className="btn-premium">
+                  <ArrowLeft size={18} />
+                  Üretim Listesi
+                </Button>
+              </Link>
 
-      <div className="production-card">
-        {errors.form ? <div className="production-alert">{errors.form}</div> : null}
-
-        <ProductionForm
-          initialValues={createEmptyProductionForm()}
-          errors={errors}
-          loading={createMutation.isPending}
-          submitLabel="Üretim Kaydını Oluştur"
-          onSubmit={handleSubmit}
+              <Link to={ROUTES.DISPATCH_PLAN}>
+                <Button variant="secondary" className="btn-premium">
+                  <CalendarBlank size={18} />
+                  Sevkiyat Planı
+                </Button>
+              </Link>
+            </div>
+          }
         />
-      </div>
-    </div>
+
+        <div className="production-form-surface">
+          {errors.form ? <div className="production-alert">{errors.form}</div> : null}
+
+          <ProductionForm
+            initialValues={createEmptyProductionForm()}
+            errors={errors}
+            loading={createMutation.isPending}
+            submitLabel="Üretim Kaydını Oluştur"
+            onSubmit={handleSubmit}
+          />
+        </div>
+      </Card>
+    </AnimatedPage>
   );
 }

@@ -3,6 +3,8 @@ import { useDeleteProductionMutation } from "../hooks/useDeleteProductionMutatio
 export function ProductionRowActions({
   item,
   onEdit,
+  onToggleExpanded,
+  isExpanded = false,
   isEditing = false,
 }) {
   const deleteMutation = useDeleteProductionMutation();
@@ -32,6 +34,19 @@ export function ProductionRowActions({
       <button
         type="button"
         className={`production-icon-button production-icon-button--glow ${
+          isExpanded ? "production-icon-button--active" : ""
+        }`}
+        onClick={onToggleExpanded}
+        disabled={isBusy}
+        title={isExpanded ? "Detayı kapat" : "Detayı aç"}
+        aria-label={isExpanded ? "Detayı kapat" : "Detayı aç"}
+      >
+        <DetailsIcon />
+      </button>
+
+      <button
+        type="button"
+        className={`production-icon-button production-icon-button--glow ${
           isEditing ? "production-icon-button--active" : ""
         }`}
         onClick={onEdit}
@@ -53,6 +68,15 @@ export function ProductionRowActions({
         <DeleteIcon />
       </button>
     </div>
+  );
+}
+
+function DetailsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3.5 12s3-5.5 8.5-5.5S20.5 12 20.5 12 17.5 17.5 12 17.5 3.5 12 3.5 12Z" />
+      <circle cx="12" cy="12" r="2.5" />
+    </svg>
   );
 }
 

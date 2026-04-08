@@ -180,10 +180,10 @@ export function DispatchWeekBoard({ items }) {
             </p>
           </div>
 
-          <div className="dispatch-week-board__actions">
+          <div className="dispatch-week-board__actions dispatch-week-board__nav">
             <button
               type="button"
-              className="production-button production-button--ghost"
+              className="dispatch-week-nav-button dispatch-week-nav-button--ghost"
               onClick={() => setWeekOffset((prev) => prev - 1)}
             >
               Önceki Hafta
@@ -191,7 +191,11 @@ export function DispatchWeekBoard({ items }) {
 
             <button
               type="button"
-              className="production-button production-button--ghost"
+              className={`dispatch-week-nav-button ${
+                weekOffset === 0
+                  ? "dispatch-week-nav-button--primary"
+                  : "dispatch-week-nav-button--ghost"
+              }`}
               onClick={() => setWeekOffset(0)}
             >
               Bu Hafta
@@ -199,7 +203,7 @@ export function DispatchWeekBoard({ items }) {
 
             <button
               type="button"
-              className="production-button production-button--ghost"
+              className="dispatch-week-nav-button dispatch-week-nav-button--ghost"
               onClick={() => setWeekOffset((prev) => prev + 1)}
             >
               Sonraki Hafta

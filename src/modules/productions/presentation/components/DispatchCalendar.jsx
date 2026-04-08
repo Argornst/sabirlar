@@ -253,7 +253,7 @@ export function DispatchCalendar({ items }) {
     }
 
     return new Date(today.getFullYear(), today.getMonth(), 1);
-  }, [items, today]);
+  }, [items]);
 
   const [currentMonth, setCurrentMonth] = useState(initialCalendarDate);
   const [selectedDateKey, setSelectedDateKey] = useState(formatDateKey(today));
@@ -407,7 +407,7 @@ export function DispatchCalendar({ items }) {
           <div className="dispatch-calendar-toolbar__actions">
             <button
               type="button"
-              className="production-button production-button--ghost"
+              className="dispatch-chip-button dispatch-chip-button--ghost"
               onClick={goToPreviousMonth}
             >
               Önceki Ay
@@ -415,7 +415,7 @@ export function DispatchCalendar({ items }) {
 
             <button
               type="button"
-              className="production-button production-button--ghost"
+              className="dispatch-chip-button dispatch-chip-button--primary"
               onClick={goToToday}
             >
               Bugün
@@ -423,7 +423,7 @@ export function DispatchCalendar({ items }) {
 
             <button
               type="button"
-              className="production-button production-button--ghost"
+              className="dispatch-chip-button dispatch-chip-button--ghost"
               onClick={goToNextMonth}
             >
               Sonraki Ay

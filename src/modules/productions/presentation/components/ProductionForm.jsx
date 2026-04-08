@@ -1,8 +1,13 @@
 import {
   PRODUCTION_STATUSES,
   QUANTITY_UNITS,
-  createEmptyProductionForm,
 } from "../../domain/entities/production.entity";
+
+import Field from "../../../../shared/components/ui/Field";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
+import Textarea from "../../../../shared/components/ui/Textarea";
+import Button from "../../../../shared/components/ui/Button";
 
 const STATUS_LABELS = {
   hazirlaniyor: "Hazırlanıyor",
@@ -12,152 +17,147 @@ const STATUS_LABELS = {
 };
 
 export function ProductionForm({
-  initialValues = createEmptyProductionForm(),
+  initialValues,
   errors = {},
   loading = false,
   submitLabel = "Kaydet",
   onSubmit,
 }) {
-  const handleSubmit = (event) => {
+  function handleSubmit(event) {
     event.preventDefault();
+
     const formData = new FormData(event.currentTarget);
 
     const values = {
-      lot_no: formData.get("lot_no"),
-      customer_name: formData.get("customer_name"),
-      product_name: formData.get("product_name"),
-      quantity: formData.get("quantity"),
+      lot_no: formData.get("lot_no")?.toString().trim(),
+      customer_name: formData.get("customer_name")?.toString().trim(),
+      product_name: formData.get("product_name")?.toString().trim(),
+      quantity: Number(formData.get("quantity")),
       quantity_unit: formData.get("quantity_unit"),
-      packaging_info: formData.get("packaging_info"),
-      pallet_info: formData.get("pallet_info"),
-      vehicle_info: formData.get("vehicle_info"),
-      dispatch_date: formData.get("dispatch_date"),
-      notes: formData.get("notes"),
+      packaging_info: formData.get("packaging_info")?.toString().trim(),
+      pallet_info: formData.get("pallet_info")?.toString().trim(),
+      vehicle_info: formData.get("vehicle_info")?.toString().trim(),
+      dispatch_date: formData.get("dispatch_date") || null,
       status: formData.get("status"),
+      notes: formData.get("notes")?.toString().trim(),
     };
 
-    onSubmit(values);
-  };
+    onSubmit?.(values);
+  }
 
   return (
-    <form className="production-form" onSubmit={handleSubmit}>
-      <div className="production-form-grid">
-        <div className="production-field">
-          <label className="production-label">Lot Numarası</label>
-          <input name="lot_no" className="production-input" defaultValue={initialValues.lot_no} />
-          {errors.lot_no ? <p className="production-error">{errors.lot_no}</p> : null}
-        </div>
+    <form className="production-form-grid" onSubmit={handleSubmit}>
+      {/* LOT */}
+      <Field label="Lot Numarası" error={errors.lot_no}>
+        <Input
+          name="lot_no"
+          defaultValue={initialValues.lot_no}
+          placeholder="LOT-2026-001"
+        />
+      </Field>
 
-        <div className="production-field">
-          <label className="production-label">Müşteri Adı</label>
-          <input
-            name="customer_name"
-            className="production-input"
-            defaultValue={initialValues.customer_name}
-          />
-          {errors.customer_name ? <p className="production-error">{errors.customer_name}</p> : null}
-        </div>
+      {/* MÜŞTERİ */}
+      <Field label="Müşteri" error={errors.customer_name}>
+        <Input
+          name="customer_name"
+          defaultValue={initialValues.customer_name}
+          placeholder="Müşteri adı"
+        />
+      </Field>
 
-        <div className="production-field production-field--full">
-          <label className="production-label">Ürün Bilgisi</label>
-          <input
-            name="product_name"
-            className="production-input"
-            defaultValue={initialValues.product_name}
-            placeholder="Örn: Kavrulmuş iç fındık 11/13 MM"
-          />
-          {errors.product_name ? <p className="production-error">{errors.product_name}</p> : null}
-        </div>
+      {/* ÜRÜN */}
+      <Field label="Ürün" error={errors.product_name} className="span-2">
+        <Input
+          name="product_name"
+          defaultValue={initialValues.product_name}
+          placeholder="Ürün adı"
+        />
+      </Field>
 
-        <div className="production-field">
-          <label className="production-label">Miktar</label>
-          <input
-            name="quantity"
-            className="production-input"
-            type="number"
-            step="0.001"
-            min="0"
-            defaultValue={initialValues.quantity}
-          />
-          {errors.quantity ? <p className="production-error">{errors.quantity}</p> : null}
-        </div>
+      {/* MİKTAR */}
+      <Field label="Miktar" error={errors.quantity}>
+        <Input
+          name="quantity"
+          type="number"
+          step="0.001"
+          min="0"
+          defaultValue={initialValues.quantity}
+        />
+      </Field>
 
-        <div className="production-field">
-          <label className="production-label">Birim</label>
-          <select name="quantity_unit" className="production-input" defaultValue={initialValues.quantity_unit}>
-            {QUANTITY_UNITS.map((unit) => (
-              <option key={unit} value={unit}>
-                {unit}
-              </option>
-            ))}
-          </select>
-          {errors.quantity_unit ? <p className="production-error">{errors.quantity_unit}</p> : null}
-        </div>
+      {/* BİRİM */}
+      <Field label="Birim">
+        <Select name="quantity_unit" defaultValue={initialValues.quantity_unit}>
+          {QUANTITY_UNITS.map((unit) => (
+            <option key={unit} value={unit}>
+              {unit}
+            </option>
+          ))}
+        </Select>
+      </Field>
 
-        <div className="production-field">
-          <label className="production-label">Paketleme Bilgisi</label>
-          <input
-            name="packaging_info"
-            className="production-input"
-            defaultValue={initialValues.packaging_info}
-          />
-          {errors.packaging_info ? <p className="production-error">{errors.packaging_info}</p> : null}
-        </div>
+      {/* PAKETLEME */}
+      <Field label="Paketleme">
+        <Input
+          name="packaging_info"
+          defaultValue={initialValues.packaging_info}
+          placeholder="Örn: 25kg çuval"
+        />
+      </Field>
 
-        <div className="production-field">
-          <label className="production-label">Palet Bilgisi</label>
-          <input name="pallet_info" className="production-input" defaultValue={initialValues.pallet_info} />
-          {errors.pallet_info ? <p className="production-error">{errors.pallet_info}</p> : null}
-        </div>
+      {/* PALET */}
+      <Field label="Palet">
+        <Input
+          name="pallet_info"
+          defaultValue={initialValues.pallet_info}
+          placeholder="Örn: 20 palet"
+        />
+      </Field>
 
-        <div className="production-field">
-          <label className="production-label">Araç Bilgisi</label>
-          <input
-            name="vehicle_info"
-            className="production-input"
-            defaultValue={initialValues.vehicle_info || ""}
-            placeholder="Örn: 52 ABC 123 / Tır 1"
-          />
-        </div>
+      {/* ARAÇ */}
+      <Field label="Araç">
+        <Input
+          name="vehicle_info"
+          defaultValue={initialValues.vehicle_info}
+          placeholder="Tır / Konteyner"
+        />
+      </Field>
 
-        <div className="production-field">
-          <label className="production-label">Çıkış Tarihi</label>
-          <input
-            name="dispatch_date"
-            className="production-input"
-            type="date"
-            defaultValue={initialValues.dispatch_date || ""}
-          />
-        </div>
+      {/* TARİH */}
+      <Field label="Çıkış Tarihi">
+        <Input
+          name="dispatch_date"
+          type="date"
+          defaultValue={initialValues.dispatch_date || ""}
+        />
+      </Field>
 
-        <div className="production-field">
-          <label className="production-label">Durum</label>
-          <select name="status" className="production-input" defaultValue={initialValues.status}>
-            {PRODUCTION_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {STATUS_LABELS[status] || status}
-              </option>
-            ))}
-          </select>
-          {errors.status ? <p className="production-error">{errors.status}</p> : null}
-        </div>
+      {/* DURUM */}
+      <Field label="Durum">
+        <Select name="status" defaultValue={initialValues.status}>
+          {PRODUCTION_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {STATUS_LABELS[status]}
+            </option>
+          ))}
+        </Select>
+      </Field>
 
-        <div className="production-field production-field--full">
-          <label className="production-label">Not</label>
-          <textarea
-            name="notes"
-            className="production-textarea"
-            rows="4"
-            defaultValue={initialValues.notes || ""}
-            placeholder="Operasyon notu, sevkiyat notu, özel uyarılar..."
-          />
-        </div>
-      </div>
+      {/* NOT */}
+      <Field label="Not" className="span-2">
+        <Textarea
+          name="notes"
+          rows={4}
+          defaultValue={initialValues.notes}
+          placeholder="Ek açıklamalar..."
+        />
+      </Field>
 
-      <div className="production-form-actions">
-        <button type="submit" className="production-button production-button--primary" disabled={loading}>
-          {loading ? "Kaydediliyor..." : submitLabel}
-        </button>
+      {/* ACTIONS */}
+      <div className="production-form-actions span-2">
+        <Button type="submit" loading={loading} className="btn-premium">
+          {submitLabel}
+        </Button>
       </div>
     </form>
   );

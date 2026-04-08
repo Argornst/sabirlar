@@ -1,7 +1,16 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import "../productions.css";
+import { ListBullets, Plus } from "@phosphor-icons/react";
 
+import AnimatedPage from "../../../../shared/components/ui/AnimatedPage";
+import Card from "../../../../shared/components/ui/Card";
+import PageHeader from "../../../../shared/components/ui/PageHeader";
+import Button from "../../../../shared/components/ui/Button";
+import ErrorState from "../../../../shared/components/ui/ErrorState";
+import LoadingState from "../../../../shared/components/ui/LoadingState";
+import { ROUTES } from "../../../../shared/constants/routes";
+
+import "../productions.css";
 import { DispatchPlanList } from "../components/DispatchPlanList";
 import { DispatchCalendar } from "../components/DispatchCalendar";
 import { DispatchWeekBoard } from "../components/DispatchWeekBoard";
@@ -83,146 +92,148 @@ export default function DispatchPlanPage() {
   const dispatchPlanQuery = useDispatchPlanQuery(filterMeta.query);
 
   return (
-    <div className="production-page">
-      <div className="production-page__header">
-        <div>
-          <h1 className="production-page__title">Sevkiyat Planı</h1>
-          <p className="production-page__subtitle">
-            Çıkış tarihi atanmış üretimleri takvim, liste ve haftalık board görünümünde takip et.
-          </p>
-        </div>
+    <AnimatedPage>
+      <Card>
+        <PageHeader
+          title="Sevkiyat Planı"
+          description="Çıkış tarihi atanmış üretimleri takvim, liste ve haftalık board görünümünde takip et."
+          badge="Sevkiyat Yönetimi"
+          actions={
+            <div className="production-header-actions">
+              <Link to={ROUTES.PRODUCTIONS}>
+                <Button variant="secondary" className="btn-premium">
+                  <ListBullets size={18} />
+                  Üretim Listesi
+                </Button>
+              </Link>
 
-        <div className="production-page__actions">
-          <Link to="/productions" className="production-button production-button--ghost production-button--with-icon">
-            <ListIcon />
-            <span>Üretim Listesi</span>
-          </Link>
+              <Link to={ROUTES.NEW_PRODUCTION}>
+                <Button className="btn-premium">
+                  <Plus size={18} />
+                  Yeni Kayıt
+                </Button>
+              </Link>
+            </div>
+          }
+        />
 
-          <Link to="/productions/new" className="production-button production-button--primary production-button--with-icon">
-            <PlusIcon />
-            <span>Yeni Kayıt</span>
-          </Link>
-        </div>
-      </div>
-
-      <div className="production-card">
-        <div className="production-card__header">
-          <div>
-            <h3 className="production-card__title">Görünüm ve Tarih Filtresi</h3>
-            <p className="production-card__subtitle">
-              Aktif filtre: {filterMeta.label}
-            </p>
-          </div>
-        </div>
-
-        <div className="dispatch-controls">
-          <div className="dispatch-filter-tabs">
-            <button
-              type="button"
-              className={`dispatch-filter-tab${
-                activeFilter === DISPATCH_FILTERS.all ? " dispatch-filter-tab--active" : ""
-              }`}
-              onClick={() => setActiveFilter(DISPATCH_FILTERS.all)}
-            >
-              Tümü
-            </button>
-
-            <button
-              type="button"
-              className={`dispatch-filter-tab${
-                activeFilter === DISPATCH_FILTERS.week ? " dispatch-filter-tab--active" : ""
-              }`}
-              onClick={() => setActiveFilter(DISPATCH_FILTERS.week)}
-            >
-              Bu Hafta
-            </button>
-
-            <button
-              type="button"
-              className={`dispatch-filter-tab${
-                activeFilter === DISPATCH_FILTERS.month ? " dispatch-filter-tab--active" : ""
-              }`}
-              onClick={() => setActiveFilter(DISPATCH_FILTERS.month)}
-            >
-              Bu Ay
-            </button>
-          </div>
-
-          <div className="dispatch-view-tabs">
-            <button
-              type="button"
-              className={`dispatch-view-tab${
-                activeView === DISPATCH_VIEWS.calendar ? " dispatch-view-tab--active" : ""
-              }`}
-              onClick={() => setActiveView(DISPATCH_VIEWS.calendar)}
-            >
-              Takvim
-            </button>
-
-            <button
-              type="button"
-              className={`dispatch-view-tab${
-                activeView === DISPATCH_VIEWS.week ? " dispatch-view-tab--active" : ""
-              }`}
-              onClick={() => setActiveView(DISPATCH_VIEWS.week)}
-            >
-              Haftalık Board
-            </button>
-
-            <button
-              type="button"
-              className={`dispatch-view-tab${
-                activeView === DISPATCH_VIEWS.list ? " dispatch-view-tab--active" : ""
-              }`}
-              onClick={() => setActiveView(DISPATCH_VIEWS.list)}
-            >
-              Liste
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {dispatchPlanQuery.isLoading ? (
         <div className="production-card">
-          <div className="production-loading">Sevkiyat planı yükleniyor...</div>
+          <div className="production-card__header">
+            <div>
+              <h3 className="production-card__title">Görünüm ve Tarih Filtresi</h3>
+              <p className="production-card__subtitle">
+                Aktif filtre: {filterMeta.label}
+              </p>
+            </div>
+          </div>
+
+          <div className="dispatch-controls">
+            <div className="dispatch-filter-tabs">
+              <button
+                type="button"
+                className={`dispatch-filter-tab${
+                  activeFilter === DISPATCH_FILTERS.all
+                    ? " dispatch-filter-tab--active"
+                    : ""
+                }`}
+                onClick={() => setActiveFilter(DISPATCH_FILTERS.all)}
+              >
+                Tümü
+              </button>
+
+              <button
+                type="button"
+                className={`dispatch-filter-tab${
+                  activeFilter === DISPATCH_FILTERS.week
+                    ? " dispatch-filter-tab--active"
+                    : ""
+                }`}
+                onClick={() => setActiveFilter(DISPATCH_FILTERS.week)}
+              >
+                Bu Hafta
+              </button>
+
+              <button
+                type="button"
+                className={`dispatch-filter-tab${
+                  activeFilter === DISPATCH_FILTERS.month
+                    ? " dispatch-filter-tab--active"
+                    : ""
+                }`}
+                onClick={() => setActiveFilter(DISPATCH_FILTERS.month)}
+              >
+                Bu Ay
+              </button>
+            </div>
+
+            <div className="dispatch-view-tabs">
+              <button
+                type="button"
+                className={`dispatch-view-tab${
+                  activeView === DISPATCH_VIEWS.calendar
+                    ? " dispatch-view-tab--active"
+                    : ""
+                }`}
+                onClick={() => setActiveView(DISPATCH_VIEWS.calendar)}
+              >
+                Takvim
+              </button>
+
+              <button
+                type="button"
+                className={`dispatch-view-tab${
+                  activeView === DISPATCH_VIEWS.week
+                    ? " dispatch-view-tab--active"
+                    : ""
+                }`}
+                onClick={() => setActiveView(DISPATCH_VIEWS.week)}
+              >
+                Haftalık Board
+              </button>
+
+              <button
+                type="button"
+                className={`dispatch-view-tab${
+                  activeView === DISPATCH_VIEWS.list
+                    ? " dispatch-view-tab--active"
+                    : ""
+                }`}
+                onClick={() => setActiveView(DISPATCH_VIEWS.list)}
+              >
+                Liste
+              </button>
+            </div>
+          </div>
         </div>
-      ) : dispatchPlanQuery.isError ? (
-        <div className="production-card">
-          <div className="production-alert">
-            {dispatchPlanQuery.error?.message ||
+
+        {dispatchPlanQuery.isLoading ? (
+          <LoadingState
+            title="Sevkiyat planı yükleniyor"
+            description="Plan verileri hazırlanıyor."
+          />
+        ) : null}
+
+        {dispatchPlanQuery.isError ? (
+          <ErrorState
+            title="Sevkiyat planı alınamadı"
+            description={
+              dispatchPlanQuery.error?.message ||
               dispatchPlanQuery.error?.details ||
-              "Sevkiyat planı alınırken hata oluştu."}
-          </div>
-        </div>
-      ) : activeView === DISPATCH_VIEWS.calendar ? (
-        <DispatchCalendar items={dispatchPlanQuery.data || []} />
-      ) : activeView === DISPATCH_VIEWS.week ? (
-        <DispatchWeekBoard items={dispatchPlanQuery.data || []} />
-      ) : (
-        <DispatchPlanList items={dispatchPlanQuery.data || []} />
-      )}
-    </div>
-  );
-}
+              "Bir hata oluştu."
+            }
+          />
+        ) : null}
 
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
-    </svg>
-  );
-}
-
-function ListIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M8 7.5h10" />
-      <path d="M8 12h10" />
-      <path d="M8 16.5h10" />
-      <circle cx="5" cy="7.5" r="1" fill="currentColor" stroke="none" />
-      <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" />
-      <circle cx="5" cy="16.5" r="1" fill="currentColor" stroke="none" />
-    </svg>
+        {!dispatchPlanQuery.isLoading && !dispatchPlanQuery.isError ? (
+          activeView === DISPATCH_VIEWS.calendar ? (
+            <DispatchCalendar items={dispatchPlanQuery.data || []} />
+          ) : activeView === DISPATCH_VIEWS.week ? (
+            <DispatchWeekBoard items={dispatchPlanQuery.data || []} />
+          ) : (
+            <DispatchPlanList items={dispatchPlanQuery.data || []} />
+          )
+        ) : null}
+      </Card>
+    </AnimatedPage>
   );
 }
