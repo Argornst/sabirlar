@@ -1,13 +1,17 @@
+import { useMemo, useState } from "react";
 import {
   PRODUCTION_STATUSES,
   QUANTITY_UNITS,
 } from "../../domain/entities/production.entity";
+import { getProductionProductOptions } from "../../application/use-cases/getProductionProductOptions";
 
 import Field from "../../../../shared/components/ui/Field";
 import Input from "../../../../shared/components/ui/Input";
 import Select from "../../../../shared/components/ui/Select";
 import Textarea from "../../../../shared/components/ui/Textarea";
 import Button from "../../../../shared/components/ui/Button";
+import DatePicker from "../../../../shared/components/ui/DatePicker";
+import ProductAutocomplete from "./ProductAutocomplete";
 
 const STATUS_LABELS = {
   hazirlaniyor: "Hazırlanıyor",
@@ -23,6 +27,12 @@ export function ProductionForm({
   submitLabel = "Kaydet",
   onSubmit,
 }) {
+  const productOptions = useMemo(() => getProductionProductOptions(), []);
+  const [productName, setProductName] = useState(initialValues.product_name || "");
+  const [dispatchDate, setDispatchDate] = useState(
+    initialValues.dispatch_date || ""
+  );
+
   function handleSubmit(event) {
     event.preventDefault();
 
@@ -47,7 +57,6 @@ export function ProductionForm({
 
   return (
     <form className="production-form-grid" onSubmit={handleSubmit}>
-      {/* LOT */}
       <Field label="Lot Numarası" error={errors.lot_no}>
         <Input
           name="lot_no"
@@ -56,7 +65,6 @@ export function ProductionForm({
         />
       </Field>
 
-      {/* MÜŞTERİ */}
       <Field label="Müşteri" error={errors.customer_name}>
         <Input
           name="customer_name"
@@ -65,16 +73,19 @@ export function ProductionForm({
         />
       </Field>
 
-      {/* ÜRÜN */}
       <Field label="Ürün" error={errors.product_name} className="span-2">
-        <Input
+        <ProductAutocomplete
           name="product_name"
-          defaultValue={initialValues.product_name}
-          placeholder="Ürün adı"
+          value={productName}
+          onChange={setProductName}
+          options={productOptions}
+          allowManualEntry
+          placeholder="Ürün seçin veya yazın"
+          hint="Listeden seçim yapabilir veya yeni ürün adı girebilirsiniz"
+          error={errors.product_name}
         />
       </Field>
 
-      {/* MİKTAR */}
       <Field label="Miktar" error={errors.quantity}>
         <Input
           name="quantity"
@@ -85,7 +96,6 @@ export function ProductionForm({
         />
       </Field>
 
-      {/* BİRİM */}
       <Field label="Birim">
         <Select name="quantity_unit" defaultValue={initialValues.quantity_unit}>
           {QUANTITY_UNITS.map((unit) => (
@@ -96,7 +106,6 @@ export function ProductionForm({
         </Select>
       </Field>
 
-      {/* PAKETLEME */}
       <Field label="Paketleme">
         <Input
           name="packaging_info"
@@ -105,7 +114,6 @@ export function ProductionForm({
         />
       </Field>
 
-      {/* PALET */}
       <Field label="Palet">
         <Input
           name="pallet_info"
@@ -114,7 +122,6 @@ export function ProductionForm({
         />
       </Field>
 
-      {/* ARAÇ */}
       <Field label="Araç">
         <Input
           name="vehicle_info"
@@ -123,16 +130,15 @@ export function ProductionForm({
         />
       </Field>
 
-      {/* TARİH */}
       <Field label="Çıkış Tarihi">
-        <Input
+        <DatePicker
           name="dispatch_date"
-          type="date"
-          defaultValue={initialValues.dispatch_date || ""}
+          value={dispatchDate}
+          onChange={(event) => setDispatchDate(event.target.value)}
+          placeholder="gg.aa.yyyy"
         />
       </Field>
 
-      {/* DURUM */}
       <Field label="Durum">
         <Select name="status" defaultValue={initialValues.status}>
           {PRODUCTION_STATUSES.map((status) => (
@@ -143,7 +149,6 @@ export function ProductionForm({
         </Select>
       </Field>
 
-      {/* NOT */}
       <Field label="Not" className="span-2">
         <Textarea
           name="notes"
@@ -153,7 +158,6 @@ export function ProductionForm({
         />
       </Field>
 
-      {/* ACTIONS */}
       <div className="production-form-actions span-2">
         <Button type="submit" loading={loading} className="btn-premium">
           {submitLabel}

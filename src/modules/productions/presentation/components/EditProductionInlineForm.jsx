@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   PRODUCTION_STATUSES,
   QUANTITY_UNITS,
 } from "../../domain/entities/production.entity";
 import { useUpdateProductionMutation } from "../hooks/useUpdateProductionMutation";
+import { getProductionProductOptions } from "../../application/use-cases/getProductionProductOptions";
 
 import Field from "../../../../shared/components/ui/Field";
 import Input from "../../../../shared/components/ui/Input";
 import Select from "../../../../shared/components/ui/Select";
 import Textarea from "../../../../shared/components/ui/Textarea";
 import Button from "../../../../shared/components/ui/Button";
+import DatePicker from "../../../../shared/components/ui/DatePicker";
+import ProductAutocomplete from "./ProductAutocomplete";
 
 const STATUS_LABELS = {
   hazirlaniyor: "Hazırlanıyor",
@@ -24,6 +27,7 @@ export default function EditProductionInlineForm({
   onSuccess,
 }) {
   const updateMutation = useUpdateProductionMutation();
+  const productOptions = useMemo(() => getProductionProductOptions(), []);
   const [formState, setFormState] = useState({
     lot_no: "",
     customer_name: "",
@@ -102,9 +106,13 @@ export default function EditProductionInlineForm({
         </Field>
 
         <Field label="Ürün" className="span-2">
-          <Input
+          <ProductAutocomplete
             value={formState.product_name}
-            onChange={(e) => updateField("product_name", e.target.value)}
+            onChange={(nextValue) => updateField("product_name", nextValue)}
+            options={productOptions}
+            allowManualEntry
+            placeholder="Ürün seçin veya yazın"
+            hint="Listeden seçebilir veya manuel girebilirsiniz"
           />
         </Field>
 
@@ -153,10 +161,10 @@ export default function EditProductionInlineForm({
         </Field>
 
         <Field label="Çıkış Tarihi">
-          <Input
-            type="date"
+          <DatePicker
             value={formState.dispatch_date}
-            onChange={(e) => updateField("dispatch_date", e.target.value)}
+            onChange={(event) => updateField("dispatch_date", event.target.value)}
+            placeholder="gg.aa.yyyy"
           />
         </Field>
 

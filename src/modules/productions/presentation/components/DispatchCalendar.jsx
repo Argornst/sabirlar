@@ -1,10 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatDispatchDateLabel,
   formatQuantityLabel,
 } from "../../domain/entities/production.entity";
 import { ProductionStatusBadge } from "./ProductionStatusBadge";
 import { useUpdateProductionMutation } from "../hooks/useUpdateProductionMutation";
+import { useDispatchFeedback } from "../hooks/useDispatchFeedback";
+import { useDispatchMoveHistory } from "../hooks/useDispatchMoveHistory";
+import { DispatchToastViewport } from "./DispatchToastViewport";
+import { DispatchMoveHistoryPanel } from "./DispatchMoveHistoryPanel";
+import DatePicker from "../../../../shared/components/ui/DatePicker";
 
 function formatDateKey(date) {
   const year = date.getFullYear();
@@ -86,6 +91,10 @@ function createEditState(item) {
   };
 }
 
+function formatItemCountLabel(count) {
+  return count === 1 ? "1 kayıt taşındı" : `${count} kayıt taşındı`;
+}
+
 const WEEKDAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 const STATUS_OPTIONS = [
@@ -163,11 +172,10 @@ function DispatchEventModal({
 
           <div className="production-field">
             <label className="production-label">Çıkış Tarihi</label>
-            <input
-              className="production-input"
-              type="date"
+            <DatePicker
               value={formState.dispatch_date}
-              onChange={(e) => onChange("dispatch_date", e.target.value)}
+              onChange={(event) => onChange("dispatch_date", event.target.value)}
+              placeholder="gg.aa.yyyy"
             />
           </div>
 
@@ -239,6 +247,10 @@ function DispatchEventModal({
 export function DispatchCalendar({ items }) {
   const today = new Date();
   const updateMutation = useUpdateProductionMutation();
+  const { toasts, pushToast, dismissToast } = useDispatchFeedback();
+  const { history, appendHistoryEntry, clearHistory } = useDispatchMoveHistory();
+
+  const navigationTimerRef = useRef(null);
 
   const initialCalendarDate = useMemo(() => {
     if (items.length && items[0]?.dispatch_date) {
@@ -253,14 +265,17 @@ export function DispatchCalendar({ items }) {
     }
 
     return new Date(today.getFullYear(), today.getMonth(), 1);
-  }, [items]);
+  }, [items, today]);
 
   const [currentMonth, setCurrentMonth] = useState(initialCalendarDate);
   const [selectedDateKey, setSelectedDateKey] = useState(formatDateKey(today));
   const [selectedItem, setSelectedItem] = useState(null);
   const [editState, setEditState] = useState(createEditState(null));
-  const [draggingItemId, setDraggingItemId] = useState(null);
+  const [draggingItemIds, setDraggingItemIds] = useState([]);
   const [dragTargetDate, setDragTargetDate] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkMoveDate, setBulkMoveDate] = useState("");
+  const [dragNavDirection, setDragNavDirection] = useState("");
 
   const groupedItems = useMemo(() => getGroupedByDate(items), [items]);
   const monthMatrix = useMemo(() => getMonthMatrix(currentMonth), [currentMonth]);
@@ -274,6 +289,20 @@ export function DispatchCalendar({ items }) {
     setSelectedItem(refreshedSelectedItem);
     setEditState(createEditState(refreshedSelectedItem));
   }, [items, selectedItem?.id]);
+
+  useEffect(() => {
+    setSelectedIds((prev) =>
+      prev.filter((id) => items.some((item) => item.id === id))
+    );
+  }, [items]);
+
+  useEffect(() => {
+    return () => {
+      if (navigationTimerRef.current) {
+        window.clearTimeout(navigationTimerRef.current);
+      }
+    };
+  }, []);
 
   const goToPreviousMonth = () => {
     setCurrentMonth(
@@ -310,11 +339,100 @@ export function DispatchCalendar({ items }) {
     }));
   };
 
+  const clearSelection = () => {
+    setSelectedIds([]);
+  };
+
+  const toggleSelection = (itemId) => {
+    setSelectedIds((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  const buildHistoryEntry = ({ count, toDate, sourceLabel, view }) => ({
+    title: count > 1 ? "Toplu taşıma tamamlandı" : "Taşıma tamamlandı",
+    message: `${formatItemCountLabel(count)} • ${sourceLabel} → ${formatDispatchDateLabel(
+      toDate
+    )}`,
+    count,
+    toDate,
+    view,
+  });
+
+  const performMove = async ({ moveItems, targetDate, sourceLabel, view }) => {
+    const safeItems = moveItems.filter(Boolean);
+
+    if (!safeItems.length) return;
+    if (!targetDate) return;
+
+    const changedItems = safeItems.filter(
+      (item) => item.dispatch_date !== targetDate
+    );
+
+    if (!changedItems.length) return;
+
+    try {
+      if (changedItems.length === 1) {
+        const item = changedItems[0];
+
+        await updateMutation.moveOneOptimistic({
+          id: item.id,
+          values: {
+            ...item,
+            dispatch_date: targetDate,
+          },
+        });
+      } else {
+        await updateMutation.moveManyOptimistic({
+          items: changedItems.map((item) => ({
+            id: item.id,
+            values: {
+              ...item,
+              dispatch_date: targetDate,
+            },
+          })),
+        });
+      }
+
+      pushToast({
+        type: "success",
+        title: "Sevkiyat tarihi güncellendi",
+        message: `${formatItemCountLabel(changedItems.length)} • ${formatDispatchDateLabel(
+          targetDate
+        )}`,
+      });
+
+      appendHistoryEntry(
+        buildHistoryEntry({
+          count: changedItems.length,
+          toDate: targetDate,
+          sourceLabel,
+          view,
+        })
+      );
+
+      setSelectedDateKey(targetDate);
+      setBulkMoveDate("");
+      setSelectedIds([]);
+    } catch (error) {
+      pushToast({
+        type: "error",
+        title: "Taşıma başarısız",
+        message:
+          error?.message ||
+          error?.details ||
+          "Tarih güncellenirken hata oluştu.",
+      });
+    }
+  };
+
   const handleSaveModal = async () => {
     if (!selectedItem) return;
 
     try {
-      await updateMutation.mutateAsync({
+      await updateMutation.moveOneOptimistic({
         id: selectedItem.id,
         values: {
           ...selectedItem,
@@ -327,23 +445,50 @@ export function DispatchCalendar({ items }) {
         },
       });
 
+      pushToast({
+        type: "success",
+        title: "Kayıt güncellendi",
+        message: `${selectedItem.customer_name} kaydı başarıyla güncellendi.`,
+      });
+
       closeDetailModal();
     } catch (error) {
-      window.alert(
-        error?.message || error?.details || "Kayıt güncellenirken hata oluştu."
-      );
+      pushToast({
+        type: "error",
+        title: "Güncelleme başarısız",
+        message:
+          error?.message ||
+          error?.details ||
+          "Kayıt güncellenirken hata oluştu.",
+      });
     }
   };
 
   const handleDragStart = (event, item) => {
+    const activeIds =
+      selectedIds.includes(item.id) && selectedIds.length > 1
+        ? selectedIds
+        : [item.id];
+
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", String(item.id));
-    setDraggingItemId(item.id);
+    event.dataTransfer.setData(
+      "application/productions-ids",
+      JSON.stringify(activeIds)
+    );
+
+    setDraggingItemIds(activeIds);
   };
 
   const handleDragEnd = () => {
-    setDraggingItemId(null);
+    setDraggingItemIds([]);
     setDragTargetDate("");
+    setDragNavDirection("");
+
+    if (navigationTimerRef.current) {
+      window.clearTimeout(navigationTimerRef.current);
+      navigationTimerRef.current = null;
+    }
   };
 
   const handleDragOverCell = (event, dateKey) => {
@@ -352,225 +497,377 @@ export function DispatchCalendar({ items }) {
     setDragTargetDate(dateKey);
   };
 
+  const parseDraggedItems = (event) => {
+    const rawIds =
+      event.dataTransfer.getData("application/productions-ids") ||
+      event.dataTransfer.getData("text/plain");
+
+    let ids = [];
+
+    try {
+      if (rawIds.startsWith("[")) {
+        ids = JSON.parse(rawIds);
+      } else if (rawIds) {
+        ids = [rawIds];
+      }
+    } catch (error) {
+      ids = rawIds ? [rawIds] : [];
+    }
+
+    return items.filter((entry) => ids.includes(String(entry.id)) || ids.includes(entry.id));
+  };
+
   const handleDropOnCell = async (event, dateKey) => {
     event.preventDefault();
 
-    const rawId = event.dataTransfer.getData("text/plain");
-    const draggedItem = items.find((entry) => String(entry.id) === rawId);
+    const draggedItems = parseDraggedItems(event);
 
     setDragTargetDate("");
 
-    if (!draggedItem) return;
-    if (draggedItem.dispatch_date === dateKey) return;
+    await performMove({
+      moveItems: draggedItems,
+      targetDate: dateKey,
+      sourceLabel: "Takvim sürükle-bırak",
+      view: "calendar",
+    });
 
-    try {
-      await updateMutation.mutateAsync({
-        id: draggedItem.id,
-        values: {
-          ...draggedItem,
-          dispatch_date: dateKey,
-        },
-      });
+    setDraggingItemIds([]);
+  };
 
-      setSelectedDateKey(dateKey);
+  const selectedEntries = items.filter((item) => selectedIds.includes(item.id));
 
-      if (selectedItem?.id === draggedItem.id) {
-        setSelectedItem({
-          ...draggedItem,
-          dispatch_date: dateKey,
-        });
-        setEditState((prev) => ({
-          ...prev,
-          dispatch_date: dateKey,
-        }));
+  const handleBulkMove = async () => {
+    await performMove({
+      moveItems: selectedEntries,
+      targetDate: bulkMoveDate,
+      sourceLabel: "Takvim toplu taşıma",
+      view: "calendar",
+    });
+  };
+
+  const scheduleNavigationWhileDragging = (direction) => {
+    if (!draggingItemIds.length) return;
+    if (dragNavDirection === direction) return;
+
+    setDragNavDirection(direction);
+
+    if (navigationTimerRef.current) {
+      window.clearTimeout(navigationTimerRef.current);
+    }
+
+    navigationTimerRef.current = window.setTimeout(() => {
+      if (direction === "prev") {
+        goToPreviousMonth();
+      } else {
+        goToNextMonth();
       }
-    } catch (error) {
-      window.alert(
-        error?.message || error?.details || "Tarih güncellenirken hata oluştu."
-      );
-    } finally {
-      setDraggingItemId(null);
+    }, 550);
+  };
+
+  const clearScheduledNavigation = () => {
+    setDragNavDirection("");
+
+    if (navigationTimerRef.current) {
+      window.clearTimeout(navigationTimerRef.current);
+      navigationTimerRef.current = null;
     }
   };
 
   return (
-    <div className="dispatch-calendar-layout">
-      <div className="production-card">
-        <div className="dispatch-calendar-toolbar">
-          <div>
-            <h3 className="production-card__title">{getMonthTitle(currentMonth)}</h3>
-            <p className="production-card__subtitle">
-              Event kartlarını sürükleyerek sevkiyat tarihini değiştir.
-            </p>
-          </div>
+    <>
+      <div className="dispatch-calendar-layout">
+        <div className="production-card">
+          <div className="dispatch-calendar-toolbar">
+            <div>
+              <h3 className="production-card__title">{getMonthTitle(currentMonth)}</h3>
+              <p className="production-card__subtitle">
+                Event kartlarını sürükleyerek sevkiyat tarihini değiştir.
+              </p>
+            </div>
 
-          <div className="dispatch-calendar-toolbar__actions">
-            <button
-              type="button"
-              className="dispatch-chip-button dispatch-chip-button--ghost"
-              onClick={goToPreviousMonth}
-            >
-              Önceki Ay
-            </button>
-
-            <button
-              type="button"
-              className="dispatch-chip-button dispatch-chip-button--primary"
-              onClick={goToToday}
-            >
-              Bugün
-            </button>
-
-            <button
-              type="button"
-              className="dispatch-chip-button dispatch-chip-button--ghost"
-              onClick={goToNextMonth}
-            >
-              Sonraki Ay
-            </button>
-          </div>
-        </div>
-
-        <div className="dispatch-calendar">
-          <div className="dispatch-calendar__weekdays">
-            {WEEKDAY_LABELS.map((label) => (
-              <div key={label} className="dispatch-calendar__weekday">
-                {label}
-              </div>
-            ))}
-          </div>
-
-          <div className="dispatch-calendar__grid">
-            {monthMatrix.flat().map((date) => {
-              const dateKey = formatDateKey(date);
-              const dayItems = groupedItems[dateKey] || [];
-              const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
-              const isToday = isSameDay(date, today);
-              const isSelected = selectedDateKey === dateKey;
-              const isDropTarget = dragTargetDate === dateKey;
-
-              return (
-                <button
-                  key={dateKey}
-                  type="button"
-                  className={[
-                    "dispatch-calendar__cell",
-                    isCurrentMonth ? "" : "dispatch-calendar__cell--muted",
-                    isToday ? "dispatch-calendar__cell--today" : "",
-                    isSelected ? "dispatch-calendar__cell--selected" : "",
-                    isDropTarget ? "dispatch-calendar__cell--drop-target" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() => setSelectedDateKey(dateKey)}
-                  onDragOver={(event) => handleDragOverCell(event, dateKey)}
-                  onDragLeave={() => {
-                    if (dragTargetDate === dateKey) setDragTargetDate("");
-                  }}
-                  onDrop={(event) => handleDropOnCell(event, dateKey)}
-                >
-                  <div className="dispatch-calendar__cell-header">
-                    <span className="dispatch-calendar__day-number">
-                      {date.getDate()}
-                    </span>
-
-                    {dayItems.length ? (
-                      <span className="dispatch-calendar__count">
-                        {dayItems.length}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="dispatch-calendar__events">
-                    {dayItems.slice(0, 3).map((item) => (
-                      <div
-                        key={item.id}
-                        className={[
-                          "dispatch-calendar__event",
-                          `dispatch-calendar__event--${item.status}`,
-                          draggingItemId === item.id
-                            ? "dispatch-calendar__event--dragging"
-                            : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        draggable
-                        onDragStart={(event) => handleDragStart(event, item)}
-                        onDragEnd={handleDragEnd}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openDetailModal(item);
-                        }}
-                      >
-                        <strong>{item.customer_name}</strong>
-                        <span>{item.lot_no}</span>
-                      </div>
-                    ))}
-
-                    {dayItems.length > 3 ? (
-                      <div className="dispatch-calendar__more">
-                        +{dayItems.length - 3} daha
-                      </div>
-                    ) : null}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="production-card">
-        <div className="production-card__header">
-          <div>
-            <h3 className="production-card__title">
-              {formatDispatchDateLabel(selectedDateKey)}
-            </h3>
-            <p className="production-card__subtitle">
-              Seçili güne ait sevkiyat detayları
-            </p>
-          </div>
-        </div>
-
-        {!selectedItems.length ? (
-          <div className="production-empty-state">
-            <h3>Kayıt yok</h3>
-            <p>Bu tarih için planlanmış sevkiyat bulunmuyor.</p>
-          </div>
-        ) : (
-          <div className="dispatch-plan-items">
-            {selectedItems.map((item) => (
-              <article
-                key={item.id}
-                className="dispatch-plan-item dispatch-plan-item--interactive"
-                onClick={() => openDetailModal(item)}
+            <div className="dispatch-calendar-toolbar__actions">
+              <button
+                type="button"
+                className={[
+                  "dispatch-chip-button",
+                  "dispatch-chip-button--ghost",
+                  dragNavDirection === "prev"
+                    ? "dispatch-chip-button--drag-active"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={goToPreviousMonth}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  scheduleNavigationWhileDragging("prev");
+                }}
+                onDragLeave={clearScheduledNavigation}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  clearScheduledNavigation();
+                }}
               >
-                <div className="dispatch-plan-item__main">
-                  <div className="dispatch-plan-item__top">
-                    <strong>{item.customer_name}</strong>
-                    <ProductionStatusBadge status={item.status} />
-                  </div>
+                Önceki Ay
+              </button>
 
-                  <p className="dispatch-plan-item__product">{item.product_name}</p>
+              <button
+                type="button"
+                className="dispatch-chip-button dispatch-chip-button--primary"
+                onClick={goToToday}
+              >
+                Bugün
+              </button>
 
-                  <div className="dispatch-plan-item__meta">
-                    <span>Lot: {item.lot_no}</span>
-                    <span>
-                      Miktar: {formatQuantityLabel(item.quantity, item.quantity_unit)}
-                    </span>
-                    <span>Paketleme: {item.packaging_info}</span>
-                    <span>Palet: {item.pallet_info}</span>
-                    <span>Araç: {item.vehicle_info || "Atanmadı"}</span>
-                  </div>
-
-                  {item.notes ? (
-                    <p className="dispatch-plan-item__notes">{item.notes}</p>
-                  ) : null}
-                </div>
-              </article>
-            ))}
+              <button
+                type="button"
+                className={[
+                  "dispatch-chip-button",
+                  "dispatch-chip-button--ghost",
+                  dragNavDirection === "next"
+                    ? "dispatch-chip-button--drag-active"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={goToNextMonth}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  scheduleNavigationWhileDragging("next");
+                }}
+                onDragLeave={clearScheduledNavigation}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  clearScheduledNavigation();
+                }}
+              >
+                Sonraki Ay
+              </button>
+            </div>
           </div>
-        )}
+
+          <div className="dispatch-bulk-toolbar">
+            <div>
+              <strong>Toplu Taşıma</strong>
+              <p>{selectedIds.length ? `${selectedIds.length} kayıt seçildi` : "Kart seçip toplu taşıma yapabilirsin."}</p>
+            </div>
+
+            <div className="dispatch-bulk-toolbar__actions">
+              <DatePicker
+                value={bulkMoveDate}
+                onChange={(event) => setBulkMoveDate(event.target.value)}
+                placeholder="Hedef tarih"
+                size="sm"
+                presets={[
+                  { label: "Temizle", action: "clear", variant: "ghost" },
+                  { label: "Bugün", value: "today", variant: "primary" },
+                ]}
+              />
+
+              <button
+                type="button"
+                className="dispatch-chip-button dispatch-chip-button--primary"
+                disabled={!selectedIds.length || !bulkMoveDate || updateMutation.isPending}
+                onClick={handleBulkMove}
+              >
+                Seçilenleri Taşı
+              </button>
+
+              <button
+                type="button"
+                className="dispatch-chip-button dispatch-chip-button--ghost"
+                disabled={!selectedIds.length}
+                onClick={clearSelection}
+              >
+                Seçimi Temizle
+              </button>
+            </div>
+          </div>
+
+          <div className="dispatch-calendar">
+            <div className="dispatch-calendar__weekdays">
+              {WEEKDAY_LABELS.map((label) => (
+                <div key={label} className="dispatch-calendar__weekday">
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            <div className="dispatch-calendar__grid">
+              {monthMatrix.flat().map((date) => {
+                const dateKey = formatDateKey(date);
+                const dayItems = groupedItems[dateKey] || [];
+                const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
+                const isToday = isSameDay(date, today);
+                const isSelected = selectedDateKey === dateKey;
+                const isDropTarget = dragTargetDate === dateKey;
+
+                return (
+                  <button
+                    key={dateKey}
+                    type="button"
+                    className={[
+                      "dispatch-calendar__cell",
+                      isCurrentMonth ? "" : "dispatch-calendar__cell--muted",
+                      isToday ? "dispatch-calendar__cell--today" : "",
+                      isSelected ? "dispatch-calendar__cell--selected" : "",
+                      isDropTarget ? "dispatch-calendar__cell--drop-target" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={() => setSelectedDateKey(dateKey)}
+                    onDragOver={(event) => handleDragOverCell(event, dateKey)}
+                    onDragLeave={() => {
+                      if (dragTargetDate === dateKey) setDragTargetDate("");
+                    }}
+                    onDrop={(event) => handleDropOnCell(event, dateKey)}
+                  >
+                    <div className="dispatch-calendar__cell-header">
+                      <span className="dispatch-calendar__day-number">
+                        {date.getDate()}
+                      </span>
+
+                      {dayItems.length ? (
+                        <span className="dispatch-calendar__count">
+                          {dayItems.length}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="dispatch-calendar__events">
+                      {dayItems.slice(0, 3).map((item) => {
+                        const isSelectedItem = selectedIds.includes(item.id);
+                        const isDragging =
+                          draggingItemIds.includes(item.id);
+
+                        return (
+                          <div
+                            key={item.id}
+                            className={[
+                              "dispatch-calendar__event",
+                              `dispatch-calendar__event--${item.status}`,
+                              isDragging ? "dispatch-calendar__event--dragging" : "",
+                              isSelectedItem
+                                ? "dispatch-calendar__event--selected"
+                                : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            draggable
+                            onDragStart={(event) => handleDragStart(event, item)}
+                            onDragEnd={handleDragEnd}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openDetailModal(item);
+                            }}
+                          >
+                            <button
+                              type="button"
+                              className="dispatch-card-select"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                toggleSelection(item.id);
+                              }}
+                              aria-label="Kaydı seç"
+                            >
+                              {isSelectedItem ? "✓" : ""}
+                            </button>
+
+                            <strong>{item.customer_name}</strong>
+                            <span>{item.lot_no}</span>
+                          </div>
+                        );
+                      })}
+
+                      {dayItems.length > 3 ? (
+                        <div className="dispatch-calendar__more">
+                          +{dayItems.length - 3} daha
+                        </div>
+                      ) : null}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="production-card">
+          <div className="production-card__header">
+            <div>
+              <h3 className="production-card__title">
+                {formatDispatchDateLabel(selectedDateKey)}
+              </h3>
+              <p className="production-card__subtitle">
+                Seçili güne ait sevkiyat detayları
+              </p>
+            </div>
+          </div>
+
+          {!selectedItems.length ? (
+            <div className="production-empty-state">
+              <h3>Kayıt yok</h3>
+              <p>Bu tarih için planlanmış sevkiyat bulunmuyor.</p>
+            </div>
+          ) : (
+            <div className="dispatch-plan-items">
+              {selectedItems.map((item) => (
+                <article
+                  key={item.id}
+                  className="dispatch-plan-item dispatch-plan-item--interactive"
+                  onClick={() => openDetailModal(item)}
+                >
+                  <div className="dispatch-plan-item__main">
+                    <div className="dispatch-plan-item__top">
+                      <strong>{item.customer_name}</strong>
+                      <div className="dispatch-plan-item__top-right">
+                        <button
+                          type="button"
+                          className={[
+                            "dispatch-card-select",
+                            selectedIds.includes(item.id)
+                              ? "dispatch-card-select--active"
+                              : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            toggleSelection(item.id);
+                          }}
+                        >
+                          {selectedIds.includes(item.id) ? "✓" : ""}
+                        </button>
+                        <ProductionStatusBadge status={item.status} />
+                      </div>
+                    </div>
+
+                    <p className="dispatch-plan-item__product">{item.product_name}</p>
+
+                    <div className="dispatch-plan-item__meta">
+                      <span>Lot: {item.lot_no}</span>
+                      <span>
+                        Miktar: {formatQuantityLabel(item.quantity, item.quantity_unit)}
+                      </span>
+                      <span>Paketleme: {item.packaging_info}</span>
+                      <span>Palet: {item.pallet_info}</span>
+                      <span>Araç: {item.vehicle_info || "Atanmadı"}</span>
+                    </div>
+
+                    {item.notes ? (
+                      <p className="dispatch-plan-item__notes">{item.notes}</p>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <DispatchMoveHistoryPanel
+          entries={history}
+          onClear={clearHistory}
+        />
       </div>
 
       <DispatchEventModal
@@ -582,6 +879,8 @@ export function DispatchCalendar({ items }) {
         onSave={handleSaveModal}
         isSaving={updateMutation.isPending}
       />
-    </div>
+
+      <DispatchToastViewport toasts={toasts} onDismiss={dismissToast} />
+    </>
   );
 }

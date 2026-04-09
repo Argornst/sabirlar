@@ -1,4 +1,5 @@
 import FilterBar from "../../../../shared/components/ui/FilterBar";
+import DatePicker from "../../../../shared/components/ui/DatePicker";
 import { PRODUCTION_STATUSES } from "../../domain/entities/production.entity";
 
 const STATUS_LABELS = {
@@ -7,6 +8,11 @@ const STATUS_LABELS = {
   sevk_planlandi: "Sevk Planlandı",
   sevk_edildi: "Sevk Edildi",
 };
+
+const FILTER_DATE_PRESETS = [
+  { label: "Temizle", action: "clear", variant: "ghost" },
+  { label: "Bugün", value: "today", variant: "primary" },
+];
 
 export function ProductionsFilters({
   filters,
@@ -48,21 +54,27 @@ export function ProductionsFilters({
 
           <div className="filter-field">
             <label htmlFor="productions-date-from">Başlangıç Tarihi</label>
-            <input
-              id="productions-date-from"
-              type="date"
+            <DatePicker
+              name="productions-date-from"
               value={filters.dateFrom}
               onChange={(event) => onChange("dateFrom", event.target.value)}
+              placeholder="gg.aa.yyyy"
+              size="sm"
+              placement="auto"
+              presets={FILTER_DATE_PRESETS}
             />
           </div>
 
           <div className="filter-field">
             <label htmlFor="productions-date-to">Bitiş Tarihi</label>
-            <input
-              id="productions-date-to"
-              type="date"
+            <DatePicker
+              name="productions-date-to"
               value={filters.dateTo}
               onChange={(event) => onChange("dateTo", event.target.value)}
+              placeholder="gg.aa.yyyy"
+              size="sm"
+              placement="auto"
+              presets={FILTER_DATE_PRESETS}
             />
           </div>
         </div>

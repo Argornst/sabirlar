@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { useFieldArray } from "react-hook-form";
+import { Controller, useFieldArray } from "react-hook-form";
 import Card from "../../../../shared/components/ui/Card";
 import Field from "../../../../shared/components/ui/Field";
 import PageHeader from "../../../../shared/components/ui/PageHeader";
 import SectionCard from "../../../../shared/components/ui/SectionCard";
 import Button from "../../../../shared/components/ui/Button";
+import DatePicker from "../../../../shared/components/ui/DatePicker";
 import { useProductsListQuery } from "../../../products/presentation/hooks/useProductsListQuery";
 import { useCreateSaleForm } from "../hooks/useCreateSaleForm";
 import { formatCurrency } from "../../../../shared/utils/currency";
@@ -79,7 +80,18 @@ export default function NewSalePage() {
               htmlFor="saleDate"
               error={errors.saleDate?.message}
             >
-              <input id="saleDate" type="date" {...register("saleDate")} />
+              <Controller
+                control={control}
+                name="saleDate"
+                render={({ field }) => (
+                  <DatePicker
+                    name={field.name}
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    placeholder="gg.aa.yyyy"
+                  />
+                )}
+              />
             </Field>
 
             <Field

@@ -1,10 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatDispatchDateLabel,
   formatQuantityLabel,
 } from "../../domain/entities/production.entity";
 import { ProductionStatusBadge } from "./ProductionStatusBadge";
 import { useUpdateProductionMutation } from "../hooks/useUpdateProductionMutation";
+import { useDispatchFeedback } from "../hooks/useDispatchFeedback";
+import { useDispatchMoveHistory } from "../hooks/useDispatchMoveHistory";
+import { DispatchToastViewport } from "./DispatchToastViewport";
+import { DispatchMoveHistoryPanel } from "./DispatchMoveHistoryPanel";
+import DatePicker from "../../../../shared/components/ui/DatePicker";
 
 const GROUP_BY = {
   customer: "customer",
@@ -63,19 +68,24 @@ function formatShortDay(date) {
   }).format(date);
 }
 
-function createUpdatePayload(item, dispatchDate) {
-  return {
-    ...item,
-    dispatch_date: dispatchDate,
-  };
+function formatItemCountLabel(count) {
+  return count === 1 ? "1 kayıt taşındı" : `${count} kayıt taşındı`;
 }
 
 export function DispatchWeekBoard({ items }) {
   const updateMutation = useUpdateProductionMutation();
+  const { toasts, pushToast, dismissToast } = useDispatchFeedback();
+  const { history, appendHistoryEntry, clearHistory } = useDispatchMoveHistory();
+
+  const navigationTimerRef = useRef(null);
+
   const [groupMode, setGroupMode] = useState(GROUP_BY.customer);
   const [weekOffset, setWeekOffset] = useState(0);
-  const [draggingItemId, setDraggingItemId] = useState(null);
+  const [draggingItemIds, setDraggingItemIds] = useState([]);
   const [dragTargetKey, setDragTargetKey] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkMoveDate, setBulkMoveDate] = useState("");
+  const [dragNavDirection, setDragNavDirection] = useState("");
 
   const baseDate = useMemo(() => {
     const today = new Date();
@@ -133,230 +143,504 @@ export function DispatchWeekBoard({ items }) {
     })
   );
 
+  useEffect(() => {
+    setSelectedIds((prev) =>
+      prev.filter((id) => items.some((item) => item.id === id))
+    );
+  }, [items]);
+
+  useEffect(() => {
+    return () => {
+      if (navigationTimerRef.current) {
+        window.clearTimeout(navigationTimerRef.current);
+      }
+    };
+  }, []);
+
+  const clearSelection = () => {
+    setSelectedIds([]);
+  };
+
+  const toggleSelection = (itemId) => {
+    setSelectedIds((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  const buildHistoryEntry = ({ count, toDate, sourceLabel, view }) => ({
+    title: count > 1 ? "Toplu taşıma tamamlandı" : "Taşıma tamamlandı",
+    message: `${formatItemCountLabel(count)} • ${sourceLabel} → ${formatDispatchDateLabel(
+      toDate
+    )}`,
+    count,
+    toDate,
+    view,
+  });
+
+  const performMove = async ({ moveItems, targetDate, sourceLabel, view }) => {
+    const safeItems = moveItems.filter(Boolean);
+
+    if (!safeItems.length) return;
+    if (!targetDate) return;
+
+    const changedItems = safeItems.filter(
+      (item) => item.dispatch_date !== targetDate
+    );
+
+    if (!changedItems.length) return;
+
+    try {
+      if (changedItems.length === 1) {
+        const item = changedItems[0];
+
+        await updateMutation.moveOneOptimistic({
+          id: item.id,
+          values: {
+            ...item,
+            dispatch_date: targetDate,
+          },
+        });
+      } else {
+        await updateMutation.moveManyOptimistic({
+          items: changedItems.map((item) => ({
+            id: item.id,
+            values: {
+              ...item,
+              dispatch_date: targetDate,
+            },
+          })),
+        });
+      }
+
+      pushToast({
+        type: "success",
+        title: "Sevkiyat tarihi güncellendi",
+        message: `${formatItemCountLabel(changedItems.length)} • ${formatDispatchDateLabel(
+          targetDate
+        )}`,
+      });
+
+      appendHistoryEntry(
+        buildHistoryEntry({
+          count: changedItems.length,
+          toDate: targetDate,
+          sourceLabel,
+          view,
+        })
+      );
+
+      setBulkMoveDate("");
+      setSelectedIds([]);
+    } catch (error) {
+      pushToast({
+        type: "error",
+        title: "Taşıma başarısız",
+        message:
+          error?.message ||
+          error?.details ||
+          "Tarih güncellenirken hata oluştu.",
+      });
+    }
+  };
+
   const handleDragStart = (event, item) => {
+    const activeIds =
+      selectedIds.includes(item.id) && selectedIds.length > 1
+        ? selectedIds
+        : [item.id];
+
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", String(item.id));
-    setDraggingItemId(item.id);
+    event.dataTransfer.setData(
+      "application/productions-ids",
+      JSON.stringify(activeIds)
+    );
+
+    setDraggingItemIds(activeIds);
   };
 
   const handleDragEnd = () => {
-    setDraggingItemId(null);
+    setDraggingItemIds([]);
     setDragTargetKey("");
+    setDragNavDirection("");
+
+    if (navigationTimerRef.current) {
+      window.clearTimeout(navigationTimerRef.current);
+      navigationTimerRef.current = null;
+    }
+  };
+
+  const parseDraggedItems = (event) => {
+    const rawIds =
+      event.dataTransfer.getData("application/productions-ids") ||
+      event.dataTransfer.getData("text/plain");
+
+    let ids = [];
+
+    try {
+      if (rawIds.startsWith("[")) {
+        ids = JSON.parse(rawIds);
+      } else if (rawIds) {
+        ids = [rawIds];
+      }
+    } catch (error) {
+      ids = rawIds ? [rawIds] : [];
+    }
+
+    return items.filter((entry) => ids.includes(String(entry.id)) || ids.includes(entry.id));
   };
 
   const handleDrop = async (event, dateKey) => {
     event.preventDefault();
 
-    const rawId = event.dataTransfer.getData("text/plain");
-    const draggedItem = items.find((entry) => String(entry.id) === rawId);
+    const draggedItems = parseDraggedItems(event);
 
     setDragTargetKey("");
 
-    if (!draggedItem) return;
-    if (draggedItem.dispatch_date === dateKey) return;
+    await performMove({
+      moveItems: draggedItems,
+      targetDate: dateKey,
+      sourceLabel: "Week board sürükle-bırak",
+      view: "week-board",
+    });
 
-    try {
-      await updateMutation.mutateAsync({
-        id: draggedItem.id,
-        values: createUpdatePayload(draggedItem, dateKey),
-      });
-    } catch (error) {
-      window.alert(
-        error?.message || error?.details || "Tarih güncellenirken hata oluştu."
-      );
-    } finally {
-      setDraggingItemId(null);
+    setDraggingItemIds([]);
+  };
+
+  const selectedEntries = items.filter((item) => selectedIds.includes(item.id));
+
+  const handleBulkMove = async () => {
+    await performMove({
+      moveItems: selectedEntries,
+      targetDate: bulkMoveDate,
+      sourceLabel: "Week board toplu taşıma",
+      view: "week-board",
+    });
+  };
+
+  const scheduleNavigationWhileDragging = (direction) => {
+    if (!draggingItemIds.length) return;
+    if (dragNavDirection === direction) return;
+
+    setDragNavDirection(direction);
+
+    if (navigationTimerRef.current) {
+      window.clearTimeout(navigationTimerRef.current);
+    }
+
+    navigationTimerRef.current = window.setTimeout(() => {
+      setWeekOffset((prev) => (direction === "prev" ? prev - 1 : prev + 1));
+    }, 550);
+  };
+
+  const clearScheduledNavigation = () => {
+    setDragNavDirection("");
+
+    if (navigationTimerRef.current) {
+      window.clearTimeout(navigationTimerRef.current);
+      navigationTimerRef.current = null;
     }
   };
 
   return (
-    <div className="dispatch-week-board">
-      <div className="production-card">
-        <div className="dispatch-week-board__top">
-          <div>
-            <h3 className="production-card__title">Haftalık Operasyon Görünümü</h3>
-            <p className="production-card__subtitle">
-              Haftalık sevkiyatları sütun bazlı takip et, kartları sürükleyerek günü değiştir.
-            </p>
-          </div>
-
-          <div className="dispatch-week-board__actions dispatch-week-board__nav">
-            <button
-              type="button"
-              className="dispatch-week-nav-button dispatch-week-nav-button--ghost"
-              onClick={() => setWeekOffset((prev) => prev - 1)}
-            >
-              Önceki Hafta
-            </button>
-
-            <button
-              type="button"
-              className={`dispatch-week-nav-button ${
-                weekOffset === 0
-                  ? "dispatch-week-nav-button--primary"
-                  : "dispatch-week-nav-button--ghost"
-              }`}
-              onClick={() => setWeekOffset(0)}
-            >
-              Bu Hafta
-            </button>
-
-            <button
-              type="button"
-              className="dispatch-week-nav-button dispatch-week-nav-button--ghost"
-              onClick={() => setWeekOffset((prev) => prev + 1)}
-            >
-              Sonraki Hafta
-            </button>
-          </div>
-        </div>
-
-        <div className="dispatch-week-board__toolbar">
-          <div className="dispatch-view-tabs">
-            <button
-              type="button"
-              className={`dispatch-view-tab${
-                groupMode === GROUP_BY.customer ? " dispatch-view-tab--active" : ""
-              }`}
-              onClick={() => setGroupMode(GROUP_BY.customer)}
-            >
-              Müşteri Bazlı
-            </button>
-
-            <button
-              type="button"
-              className={`dispatch-view-tab${
-                groupMode === GROUP_BY.vehicle ? " dispatch-view-tab--active" : ""
-              }`}
-              onClick={() => setGroupMode(GROUP_BY.vehicle)}
-            >
-              Araç Bazlı
-            </button>
-          </div>
-
-          <div className="dispatch-week-board__summary">
-            <span>Toplam Sevkiyat: {weekTotal}</span>
-            <span>En Yoğun Gün: {maxDayCount} kayıt</span>
-          </div>
-        </div>
-
-        <div className="dispatch-density-grid">
-          {weekDays.map((day) => {
-            const dateKey = formatDateKey(day);
-            const count = filteredItems.filter((item) => item.dispatch_date === dateKey).length;
-            const density = getDensityLevel(count);
-
-            return (
-              <div key={dateKey} className="dispatch-density-card">
-                <div className="dispatch-density-card__header">
-                  <strong>{formatShortDay(day)}</strong>
-                  <span>{count} kayıt</span>
-                </div>
-
-                <div className="dispatch-density-bar">
-                  <div
-                    className={`dispatch-density-bar__fill dispatch-density-bar__fill--${density}`}
-                    style={{ width: `${Math.min(100, (count / maxDayCount) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="production-card">
-        <div className="dispatch-week-grid">
-          <div className="dispatch-week-grid__header dispatch-week-grid__header--label">
-            {groupMode === GROUP_BY.customer ? "Müşteri" : "Araç"}
-          </div>
-
-          {weekDays.map((day) => (
-            <div key={formatDateKey(day)} className="dispatch-week-grid__header">
-              <strong>{formatShortDay(day)}</strong>
-              <span>{formatDispatchDateLabel(formatDateKey(day))}</span>
+    <>
+      <div className="dispatch-week-board">
+        <div className="production-card">
+          <div className="dispatch-week-board__top">
+            <div>
+              <h3 className="production-card__title">Haftalık Operasyon Görünümü</h3>
+              <p className="production-card__subtitle">
+                Haftalık sevkiyatları sütun bazlı takip et, kartları sürükleyerek günü değiştir.
+              </p>
             </div>
-          ))}
 
-          {groupedRows.length === 0 ? (
-            <div className="dispatch-week-grid__empty">
-              Bu görünüm için haftalık sevkiyat bulunmuyor.
+            <div className="dispatch-week-board__actions dispatch-week-board__nav">
+              <button
+                type="button"
+                className={[
+                  "dispatch-week-nav-button",
+                  "dispatch-week-nav-button--ghost",
+                  dragNavDirection === "prev"
+                    ? "dispatch-week-nav-button--drag-active"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => setWeekOffset((prev) => prev - 1)}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  scheduleNavigationWhileDragging("prev");
+                }}
+                onDragLeave={clearScheduledNavigation}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  clearScheduledNavigation();
+                }}
+              >
+                Önceki Hafta
+              </button>
+
+              <button
+                type="button"
+                className={`dispatch-week-nav-button ${
+                  weekOffset === 0
+                    ? "dispatch-week-nav-button--primary"
+                    : "dispatch-week-nav-button--ghost"
+                }`}
+                onClick={() => setWeekOffset(0)}
+              >
+                Bu Hafta
+              </button>
+
+              <button
+                type="button"
+                className={[
+                  "dispatch-week-nav-button",
+                  "dispatch-week-nav-button--ghost",
+                  dragNavDirection === "next"
+                    ? "dispatch-week-nav-button--drag-active"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => setWeekOffset((prev) => prev + 1)}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  scheduleNavigationWhileDragging("next");
+                }}
+                onDragLeave={clearScheduledNavigation}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  clearScheduledNavigation();
+                }}
+              >
+                Sonraki Hafta
+              </button>
             </div>
-          ) : (
-            groupedRows.map((row) => (
-              <div key={row.key} className="dispatch-week-grid__row">
-                <div className="dispatch-week-grid__group-cell">
-                  <strong>{row.label}</strong>
-                  <span>{row.total} kayıt</span>
-                </div>
+          </div>
 
-                {weekDays.map((day) => {
-                  const dateKey = formatDateKey(day);
-                  const dayItems = row.itemsByDate[dateKey] || [];
-                  const isDropTarget = dragTargetKey === `${row.key}-${dateKey}`;
+          <div className="dispatch-week-board__toolbar">
+            <div className="dispatch-view-tabs">
+              <button
+                type="button"
+                className={`dispatch-view-tab${
+                  groupMode === GROUP_BY.customer ? " dispatch-view-tab--active" : ""
+                }`}
+                onClick={() => setGroupMode(GROUP_BY.customer)}
+              >
+                Müşteri Bazlı
+              </button>
 
-                  return (
+              <button
+                type="button"
+                className={`dispatch-view-tab${
+                  groupMode === GROUP_BY.vehicle ? " dispatch-view-tab--active" : ""
+                }`}
+                onClick={() => setGroupMode(GROUP_BY.vehicle)}
+              >
+                Araç Bazlı
+              </button>
+            </div>
+
+            <div className="dispatch-week-board__summary">
+              <span>Toplam Sevkiyat: {weekTotal}</span>
+              <span>En Yoğun Gün: {maxDayCount} kayıt</span>
+            </div>
+          </div>
+
+          <div className="dispatch-bulk-toolbar">
+            <div>
+              <strong>Toplu Taşıma</strong>
+              <p>{selectedIds.length ? `${selectedIds.length} kayıt seçildi` : "Kart seçip toplu taşıma yapabilirsin."}</p>
+            </div>
+
+            <div className="dispatch-bulk-toolbar__actions">
+              <DatePicker
+                value={bulkMoveDate}
+                onChange={(event) => setBulkMoveDate(event.target.value)}
+                placeholder="Hedef tarih"
+                size="sm"
+                presets={[
+                  { label: "Temizle", action: "clear", variant: "ghost" },
+                  { label: "Bugün", value: "today", variant: "primary" },
+                ]}
+              />
+
+              <button
+                type="button"
+                className="dispatch-chip-button dispatch-chip-button--primary"
+                disabled={!selectedIds.length || !bulkMoveDate || updateMutation.isPending}
+                onClick={handleBulkMove}
+              >
+                Seçilenleri Taşı
+              </button>
+
+              <button
+                type="button"
+                className="dispatch-chip-button dispatch-chip-button--ghost"
+                disabled={!selectedIds.length}
+                onClick={clearSelection}
+              >
+                Seçimi Temizle
+              </button>
+            </div>
+          </div>
+
+          <div className="dispatch-density-grid">
+            {weekDays.map((day) => {
+              const dateKey = formatDateKey(day);
+              const count = filteredItems.filter((item) => item.dispatch_date === dateKey).length;
+              const density = getDensityLevel(count);
+
+              return (
+                <div key={dateKey} className="dispatch-density-card">
+                  <div className="dispatch-density-card__header">
+                    <strong>{formatShortDay(day)}</strong>
+                    <span>{count} kayıt</span>
+                  </div>
+
+                  <div className="dispatch-density-bar">
                     <div
-                      key={`${row.key}-${dateKey}`}
-                      className={[
-                        "dispatch-week-grid__cell",
-                        isDropTarget ? "dispatch-week-grid__cell--drop-target" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                      onDragOver={(event) => {
-                        event.preventDefault();
-                        setDragTargetKey(`${row.key}-${dateKey}`);
-                      }}
-                      onDragLeave={() => {
-                        if (dragTargetKey === `${row.key}-${dateKey}`) {
-                          setDragTargetKey("");
-                        }
-                      }}
-                      onDrop={(event) => handleDrop(event, dateKey)}
-                    >
-                      {dayItems.length ? (
-                        dayItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className={[
-                              "dispatch-week-card",
-                              `dispatch-week-card--${item.status}`,
-                              draggingItemId === item.id ? "dispatch-week-card--dragging" : "",
-                            ]
-                              .filter(Boolean)
-                              .join(" ")}
-                            draggable
-                            onDragStart={(event) => handleDragStart(event, item)}
-                            onDragEnd={handleDragEnd}
-                          >
-                            <div className="dispatch-week-card__top">
-                              <strong>{item.customer_name}</strong>
-                              <ProductionStatusBadge status={item.status} />
-                            </div>
-
-                            <p>{item.product_name}</p>
-
-                            <div className="dispatch-week-card__meta">
-                              <span>Lot: {item.lot_no}</span>
-                              <span>
-                                Miktar: {formatQuantityLabel(item.quantity, item.quantity_unit)}
-                              </span>
-                              <span>Araç: {item.vehicle_info || "Atanmadı"}</span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="dispatch-week-grid__placeholder">Boş</div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))
-          )}
+                      className={`dispatch-density-bar__fill dispatch-density-bar__fill--${density}`}
+                      style={{ width: `${Math.min(100, (count / maxDayCount) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
+
+        <div className="production-card">
+          <div className="dispatch-week-grid">
+            <div className="dispatch-week-grid__header dispatch-week-grid__header--label">
+              {groupMode === GROUP_BY.customer ? "Müşteri" : "Araç"}
+            </div>
+
+            {weekDays.map((day) => (
+              <div key={formatDateKey(day)} className="dispatch-week-grid__header">
+                <strong>{formatShortDay(day)}</strong>
+                <span>{formatDispatchDateLabel(formatDateKey(day))}</span>
+              </div>
+            ))}
+
+            {groupedRows.length === 0 ? (
+              <div className="dispatch-week-grid__empty">
+                Bu görünüm için haftalık sevkiyat bulunmuyor.
+              </div>
+            ) : (
+              groupedRows.map((row) => (
+                <div key={row.key} className="dispatch-week-grid__row">
+                  <div className="dispatch-week-grid__group-cell">
+                    <strong>{row.label}</strong>
+                    <span>{row.total} kayıt</span>
+                  </div>
+
+                  {weekDays.map((day) => {
+                    const dateKey = formatDateKey(day);
+                    const dayItems = row.itemsByDate[dateKey] || [];
+                    const cellKey = `${row.key}-${dateKey}`;
+                    const isDropTarget = dragTargetKey === cellKey;
+
+                    return (
+                      <div
+                        key={cellKey}
+                        className={[
+                          "dispatch-week-grid__cell",
+                          isDropTarget ? "dispatch-week-grid__cell--drop-target" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        onDragOver={(event) => {
+                          event.preventDefault();
+                          setDragTargetKey(cellKey);
+                        }}
+                        onDragLeave={() => {
+                          if (dragTargetKey === cellKey) {
+                            setDragTargetKey("");
+                          }
+                        }}
+                        onDrop={(event) => handleDrop(event, dateKey)}
+                      >
+                        {dayItems.length ? (
+                          dayItems.map((item) => {
+                            const isSelectedItem = selectedIds.includes(item.id);
+                            const isDragging = draggingItemIds.includes(item.id);
+
+                            return (
+                              <div
+                                key={item.id}
+                                className={[
+                                  "dispatch-week-card",
+                                  `dispatch-week-card--${item.status}`,
+                                  isDragging ? "dispatch-week-card--dragging" : "",
+                                  isSelectedItem ? "dispatch-week-card--selected" : "",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                                draggable
+                                onDragStart={(event) => handleDragStart(event, item)}
+                                onDragEnd={handleDragEnd}
+                              >
+                                <div className="dispatch-week-card__top">
+                                  <div className="dispatch-week-card__top-row">
+                                    <strong>{item.customer_name}</strong>
+
+                                    <button
+                                      type="button"
+                                      className={[
+                                        "dispatch-card-select",
+                                        isSelectedItem
+                                          ? "dispatch-card-select--active"
+                                          : "",
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" ")}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        toggleSelection(item.id);
+                                      }}
+                                    >
+                                      {isSelectedItem ? "✓" : ""}
+                                    </button>
+                                  </div>
+
+                                  <ProductionStatusBadge status={item.status} />
+                                </div>
+
+                                <p>{item.product_name}</p>
+
+                                <div className="dispatch-week-card__meta">
+                                  <span>Lot: {item.lot_no}</span>
+                                  <span>
+                                    Miktar: {formatQuantityLabel(item.quantity, item.quantity_unit)}
+                                  </span>
+                                  <span>Araç: {item.vehicle_info || "Atanmadı"}</span>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="dispatch-week-grid__placeholder">Boş</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <DispatchMoveHistoryPanel
+          entries={history}
+          onClear={clearHistory}
+        />
       </div>
-    </div>
+
+      <DispatchToastViewport toasts={toasts} onDismiss={dismissToast} />
+    </>
   );
 }
