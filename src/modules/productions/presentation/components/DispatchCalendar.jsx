@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   formatDispatchDateLabel,
   formatQuantityLabel,
@@ -6,10 +7,10 @@ import {
 import { ProductionStatusBadge } from "./ProductionStatusBadge";
 import { useUpdateProductionMutation } from "../hooks/useUpdateProductionMutation";
 import { useDispatchFeedback } from "../hooks/useDispatchFeedback";
-import { useDispatchMoveHistory } from "../hooks/useDispatchMoveHistory";
 import { DispatchToastViewport } from "./DispatchToastViewport";
-import { DispatchMoveHistoryPanel } from "./DispatchMoveHistoryPanel";
 import DatePicker from "../../../../shared/components/ui/DatePicker";
+import { createDispatchLogs } from "../../application/use-cases/createDispatchLogs";
+import { dispatchLogKeys } from "../hooks/useDispatchLogsQuery";
 
 function formatDateKey(date) {
   const year = date.getFullYear();
@@ -118,47 +119,49 @@ function DispatchEventModal({
   return (
     <div className="dispatch-modal-backdrop" onClick={onClose}>
       <div
-        className="dispatch-modal"
+        className="dispatch-modal dispatch-modal--premium"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="dispatch-modal__header">
-          <div>
-            <h3 className="dispatch-modal__title">{item.customer_name}</h3>
-            <p className="dispatch-modal__subtitle">{item.product_name}</p>
-          </div>
+          <div className="dispatch-modal__header-main">
+            <div className="dispatch-modal__title-group">
+              <h3 className="dispatch-modal__title">{item.customer_name}</h3>
+              <p className="dispatch-modal__subtitle">{item.product_name}</p>
+            </div>
 
-          <button
-            type="button"
-            className="dispatch-modal__close"
-            onClick={onClose}
-            aria-label="Kapat"
-          >
-            ×
-          </button>
+            <button
+              type="button"
+              className="dispatch-modal__close"
+              onClick={onClose}
+              aria-label="Kapat"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
-        <div className="dispatch-modal__meta">
-          <div className="dispatch-modal__meta-item">
+        <div className="dispatch-modal__summary-grid">
+          <div className="dispatch-modal__summary-card">
             <span>Lot</span>
             <strong>{item.lot_no}</strong>
           </div>
 
-          <div className="dispatch-modal__meta-item">
+          <div className="dispatch-modal__summary-card">
             <span>Miktar</span>
             <strong>{formatQuantityLabel(item.quantity, item.quantity_unit)}</strong>
           </div>
 
-          <div className="dispatch-modal__meta-item">
+          <div className="dispatch-modal__summary-card">
             <span>Durum</span>
             <ProductionStatusBadge status={formState.status} />
           </div>
         </div>
 
-        <div className="dispatch-modal__form">
-          <div className="production-field">
-            <label className="production-label">Durum</label>
+        <div className="dispatch-modal__form-grid">
+          <div className="dispatch-modal__field">
+            <label className="dispatch-modal__label">Durum</label>
             <select
-              className="production-input"
+              className="dispatch-modal__input dispatch-modal__input--select"
               value={formState.status}
               onChange={(e) => onChange("status", e.target.value)}
             >
@@ -170,8 +173,8 @@ function DispatchEventModal({
             </select>
           </div>
 
-          <div className="production-field">
-            <label className="production-label">Çıkış Tarihi</label>
+          <div className="dispatch-modal__field">
+            <label className="dispatch-modal__label">Çıkış Tarihi</label>
             <DatePicker
               value={formState.dispatch_date}
               onChange={(event) => onChange("dispatch_date", event.target.value)}
@@ -179,43 +182,47 @@ function DispatchEventModal({
             />
           </div>
 
-          <div className="production-field">
-            <label className="production-label">Paketleme Bilgisi</label>
+          <div className="dispatch-modal__field">
+            <label className="dispatch-modal__label">Paketleme Bilgisi</label>
             <input
-              className="production-input"
+              className="dispatch-modal__input"
               type="text"
               value={formState.packaging_info}
               onChange={(e) => onChange("packaging_info", e.target.value)}
+              placeholder="Örn: 1000 KUTU"
             />
           </div>
 
-          <div className="production-field">
-            <label className="production-label">Palet Bilgisi</label>
+          <div className="dispatch-modal__field">
+            <label className="dispatch-modal__label">Palet Bilgisi</label>
             <input
-              className="production-input"
+              className="dispatch-modal__input"
               type="text"
               value={formState.pallet_info}
               onChange={(e) => onChange("pallet_info", e.target.value)}
+              placeholder="Örn: 25"
             />
           </div>
 
-          <div className="production-field">
-            <label className="production-label">Araç Bilgisi</label>
+          <div className="dispatch-modal__field dispatch-modal__field--full">
+            <label className="dispatch-modal__label">Araç Bilgisi</label>
             <input
-              className="production-input"
+              className="dispatch-modal__input"
               type="text"
               value={formState.vehicle_info}
               onChange={(e) => onChange("vehicle_info", e.target.value)}
+              placeholder="Örn: TIR 1"
             />
           </div>
 
-          <div className="production-field production-field--full">
-            <label className="production-label">Not</label>
+          <div className="dispatch-modal__field dispatch-modal__field--full">
+            <label className="dispatch-modal__label">Not</label>
             <textarea
-              className="production-textarea"
+              className="dispatch-modal__textarea"
               rows="4"
               value={formState.notes}
               onChange={(e) => onChange("notes", e.target.value)}
+              placeholder="Operasyon notları..."
             />
           </div>
         </div>
@@ -223,7 +230,7 @@ function DispatchEventModal({
         <div className="dispatch-modal__footer">
           <button
             type="button"
-            className="production-button production-button--ghost"
+            className="dispatch-chip-button dispatch-chip-button--ghost"
             onClick={onClose}
             disabled={isSaving}
           >
@@ -232,7 +239,7 @@ function DispatchEventModal({
 
           <button
             type="button"
-            className="production-button production-button--primary"
+            className="dispatch-chip-button dispatch-chip-button--primary"
             onClick={onSave}
             disabled={isSaving}
           >
@@ -246,9 +253,9 @@ function DispatchEventModal({
 
 export function DispatchCalendar({ items }) {
   const today = new Date();
+  const queryClient = useQueryClient();
   const updateMutation = useUpdateProductionMutation();
   const { toasts, pushToast, dismissToast } = useDispatchFeedback();
-  const { history, appendHistoryEntry, clearHistory } = useDispatchMoveHistory();
 
   const navigationTimerRef = useRef(null);
 
@@ -283,6 +290,7 @@ export function DispatchCalendar({ items }) {
 
   useEffect(() => {
     if (!selectedItem) return;
+
     const refreshedSelectedItem =
       items.find((entry) => entry.id === selectedItem.id) || null;
 
@@ -351,17 +359,7 @@ export function DispatchCalendar({ items }) {
     );
   };
 
-  const buildHistoryEntry = ({ count, toDate, sourceLabel, view }) => ({
-    title: count > 1 ? "Toplu taşıma tamamlandı" : "Taşıma tamamlandı",
-    message: `${formatItemCountLabel(count)} • ${sourceLabel} → ${formatDispatchDateLabel(
-      toDate
-    )}`,
-    count,
-    toDate,
-    view,
-  });
-
-  const performMove = async ({ moveItems, targetDate, sourceLabel, view }) => {
+  const performMove = async ({ moveItems, targetDate }) => {
     const safeItems = moveItems.filter(Boolean);
 
     if (!safeItems.length) return;
@@ -372,6 +370,12 @@ export function DispatchCalendar({ items }) {
     );
 
     if (!changedItems.length) return;
+
+    const fromDateMap = {};
+
+    changedItems.forEach((item) => {
+      fromDateMap[item.id] = item.dispatch_date;
+    });
 
     try {
       if (changedItems.length === 1) {
@@ -396,6 +400,16 @@ export function DispatchCalendar({ items }) {
         });
       }
 
+      await createDispatchLogs({
+        items: changedItems,
+        fromDateMap,
+        toDate: targetDate,
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: dispatchLogKeys.all,
+      });
+
       pushToast({
         type: "success",
         title: "Sevkiyat tarihi güncellendi",
@@ -403,15 +417,6 @@ export function DispatchCalendar({ items }) {
           targetDate
         )}`,
       });
-
-      appendHistoryEntry(
-        buildHistoryEntry({
-          count: changedItems.length,
-          toDate: targetDate,
-          sourceLabel,
-          view,
-        })
-      );
 
       setSelectedDateKey(targetDate);
       setBulkMoveDate("");
@@ -514,7 +519,9 @@ export function DispatchCalendar({ items }) {
       ids = rawIds ? [rawIds] : [];
     }
 
-    return items.filter((entry) => ids.includes(String(entry.id)) || ids.includes(entry.id));
+    return items.filter(
+      (entry) => ids.includes(String(entry.id)) || ids.includes(entry.id)
+    );
   };
 
   const handleDropOnCell = async (event, dateKey) => {
@@ -527,8 +534,6 @@ export function DispatchCalendar({ items }) {
     await performMove({
       moveItems: draggedItems,
       targetDate: dateKey,
-      sourceLabel: "Takvim sürükle-bırak",
-      view: "calendar",
     });
 
     setDraggingItemIds([]);
@@ -540,8 +545,6 @@ export function DispatchCalendar({ items }) {
     await performMove({
       moveItems: selectedEntries,
       targetDate: bulkMoveDate,
-      sourceLabel: "Takvim toplu taşıma",
-      view: "calendar",
     });
   };
 
@@ -649,7 +652,11 @@ export function DispatchCalendar({ items }) {
           <div className="dispatch-bulk-toolbar">
             <div>
               <strong>Toplu Taşıma</strong>
-              <p>{selectedIds.length ? `${selectedIds.length} kayıt seçildi` : "Kart seçip toplu taşıma yapabilirsin."}</p>
+              <p>
+                {selectedIds.length
+                  ? `${selectedIds.length} kayıt seçildi`
+                  : "Kart seçip toplu taşıma yapabilirsin."}
+              </p>
             </div>
 
             <div className="dispatch-bulk-toolbar__actions">
@@ -667,7 +674,9 @@ export function DispatchCalendar({ items }) {
               <button
                 type="button"
                 className="dispatch-chip-button dispatch-chip-button--primary"
-                disabled={!selectedIds.length || !bulkMoveDate || updateMutation.isPending}
+                disabled={
+                  !selectedIds.length || !bulkMoveDate || updateMutation.isPending
+                }
                 onClick={handleBulkMove}
               >
                 Seçilenleri Taşı
@@ -703,9 +712,8 @@ export function DispatchCalendar({ items }) {
                 const isDropTarget = dragTargetDate === dateKey;
 
                 return (
-                  <button
+                  <div
                     key={dateKey}
-                    type="button"
                     className={[
                       "dispatch-calendar__cell",
                       isCurrentMonth ? "" : "dispatch-calendar__cell--muted",
@@ -715,7 +723,15 @@ export function DispatchCalendar({ items }) {
                     ]
                       .filter(Boolean)
                       .join(" ")}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setSelectedDateKey(dateKey)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedDateKey(dateKey);
+                      }
+                    }}
                     onDragOver={(event) => handleDragOverCell(event, dateKey)}
                     onDragLeave={() => {
                       if (dragTargetDate === dateKey) setDragTargetDate("");
@@ -737,8 +753,7 @@ export function DispatchCalendar({ items }) {
                     <div className="dispatch-calendar__events">
                       {dayItems.slice(0, 3).map((item) => {
                         const isSelectedItem = selectedIds.includes(item.id);
-                        const isDragging =
-                          draggingItemIds.includes(item.id);
+                        const isDragging = draggingItemIds.includes(item.id);
 
                         return (
                           <div
@@ -785,7 +800,7 @@ export function DispatchCalendar({ items }) {
                         </div>
                       ) : null}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -863,11 +878,6 @@ export function DispatchCalendar({ items }) {
             </div>
           )}
         </div>
-
-        <DispatchMoveHistoryPanel
-          entries={history}
-          onClear={clearHistory}
-        />
       </div>
 
       <DispatchEventModal

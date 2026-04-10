@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   formatDispatchDateLabel,
   formatQuantityLabel,
@@ -6,10 +7,10 @@ import {
 import { ProductionStatusBadge } from "./ProductionStatusBadge";
 import { useUpdateProductionMutation } from "../hooks/useUpdateProductionMutation";
 import { useDispatchFeedback } from "../hooks/useDispatchFeedback";
-import { useDispatchMoveHistory } from "../hooks/useDispatchMoveHistory";
 import { DispatchToastViewport } from "./DispatchToastViewport";
-import { DispatchMoveHistoryPanel } from "./DispatchMoveHistoryPanel";
 import DatePicker from "../../../../shared/components/ui/DatePicker";
+import { createDispatchLogs } from "../../application/use-cases/createDispatchLogs";
+import { dispatchLogKeys } from "../hooks/useDispatchLogsQuery";
 
 const GROUP_BY = {
   customer: "customer",
@@ -73,9 +74,9 @@ function formatItemCountLabel(count) {
 }
 
 export function DispatchWeekBoard({ items }) {
+  const queryClient = useQueryClient();
   const updateMutation = useUpdateProductionMutation();
   const { toasts, pushToast, dismissToast } = useDispatchFeedback();
-  const { history, appendHistoryEntry, clearHistory } = useDispatchMoveHistory();
 
   const navigationTimerRef = useRef(null);
 
@@ -169,17 +170,7 @@ export function DispatchWeekBoard({ items }) {
     );
   };
 
-  const buildHistoryEntry = ({ count, toDate, sourceLabel, view }) => ({
-    title: count > 1 ? "Toplu taşıma tamamlandı" : "Taşıma tamamlandı",
-    message: `${formatItemCountLabel(count)} • ${sourceLabel} → ${formatDispatchDateLabel(
-      toDate
-    )}`,
-    count,
-    toDate,
-    view,
-  });
-
-  const performMove = async ({ moveItems, targetDate, sourceLabel, view }) => {
+  const performMove = async ({ moveItems, targetDate }) => {
     const safeItems = moveItems.filter(Boolean);
 
     if (!safeItems.length) return;
@@ -190,6 +181,12 @@ export function DispatchWeekBoard({ items }) {
     );
 
     if (!changedItems.length) return;
+
+    const fromDateMap = {};
+
+    changedItems.forEach((item) => {
+      fromDateMap[item.id] = item.dispatch_date;
+    });
 
     try {
       if (changedItems.length === 1) {
@@ -214,6 +211,16 @@ export function DispatchWeekBoard({ items }) {
         });
       }
 
+      await createDispatchLogs({
+        items: changedItems,
+        fromDateMap,
+        toDate: targetDate,
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: dispatchLogKeys.all,
+      });
+
       pushToast({
         type: "success",
         title: "Sevkiyat tarihi güncellendi",
@@ -221,15 +228,6 @@ export function DispatchWeekBoard({ items }) {
           targetDate
         )}`,
       });
-
-      appendHistoryEntry(
-        buildHistoryEntry({
-          count: changedItems.length,
-          toDate: targetDate,
-          sourceLabel,
-          view,
-        })
-      );
 
       setBulkMoveDate("");
       setSelectedIds([]);
@@ -289,7 +287,9 @@ export function DispatchWeekBoard({ items }) {
       ids = rawIds ? [rawIds] : [];
     }
 
-    return items.filter((entry) => ids.includes(String(entry.id)) || ids.includes(entry.id));
+    return items.filter(
+      (entry) => ids.includes(String(entry.id)) || ids.includes(entry.id)
+    );
   };
 
   const handleDrop = async (event, dateKey) => {
@@ -302,8 +302,6 @@ export function DispatchWeekBoard({ items }) {
     await performMove({
       moveItems: draggedItems,
       targetDate: dateKey,
-      sourceLabel: "Week board sürükle-bırak",
-      view: "week-board",
     });
 
     setDraggingItemIds([]);
@@ -315,8 +313,6 @@ export function DispatchWeekBoard({ items }) {
     await performMove({
       moveItems: selectedEntries,
       targetDate: bulkMoveDate,
-      sourceLabel: "Week board toplu taşıma",
-      view: "week-board",
     });
   };
 
@@ -453,7 +449,11 @@ export function DispatchWeekBoard({ items }) {
           <div className="dispatch-bulk-toolbar">
             <div>
               <strong>Toplu Taşıma</strong>
-              <p>{selectedIds.length ? `${selectedIds.length} kayıt seçildi` : "Kart seçip toplu taşıma yapabilirsin."}</p>
+              <p>
+                {selectedIds.length
+                  ? `${selectedIds.length} kayıt seçildi`
+                  : "Kart seçip toplu taşıma yapabilirsin."}
+              </p>
             </div>
 
             <div className="dispatch-bulk-toolbar__actions">
@@ -471,7 +471,9 @@ export function DispatchWeekBoard({ items }) {
               <button
                 type="button"
                 className="dispatch-chip-button dispatch-chip-button--primary"
-                disabled={!selectedIds.length || !bulkMoveDate || updateMutation.isPending}
+                disabled={
+                  !selectedIds.length || !bulkMoveDate || updateMutation.isPending
+                }
                 onClick={handleBulkMove}
               >
                 Seçilenleri Taşı
@@ -491,7 +493,9 @@ export function DispatchWeekBoard({ items }) {
           <div className="dispatch-density-grid">
             {weekDays.map((day) => {
               const dateKey = formatDateKey(day);
-              const count = filteredItems.filter((item) => item.dispatch_date === dateKey).length;
+              const count = filteredItems.filter(
+                (item) => item.dispatch_date === dateKey
+              ).length;
               const density = getDensityLevel(count);
 
               return (
@@ -615,7 +619,10 @@ export function DispatchWeekBoard({ items }) {
                                 <div className="dispatch-week-card__meta">
                                   <span>Lot: {item.lot_no}</span>
                                   <span>
-                                    Miktar: {formatQuantityLabel(item.quantity, item.quantity_unit)}
+                                    Miktar: {formatQuantityLabel(
+                                      item.quantity,
+                                      item.quantity_unit
+                                    )}
                                   </span>
                                   <span>Araç: {item.vehicle_info || "Atanmadı"}</span>
                                 </div>
@@ -633,11 +640,6 @@ export function DispatchWeekBoard({ items }) {
             )}
           </div>
         </div>
-
-        <DispatchMoveHistoryPanel
-          entries={history}
-          onClear={clearHistory}
-        />
       </div>
 
       <DispatchToastViewport toasts={toasts} onDismiss={dismissToast} />

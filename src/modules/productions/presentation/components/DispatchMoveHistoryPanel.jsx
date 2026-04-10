@@ -1,3 +1,5 @@
+import { useDispatchLogsQuery } from "../hooks/useDispatchLogsQuery";
+
 function formatHistoryDate(value) {
   if (!value) return "-";
 
@@ -11,51 +13,79 @@ function formatHistoryDate(value) {
   }
 }
 
-export function DispatchMoveHistoryPanel({
-  entries = [],
-  title = "Taşıma Geçmişi",
-  description = "Son sürükle-bırak ve toplu taşıma işlemleri",
-  onClear,
-}) {
+function formatActionType(actionType) {
+  switch (actionType) {
+    case "move":
+      return "Tekli taşıma";
+    case "bulk_move":
+      return "Toplu taşıma";
+    case "update":
+      return "Kayıt güncelleme";
+    default:
+      return "İşlem";
+  }
+}
+
+function formatDateRange(fromDate, toDate) {
+  if (fromDate && toDate) {
+    return `${fromDate} → ${toDate}`;
+  }
+
+  if (toDate) {
+    return `Hedef tarih: ${toDate}`;
+  }
+
+  return "-";
+}
+
+export function DispatchMoveHistoryPanel() {
+  const { data = [], isLoading, isError } = useDispatchLogsQuery();
+
   return (
     <div className="production-card">
       <div className="production-card__header">
         <div>
-          <h3 className="production-card__title">{title}</h3>
-          <p className="production-card__subtitle">{description}</p>
+          <h3 className="production-card__title">Taşıma Geçmişi</h3>
+          <p className="production-card__subtitle">
+            Yapılan sürükle-bırak ve toplu taşıma işlemleri
+          </p>
         </div>
-
-        {entries.length ? (
-          <button
-            type="button"
-            className="dispatch-chip-button dispatch-chip-button--ghost"
-            onClick={onClear}
-          >
-            Geçmişi Temizle
-          </button>
-        ) : null}
       </div>
 
-      {!entries.length ? (
+      {isLoading ? (
         <div className="production-empty-state">
-          <h3>Henüz kayıt yok</h3>
-          <p>Taşıma yaptıkça burada işlem özeti görünecek.</p>
+          <h3>Yükleniyor</h3>
+          <p>Geçmiş kayıtları getiriliyor.</p>
+        </div>
+      ) : isError ? (
+        <div className="production-empty-state">
+          <h3>Geçmiş yüklenemedi</h3>
+          <p>Dispatch log kayıtları alınırken hata oluştu.</p>
+        </div>
+      ) : !data.length ? (
+        <div className="production-empty-state">
+          <h3>Kayıt yok</h3>
+          <p>Henüz bir taşıma işlemi yapılmadı.</p>
         </div>
       ) : (
         <div className="dispatch-history-list">
-          {entries.map((entry) => (
-            <article key={entry.id} className="dispatch-history-item">
+          {data.map((log) => (
+            <article key={log.id} className="dispatch-history-item">
               <div className="dispatch-history-item__top">
-                <strong>{entry.title}</strong>
-                <span>{formatHistoryDate(entry.createdAt)}</span>
+                <strong>{log.meta?.customer_name || "Müşteri yok"}</strong>
+                <span>{formatHistoryDate(log.createdAt)}</span>
               </div>
 
-              <p>{entry.message}</p>
+              <p>
+                {formatActionType(log.actionType)} •{" "}
+                {formatDateRange(log.fromDate, log.toDate)}
+              </p>
 
               <div className="dispatch-history-item__meta">
-                <span>Görünüm: {entry.view || "-"}</span>
-                <span>Kayıt: {entry.count || 1}</span>
-                <span>Hedef Tarih: {entry.toDate || "-"}</span>
+                <span>Ürün: {log.meta?.product_name || "-"}</span>
+                <span>Lot: {log.meta?.lot_no || "-"}</span>
+                <span>Kaynak: {log.meta?.source || "dispatch"}</span>
+                <span>Yapan: {log.meta?.actor_name || "Bilinmeyen kullanıcı"}</span>
               </div>
             </article>
           ))}

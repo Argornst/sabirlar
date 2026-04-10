@@ -7925,3 +7925,190 @@ input[type="number"]::-webkit-inner-spin-button {
 :root[data-theme="light"] .section-subtitle {
   color: #64748b !important;
 }
+.reports-section {
+  overflow: visible;
+}
+
+.reports-section__header {
+  margin-bottom: 18px;
+}
+
+.reports-section__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dispatch-log-filters {
+  display: grid;
+  gap: 18px;
+}
+
+.dispatch-log-filters__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dispatch-log-filters__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.dispatch-log-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dispatch-log-summary-card {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 18px;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.42);
+  display: grid;
+  gap: 8px;
+}
+
+.dispatch-log-summary-card span {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dispatch-log-summary-card strong {
+  color: #f8fafc;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.dispatch-log-table-wrap {
+  display: grid;
+  gap: 14px;
+}
+
+.dispatch-log-table-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dispatch-log-table-scroll {
+  overflow-x: auto;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 18px;
+}
+
+.dispatch-log-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.dispatch-log-table thead th {
+  text-align: left;
+  padding: 14px 16px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 800;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.65);
+}
+
+.dispatch-log-table tbody td {
+  padding: 14px 16px;
+  color: #e2e8f0;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  vertical-align: middle;
+}
+
+.dispatch-log-table tbody tr:hover td {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.dispatch-log-table__empty {
+  text-align: center;
+  color: #94a3b8 !important;
+  padding: 24px !important;
+}
+
+.dispatch-log-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dispatch-log-pagination__info {
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 1200px) {
+  .dispatch-log-filters__grid,
+  .dispatch-log-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .dispatch-log-filters__grid,
+  .dispatch-log-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dispatch-log-filters__footer,
+  .dispatch-log-pagination {
+    justify-content: stretch;
+  }
+
+  .dispatch-log-pagination > * {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+:root[data-theme="light"] .dispatch-log-summary-card,
+:root[data-theme="light"] .dispatch-log-table-scroll {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)),
+    rgba(255, 255, 255, 0.96);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 10px 22px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+:root[data-theme="light"] .dispatch-log-summary-card span,
+:root[data-theme="light"] .dispatch-log-table-meta {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .dispatch-log-summary-card strong,
+:root[data-theme="light"] .dispatch-log-table tbody td,
+:root[data-theme="light"] .dispatch-log-pagination__info {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .dispatch-log-table thead th {
+  color: #334155;
+  background: rgba(248, 250, 252, 0.96);
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+:root[data-theme="light"] .dispatch-log-table tbody td {
+  border-bottom-color: rgba(15, 23, 42, 0.06);
+}
+
+:root[data-theme="light"] .dispatch-log-table tbody tr:hover td {
+  background: rgba(37, 99, 235, 0.04);
+}
