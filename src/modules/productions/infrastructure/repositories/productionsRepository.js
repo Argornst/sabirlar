@@ -2,6 +2,38 @@ import { supabase } from "../../../../shared/lib/supabaseClient";
 
 const TABLE_NAME = "productions";
 
+async function getActiveOrganizationId() {
+  const { data, error } = await supabase.rpc("current_user_organization_id");
+
+  if (error) {
+    throw error;
+  }
+
+  if (data == null) {
+    throw new Error("Aktif organizasyon bulunamadı.");
+  }
+
+  return data;
+}
+
+function sanitizeCreatePayload(payload, organizationId) {
+  return {
+    ...payload,
+    organization_id: organizationId,
+  };
+}
+
+function sanitizeUpdatePayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return {};
+  }
+
+  const nextPayload = { ...payload };
+  delete nextPayload.organization_id;
+
+  return nextPayload;
+}
+
 const buildListQuery = (filters = {}) => {
   let query = supabase
     .from(TABLE_NAME)
@@ -61,9 +93,12 @@ export const productionsRepository = {
   },
 
   async create(payload) {
+    const organizationId = await getActiveOrganizationId();
+    const safePayload = sanitizeCreatePayload(payload, organizationId);
+
     const { data, error } = await supabase
       .from(TABLE_NAME)
-      .insert(payload)
+      .insert(safePayload)
       .select("*")
       .single();
 
@@ -72,9 +107,11 @@ export const productionsRepository = {
   },
 
   async update(id, payload) {
+    const safePayload = sanitizeUpdatePayload(payload);
+
     const { data, error } = await supabase
       .from(TABLE_NAME)
-      .update(payload)
+      .update(safePayload)
       .eq("id", id)
       .select("*")
       .single();
@@ -91,39 +128,38 @@ export const productionsRepository = {
   },
 
   async getDispatchPlan(filters = {}) {
-  let query = supabase
-    .from(TABLE_NAME)
-    .select("*")
-    .not("dispatch_date", "is", null)
-    .order("dispatch_date", { ascending: true })
-    .order("created_at", { ascending: true });
+    let query = supabase
+      .from(TABLE_NAME)
+      .select("*")
+      .not("dispatch_date", "is", null)
+      .order("dispatch_date", { ascending: true })
+      .order("created_at", { ascending: true });
 
-  if (filters.dateFrom) {
-    query = query.gte("dispatch_date", filters.dateFrom);
-  }
+    if (filters.dateFrom) {
+      query = query.gte("dispatch_date", filters.dateFrom);
+    }
 
-  if (filters.dateTo) {
-    query = query.lte("dispatch_date", filters.dateTo);
-  }
+    if (filters.dateTo) {
+      query = query.lte("dispatch_date", filters.dateTo);
+    }
 
-  if (filters.search) {
-    const term = filters.search.trim();
-    query = query.or(
-      [
-        `lot_no.ilike.%${term}%`,
-        `customer_name.ilike.%${term}%`,
-        `product_name.ilike.%${term}%`,
-      ].join(",")
-    );
-  }
+    if (filters.search) {
+      const term = filters.search.trim();
+      query = query.or(
+        [
+          `lot_no.ilike.%${term}%`,
+          `customer_name.ilike.%${term}%`,
+          `product_name.ilike.%${term}%`,
+        ].join(",")
+      );
+    }
 
-  const { data, error } = await query;
+    const { data, error } = await query;
 
-  if (error) {
-    console.error("Productions getDispatchPlan error:", error);
-    throw createSupabaseError(error, "Sevkiyat planı alınamadı.");
-  }
+    if (error) {
+      throw error;
+    }
 
-  return data || [];
-},
+    return data || [];
+  },
 };

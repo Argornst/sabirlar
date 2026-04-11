@@ -5,7 +5,9 @@ export default function Button({
   type = "button",
   variant = "primary",
   className = "",
-  ...props
+  loading = false,
+  disabled = false,
+  ...rest
 }) {
   const variantClassMap = {
     primary: "ui-button ui-button--primary",
@@ -17,13 +19,19 @@ export default function Button({
   return (
     <motion.button
       type={type}
+      disabled={disabled || loading}
       className={`${variantClassMap[variant] ?? variantClassMap.primary} ${className}`.trim()}
       whileHover={{ y: -1, scale: 1.01 }}
       whileTap={{ scale: 0.985 }}
       transition={{ duration: 0.16, ease: "easeOut" }}
-      {...props}
+      {...rest}   // ⚠️ artık loading burada yok
     >
-      {children}
+      {loading ? (
+  <span className="ui-button__loading">
+    <span className="ui-button__spinner" />
+    Yükleniyor...
+  </span>
+) : children}
     </motion.button>
   );
 }

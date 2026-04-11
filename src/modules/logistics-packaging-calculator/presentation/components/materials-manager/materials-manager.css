@@ -1,0 +1,53 @@
+.lp-materials-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.lp-field--inline {
+  min-width: 180px;
+}
+
+.lp-materials-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.lp-materials-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lp-materials-table th,
+.lp-materials-table td {
+  padding: 0.95rem 1rem;
+  text-align: left;
+  font-size: 0.92rem;
+}
+
+.lp-materials-table thead th {
+  background: rgba(30, 41, 59, 0.72);
+  color: #e2e8f0;
+  font-weight: 800;
+}
+
+:global(.light) .lp-materials-table thead th,
+:global([data-theme='light']) .lp-materials-table thead th {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.lp-materials-table tbody tr {
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.lp-materials-table tbody td {
+  color: #cbd5e1;
+}
+
+:global(.light) .lp-materials-table tbody td,
+:global([data-theme='light']) .lp-materials-table tbody td {
+  color: #334155;
+}

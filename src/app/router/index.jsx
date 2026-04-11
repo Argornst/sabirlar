@@ -13,6 +13,8 @@ import ProductsPage from "../../modules/products/presentation/pages/ProductsPage
 import ReportsPage from "../../modules/reports/presentation/pages/ReportsPage";
 import UsersPage from "../../modules/users/presentation/pages/UsersPage";
 
+import { logisticsPackagingRoutes } from '@/modules/logistics-packaging-calculator';
+
 import ProductionsPage from "../../modules/productions/presentation/pages/ProductionsPage";
 import NewProductionPage from "../../modules/productions/presentation/pages/NewProductionPage";
 import DispatchPlanPage from "../../modules/productions/presentation/pages/DispatchPlanPage";
@@ -71,6 +73,8 @@ export default function AppRouter() {
             <Route path={ROUTES.PRODUCTIONS} element={<ProductionsPage />} />
             <Route path={ROUTES.NEW_PRODUCTION} element={<NewProductionPage />} />
             <Route path={ROUTES.DISPATCH_PLAN} element={<DispatchPlanPage />} />
+
+            {logisticsPackagingRoutes}
           </Route>
         </Route>
 
