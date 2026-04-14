@@ -46,3 +46,23 @@ export function mapCalculationResultToSummaryItems(
     { label: 'Durum', value: translateValidationStatus(result.validationStatus) },
   ];
 }
+
+export function mapAggregateResultToSummaryItems(result: {
+  totalNetWeightKg: number;
+  totalTareWeightKg: number;
+  totalGrossWeightKg: number;
+  totalContainerCount: number;
+  totalPalletCount: number;
+  totalGroundPalletCount: number;
+  validationStatus: string;
+}): Array<{ label: string; value: string }> {
+  return [
+    { label: 'Genel Net', value: `${result.totalNetWeightKg.toFixed(3)} kg` },
+    { label: 'Genel Dara', value: `${result.totalTareWeightKg.toFixed(3)} kg` },
+    { label: 'Genel Brüt', value: `${result.totalGrossWeightKg.toFixed(3)} kg` },
+    { label: 'Genel Ambalaj', value: `${result.totalContainerCount}` },
+    { label: 'Genel Palet', value: `${result.totalPalletCount}` },
+    { label: 'Zemindeki Palet', value: `${result.totalGroundPalletCount}` },
+    { label: 'Durum', value: translateValidationStatus(result.validationStatus) },
+  ];
+}

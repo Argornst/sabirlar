@@ -1,195 +1,199 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
-  useCreatePackagingCalculationMutation,
-  usePackagingCalculator,
+  mapAggregateResultToSummaryItems,
+  useCreatePackagingScenarioMutation,
+  useDeletePackagingScenarioMutation,
   usePackagingMaterialsQuery,
   usePackagingProductsQuery,
   usePackagingRulesQuery,
+  usePackagingScenarioCalculator,
+  usePackagingScenariosQuery,
 } from '../../application';
-import { SupabasePackagingCalculationsRepository } from '../../infrastructure/repositories/supabase-packaging-calculations.repository.js';
 import { SupabasePackagingMaterialsRepository } from '../../infrastructure/repositories/supabase-packaging-materials.repository.js';
 import { SupabasePackagingProductsRepository } from '../../infrastructure/repositories/supabase-packaging-products.repository.js';
 import { SupabasePackagingRulesRepository } from '../../infrastructure/repositories/supabase-packaging-rules.repository.js';
+import { SupabasePackagingScenariosRepository } from '../../infrastructure/repositories/supabase-packaging-scenarios.repository.js';
 import { CalculatorForm } from '../components/calculator-form/calculator-form';
+import { CalculationResultCards } from '../components/calculation-result-cards/calculation-result-cards';
 import { LogisticsPackagingLayout } from '../components/logistics-packaging-layout/logistics-packaging-layout';
+import { ScenarioHistory } from '../components/scenario-history/scenario-history';
+import { StackSummary } from '../components/stack-summary/stack-summary';
+import { LotSummary } from '../components/lot-summary/lot-summary';
+import './logistics-packaging-calculator-page.css';
 
 const productsRepository = new SupabasePackagingProductsRepository();
 const materialsRepository = new SupabasePackagingMaterialsRepository();
 const rulesRepository = new SupabasePackagingRulesRepository();
-const calculationsRepository = new SupabasePackagingCalculationsRepository();
+const scenariosRepository = new SupabasePackagingScenariosRepository();
 
 function pickPreferredMaterial(materials, rules) {
-  if (!materials.length) return null;
-  if (!rules.length) return materials[0];
+  if (!materials.length) return '';
+  if (!rules.length) return materials[0]?.id ?? '';
 
   const requiredIds = new Set(
     rules.filter((rule) => rule.isRequired).map((rule) => rule.materialId),
   );
 
   const requiredMatch = materials.find((item) => requiredIds.has(item.id));
-  return requiredMatch ?? materials[0];
+  return requiredMatch?.id ?? materials[0]?.id ?? '';
+}
+
+function translateValidationStatus(status) {
+  if (status === 'VALID') return 'Uygun';
+  if (status === 'WARNING') return 'Uyarılı';
+  if (status === 'INVALID') return 'Hatalı';
+  return status ?? '-';
+}
+
+function getStatusClass(status) {
+  if (status === 'INVALID') return 'is-invalid';
+  if (status === 'WARNING') return 'is-warning';
+  return '';
+}
+
+function createDefaultPalletLine() {
+  return {
+    id: crypto.randomUUID(),
+    palletMaterialId: '',
+    palletCount: 1,
+    unitsPerRow: '',
+    unitsPerPallet: '',
+    stackGroup: '',
+    stackOrder: 1,
+  };
+}
+
+function mapScenarioHistoryItemToFormValues(item) {
+  return {
+    name: item.scenario.name || '',
+    lots: item.lots.map((lotWrapper) => ({
+      id: crypto.randomUUID(),
+      values: {
+        lotNumber: lotWrapper.lot.lotNumber || '',
+        productId: lotWrapper.lot.productId || '',
+        totalQuantityKg:
+          lotWrapper.lot.totalQuantityKg == null
+            ? ''
+            : Number(lotWrapper.lot.totalQuantityKg),
+        containerMaterialId: lotWrapper.lot.containerMaterialId || '',
+        vacuumBagMaterialId: lotWrapper.lot.vacuumBagMaterialId || null,
+        unitNetWeightKg:
+          lotWrapper.lot.unitNetWeightKg == null
+            ? ''
+            : Number(lotWrapper.lot.unitNetWeightKg),
+        notes: lotWrapper.lot.notes || '',
+        palletLines:
+          lotWrapper.palletLines.length > 0
+            ? lotWrapper.palletLines.map((line) => ({
+                id: crypto.randomUUID(),
+                palletMaterialId: line.palletMaterialId || '',
+                palletCount: line.palletCount ?? 1,
+                unitsPerRow: line.unitsPerRow ?? '',
+                unitsPerPallet: line.unitsPerPallet ?? '',
+                stackGroup: line.stackGroup || '',
+                stackOrder: line.stackOrder ?? 1,
+              }))
+            : [createDefaultPalletLine()],
+      },
+    })),
+  };
+}
+
+function mapScenarioHistoryItemToDuplicatedFormValues(item) {
+  const base = mapScenarioHistoryItemToFormValues(item);
+
+  return {
+    ...base,
+    name: base.name ? `${base.name} (Kopya)` : 'Kopya Senaryo',
+  };
 }
 
 export function LogisticsPackagingCalculatorPage() {
   const productsQuery = usePackagingProductsQuery(productsRepository);
   const materialsQuery = usePackagingMaterialsQuery(materialsRepository);
+  const rulesQuery = usePackagingRulesQuery(rulesRepository);
+  const scenariosQuery = usePackagingScenariosQuery(scenariosRepository);
 
   const products = productsQuery.data ?? [];
   const materials = materialsQuery.data ?? [];
+  const allRules = rulesQuery.data ?? [];
+  const scenarios = scenariosQuery.data ?? [];
 
-  const calculator = usePackagingCalculator({
+  const scenario = usePackagingScenarioCalculator({
     materials,
-    productRules: [],
+    productRules: allRules,
   });
 
-  const rulesQuery = usePackagingRulesQuery(
-    rulesRepository,
-    calculator.values.productId || undefined,
+  const createScenarioMutation = useCreatePackagingScenarioMutation({
+    scenariosRepository,
+    materials,
+    productRules: allRules,
+  });
+
+  const deleteScenarioMutation = useDeletePackagingScenarioMutation(
+    scenariosRepository,
   );
 
-  const activeRules = useMemo(() => rulesQuery.data ?? [], [rulesQuery.data]);
+  const [focusedProblemLotId, setFocusedProblemLotId] = useState(null);
 
-  const allowedMaterialIds = useMemo(
-    () => activeRules.map((rule) => rule.materialId),
-    [activeRules],
-  );
+  const isLoading =
+    productsQuery.isLoading ||
+    materialsQuery.isLoading ||
+    rulesQuery.isLoading ||
+    scenariosQuery.isLoading;
 
-  const allowedMaterials = useMemo(() => {
-    if (!allowedMaterialIds.length) return materials;
-    const allowedSet = new Set(allowedMaterialIds);
-    return materials.filter((item) => allowedSet.has(item.id));
-  }, [allowedMaterialIds, materials]);
+  const isSaving = createScenarioMutation.isPending;
 
-  const containerRules = useMemo(
-    () =>
-      activeRules.filter((rule) => {
-        const material = materials.find((item) => item.id === rule.materialId);
-        return material?.materialType === 'BOX' || material?.materialType === 'DRUM';
-      }),
-    [activeRules, materials],
-  );
-
-  const vacuumRules = useMemo(
-    () =>
-      activeRules.filter((rule) => {
-        const material = materials.find((item) => item.id === rule.materialId);
-        return material?.materialType === 'VACUUM_BAG';
-      }),
-    [activeRules, materials],
-  );
-
-  const palletRules = useMemo(
-    () =>
-      activeRules.filter((rule) => {
-        const material = materials.find((item) => item.id === rule.materialId);
-        return material?.materialType === 'PALLET';
-      }),
-    [activeRules, materials],
-  );
-
-  const allowedContainers = useMemo(
-    () =>
-      allowedMaterials.filter(
-        (item) => item.materialType === 'BOX' || item.materialType === 'DRUM',
+  const sharedStackGroupOptions = useMemo(() => {
+    return Array.from(
+      new Set(
+        scenario.values.lots.flatMap((lot) =>
+          lot.values.palletLines
+            .map((line) => line.stackGroup?.trim())
+            .filter(Boolean),
+        ),
       ),
-    [allowedMaterials],
-  );
-
-  const allowedVacuumBags = useMemo(
-    () => allowedMaterials.filter((item) => item.materialType === 'VACUUM_BAG'),
-    [allowedMaterials],
-  );
-
-  const allowedPallets = useMemo(
-    () => allowedMaterials.filter((item) => item.materialType === 'PALLET'),
-    [allowedMaterials],
-  );
-
-  const preferredContainer = useMemo(
-    () => pickPreferredMaterial(allowedContainers, containerRules),
-    [allowedContainers, containerRules],
-  );
-
-  const preferredVacuumBag = useMemo(
-    () => pickPreferredMaterial(allowedVacuumBags, vacuumRules),
-    [allowedVacuumBags, vacuumRules],
-  );
-
-  const preferredPallet = useMemo(
-    () => pickPreferredMaterial(allowedPallets, palletRules),
-    [allowedPallets, palletRules],
-  );
-
-  const allowedContainerIdsKey = useMemo(
-    () => allowedContainers.map((item) => item.id).join(','),
-    [allowedContainers],
-  );
-
-  const allowedVacuumIdsKey = useMemo(
-    () => allowedVacuumBags.map((item) => item.id).join(','),
-    [allowedVacuumBags],
-  );
-
-  const allowedPalletIdsKey = useMemo(
-    () => allowedPallets.map((item) => item.id).join(','),
-    [allowedPallets],
-  );
-
-  const preferredContainerId = preferredContainer?.id ?? '';
-  const preferredVacuumBagId = preferredVacuumBag?.id ?? '';
-  const preferredPalletId = preferredPallet?.id ?? '';
+    ).sort((a, b) => a.localeCompare(b, 'tr'));
+  }, [scenario.values.lots]);
 
   useEffect(() => {
-    if (!calculator.values.productId) return;
+    scenario.values.lots.forEach((lot) => {
+      const lotRules = allRules.filter(
+        (rule) => rule.productId === lot.values.productId,
+      );
 
-    calculator.setValues((current) => {
-      let hasAnyChange = false;
+      const allowedMaterialIds = lotRules.map((rule) => rule.materialId);
+      const allowedSet = new Set(allowedMaterialIds);
 
-      const next = {
-        ...current,
-        palletLines: current.palletLines.map((line) => ({ ...line })),
-      };
+      const allowedMaterials =
+        allowedSet.size > 0
+          ? materials.filter((item) => allowedSet.has(item.id))
+          : materials;
 
-      const currentContainerAllowed =
-        !current.containerMaterialId ||
-        allowedContainers.some((item) => item.id === current.containerMaterialId);
+      const allowedContainers = allowedMaterials.filter(
+        (item) => item.materialType === 'BOX' || item.materialType === 'DRUM',
+      );
+      const allowedVacuumBags = allowedMaterials.filter(
+        (item) => item.materialType === 'VACUUM_BAG',
+      );
+      const allowedPallets = allowedMaterials.filter(
+        (item) => item.materialType === 'PALLET',
+      );
 
-      if (!currentContainerAllowed) {
-        next.containerMaterialId = preferredContainerId;
-        hasAnyChange = true;
-      } else if (!current.containerMaterialId && preferredContainerId) {
-        next.containerMaterialId = preferredContainerId;
-        hasAnyChange = true;
-      }
+      const preferredContainerId = pickPreferredMaterial(allowedContainers, lotRules);
+      const preferredVacuumBagId = pickPreferredMaterial(allowedVacuumBags, lotRules);
+      const preferredPalletId = pickPreferredMaterial(allowedPallets, lotRules);
 
-      const currentVacuumAllowed =
-        !current.vacuumBagMaterialId ||
-        allowedVacuumBags.some((item) => item.id === current.vacuumBagMaterialId);
+      let hasChanges = false;
 
-      if (!currentVacuumAllowed) {
-        next.vacuumBagMaterialId = preferredVacuumBagId || null;
-        hasAnyChange = true;
-      } else if (!current.vacuumBagMaterialId && preferredVacuumBagId) {
-        next.vacuumBagMaterialId = preferredVacuumBagId;
-        hasAnyChange = true;
-      }
-
-      next.palletLines = next.palletLines.map((line, index) => {
-        const isAllowed =
-          !line.palletMaterialId ||
-          allowedPallets.some((item) => item.id === line.palletMaterialId);
-
-        if (!isAllowed) {
-          hasAnyChange = true;
-          return {
-            ...line,
-            palletMaterialId: preferredPalletId,
-          };
+      const nextPalletLines = lot.values.palletLines.map((line) => {
+        if (!lot.values.productId) {
+          return line;
         }
 
-        if (!line.palletMaterialId && index === 0 && preferredPalletId) {
-          hasAnyChange = true;
+        if (!line.palletMaterialId && preferredPalletId) {
+          hasChanges = true;
           return {
             ...line,
             palletMaterialId: preferredPalletId,
@@ -199,50 +203,122 @@ export function LogisticsPackagingCalculatorPage() {
         return line;
       });
 
-      return hasAnyChange ? next : current;
-    });
-  }, [
-    calculator.values.productId,
-    calculator.setValues,
-    allowedContainerIdsKey,
-    allowedVacuumIdsKey,
-    allowedPalletIdsKey,
-    preferredContainerId,
-    preferredVacuumBagId,
-    preferredPalletId,
-    allowedContainers,
-    allowedVacuumBags,
-    allowedPallets,
-  ]);
+      if (
+        lot.values.productId &&
+        (!lot.values.containerMaterialId ||
+          (preferredContainerId &&
+            lot.values.containerMaterialId !== preferredContainerId &&
+            !allowedSet.has(lot.values.containerMaterialId)))
+      ) {
+        hasChanges = true;
+      }
 
-  const handleAddPalletLine = () => {
-    calculator.setValues((current) => ({
-      ...current,
-      palletLines: [
-        ...current.palletLines,
-        {
-          id: crypto.randomUUID(),
-          palletMaterialId: preferredPalletId,
-          palletCount: 1,
-          unitsPerRow: '',
-          unitsPerPallet: '',
-          stackGroup: '',
-          stackGroupMode: 'select',
-          stackGroupDraft: '',
-          stackOrder: 1,
-        },
-      ],
+      if (
+        lot.values.productId &&
+        lot.values.vacuumBagMaterialId == null &&
+        preferredVacuumBagId
+      ) {
+        hasChanges = true;
+      }
+
+      if (hasChanges) {
+        scenario.updateLotValues(lot.id, (current) => ({
+          ...current,
+          containerMaterialId:
+            current.containerMaterialId && allowedSet.has(current.containerMaterialId)
+              ? current.containerMaterialId
+              : preferredContainerId || current.containerMaterialId,
+          vacuumBagMaterialId:
+            current.vacuumBagMaterialId == null && preferredVacuumBagId
+              ? preferredVacuumBagId
+              : current.vacuumBagMaterialId,
+          palletLines: nextPalletLines,
+        }));
+      }
+    });
+  }, [allRules, materials, scenario]);
+
+  const handleSaveScenario = async () => {
+    const lotStatuses = scenario.values.lots.map((lot) => ({
+      lotId: lot.id,
+      status: scenario.getLotResult(lot.id).validationStatus,
     }));
+
+    const firstInvalidLot = lotStatuses.find((item) => item.status === 'INVALID');
+
+    if (firstInvalidLot) {
+      setFocusedProblemLotId(firstInvalidLot.lotId);
+
+      requestAnimationFrame(() => {
+        const element = document.getElementById(
+          `lp-scenario-lot-card-${firstInvalidLot.lotId}`,
+        );
+
+        element?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      });
+
+      window.setTimeout(() => {
+        setFocusedProblemLotId((current) =>
+          current === firstInvalidLot.lotId ? null : current,
+        );
+      }, 2200);
+
+      toast.error('Kaydetmeden önce hatalı lotu düzeltin.');
+      return;
+    }
+
+    try {
+      await createScenarioMutation.mutateAsync({
+        values: scenario.values,
+      });
+
+      toast.success('Paketleme senaryosu kaydedildi.');
+      scenario.reset();
+      setFocusedProblemLotId(null);
+    } catch (error) {
+      toast.error(error?.message || 'Kayıt sırasında hata oluştu.');
+    }
   };
 
-  const createMutation = useCreatePackagingCalculationMutation({
-    calculationsRepository,
-    materials,
-    productRules: activeRules,
-  });
+  const handleLoadScenario = (historyItem) => {
+    scenario.loadScenario(mapScenarioHistoryItemToFormValues(historyItem));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setFocusedProblemLotId(null);
+    toast.success('Senaryo forma yüklendi.');
+  };
 
-  const isLoading = productsQuery.isLoading || materialsQuery.isLoading;
-  const isSaving = createMutation.isPending;
+  const handleDuplicateScenario = (historyItem) => {
+    scenario.duplicateScenario(
+      mapScenarioHistoryItemToDuplicatedFormValues(historyItem),
+    );
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setFocusedProblemLotId(null);
+    toast.success('Senaryo kopyalanıp forma yüklendi.');
+  };
+
+  const handleDeleteScenario = async (historyItem) => {
+    const scenarioName = historyItem.scenario.name || 'İsimsiz Senaryo';
+    const isConfirmed = window.confirm(
+      `"${scenarioName}" senaryosunu silmek istediğinize emin misiniz?`,
+    );
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    try {
+      await deleteScenarioMutation.mutateAsync(historyItem.scenario.id);
+      toast.success('Senaryo silindi.');
+    } catch (error) {
+      toast.error(
+        error?.message ||
+          'Silme sırasında hata oluştu. DELETE policy eksik olabilir.',
+      );
+    }
+  };
 
   if (isLoading) {
     return (
@@ -255,33 +331,177 @@ export function LogisticsPackagingCalculatorPage() {
     );
   }
 
+  const aggregateSummaryItems = mapAggregateResultToSummaryItems(
+    scenario.aggregateResult,
+  );
+
   return (
     <LogisticsPackagingLayout
       title="Paketleme Hesaplayıcı"
-      subtitle="Lot bazlı ürün, ambalaj, palet ve istif planını hesaplayın; brüt ağırlık ve yükseklik limitlerini gerçek zamanlı izleyin."
+      subtitle="Aynı sevkiyat içinde birden fazla lotu hesaplayın, lot bazlı planı yönetin ve en altta genel toplamı görün."
+      actions={
+        <button type="button" className="lp-button" onClick={scenario.addLot}>
+          Lot Ekle
+        </button>
+      }
     >
-      <CalculatorForm
-        values={calculator.values}
-        result={calculator.result}
-        products={products}
-        materials={materials}
-        allowedMaterialIds={allowedMaterialIds}
-        onChangeValues={calculator.setValues}
-        onAddPalletLine={handleAddPalletLine}
-        onRemovePalletLine={calculator.removePalletLine}
-        onSubmit={async () => {
-          try {
-            await createMutation.mutateAsync({
-              values: calculator.values,
-            });
-            toast.success('Paketleme hesaplaması kaydedildi.');
-            calculator.reset();
-          } catch (error) {
-            toast.error(error?.message || 'Kayıt sırasında hata oluştu.');
-          }
-        }}
-        isSaving={isSaving}
-      />
+      <div className="lp-panel">
+        <div className="lp-section-heading">
+          <div>
+            <h3 className="lp-section-heading__title">Senaryo Bilgisi</h3>
+            <p className="lp-section-heading__description">
+              Aynı sevkiyat içinde yer alan lotları tek senaryo altında yönetin.
+            </p>
+          </div>
+        </div>
+
+        <div className="lp-form-grid lp-form-grid--3">
+          <label className="lp-field">
+            <span className="lp-field__label">Senaryo Adı</span>
+            <input
+              className="lp-input"
+              type="text"
+              value={scenario.values.name}
+              onChange={(event) => scenario.setScenarioName(event.target.value)}
+              placeholder="Örn: Müşteri X / 14 Nisan Sevkiyatı"
+            />
+          </label>
+
+          <div className="lp-field">
+            <span className="lp-field__label">Lot Sayısı</span>
+            <div className="lp-input">{scenario.values.lots.length}</div>
+          </div>
+
+          <div className="lp-field">
+            <span className="lp-field__label">Genel Durum</span>
+            <div className="lp-input">
+              {translateValidationStatus(scenario.aggregateResult.validationStatus)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {scenario.values.lots.map((lot, index) => {
+        const lotRules = allRules.filter(
+          (rule) => rule.productId === lot.values.productId,
+        );
+
+        const allowedMaterialIds = lotRules.map((rule) => rule.materialId);
+        const allowedSet = new Set(allowedMaterialIds);
+
+        const allowedMaterials =
+          allowedSet.size > 0
+            ? materials.filter((item) => allowedSet.has(item.id))
+            : materials;
+
+        const allowedPallets = allowedMaterials.filter(
+          (item) => item.materialType === 'PALLET',
+        );
+
+        const preferredPalletId = pickPreferredMaterial(allowedPallets, lotRules);
+        const lotResult = scenario.getLotResult(lot.id);
+
+        return (
+          <div
+            key={lot.id}
+            id={`lp-scenario-lot-card-${lot.id}`}
+            className={`lp-panel lp-scenario-lot-card ${getStatusClass(
+              lotResult.validationStatus,
+            )} ${focusedProblemLotId === lot.id ? 'is-focused' : ''}`}
+          >
+            <div className="lp-scenario-lot-card__header">
+              <div className="lp-scenario-lot-card__meta">
+                <h3 className="lp-scenario-lot-card__title">Lot {index + 1}</h3>
+                <p className="lp-scenario-lot-card__description">
+                  Her lot kendi ürün, ambalaj, palet ve istif planını ayrı hesaplar.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="lp-button lp-button--ghost"
+                onClick={() => scenario.removeLot(lot.id)}
+                disabled={scenario.values.lots.length === 1}
+              >
+                Lotu Sil
+              </button>
+            </div>
+
+            <LotSummary
+              values={lot.values}
+              result={lotResult}
+              products={products}
+            />
+
+            <CalculatorForm
+              values={lot.values}
+              result={lotResult}
+              products={products}
+              materials={materials}
+              allowedMaterialIds={allowedMaterialIds}
+              sharedStackGroupOptions={sharedStackGroupOptions}
+              onChangeValues={(updater) => scenario.updateLotValues(lot.id, updater)}
+              onAddPalletLine={() => scenario.addPalletLine(lot.id, preferredPalletId)}
+              onRemovePalletLine={(lineId) => scenario.removePalletLine(lot.id, lineId)}
+              onSubmit={handleSaveScenario}
+              isSaving={isSaving}
+              hideSubmit
+            />
+          </div>
+        );
+      })}
+
+      <div className="lp-panel lp-scenario-summary-panel">
+        <div className="lp-section-heading">
+          <div>
+            <h3 className="lp-section-heading__title">Genel Toplam</h3>
+            <p className="lp-section-heading__description">
+              Tüm lotların toplam net, dara, brüt ve palet özeti.
+            </p>
+          </div>
+        </div>
+
+        <CalculationResultCards
+          items={aggregateSummaryItems}
+          status={scenario.aggregateResult.validationStatus}
+        />
+      </div>
+
+      <div className="lp-panel">
+        <StackSummary stacks={scenario.aggregateResult.stackSummaries} />
+      </div>
+
+      <div className="lp-form-actions">
+        <button
+          type="button"
+          className="lp-button"
+          disabled={isSaving}
+          onClick={handleSaveScenario}
+        >
+          {isSaving ? 'Kaydediliyor...' : 'Senaryoyu Kaydet'}
+        </button>
+      </div>
+
+      <div className="lp-panel">
+        <div className="lp-section-heading">
+          <div>
+            <h3 className="lp-section-heading__title">Geçmiş Senaryolar</h3>
+            <p className="lp-section-heading__description">
+              Daha önce kaydedilen çoklu lot paketleme senaryoları.
+            </p>
+          </div>
+        </div>
+
+        <ScenarioHistory
+          scenarios={scenarios}
+          products={products}
+          materials={materials}
+          onLoadScenario={handleLoadScenario}
+          onDuplicateScenario={handleDuplicateScenario}
+          onDeleteScenario={handleDeleteScenario}
+          deletingScenarioId={deleteScenarioMutation.variables ?? null}
+        />
+      </div>
     </LogisticsPackagingLayout>
   );
 }

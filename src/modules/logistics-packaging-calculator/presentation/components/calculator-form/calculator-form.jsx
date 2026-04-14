@@ -35,9 +35,9 @@ function getNextSuggestedStackOrder(lines, lineId, stackGroup) {
   return expected;
 }
 
-function getNextStackGroupName(lines) {
-  const usedNumbers = lines
-    .map((line) => line.stackGroup?.trim())
+function getNextStackGroupName(stackGroupOptions = []) {
+  const usedNumbers = stackGroupOptions
+    .map((group) => String(group ?? '').trim())
     .filter(Boolean)
     .map((group) => {
       const match = /^İstif-(\d+)$/i.exec(group);
@@ -62,17 +62,46 @@ function getNextStackGroupName(lines) {
   return `İstif-${expected}`;
 }
 
+function getValidationMap(result) {
+  const messages = result?.validationMessages ?? [];
+
+  return messages.reduce(
+    (acc, message) => {
+      if (message.palletLineId) {
+        acc.palletLineIds.add(message.palletLineId);
+      }
+
+      if (message.stackGroup) {
+        acc.stackGroups.add(message.stackGroup);
+      }
+
+      if (!message.palletLineId && !message.stackGroup) {
+        acc.hasGeneralError = true;
+      }
+
+      return acc;
+    },
+    {
+      palletLineIds: new Set(),
+      stackGroups: new Set(),
+      hasGeneralError: false,
+    },
+  );
+}
+
 export function CalculatorForm({
   values,
   result,
   products,
   materials,
   allowedMaterialIds,
+  sharedStackGroupOptions = [],
   onChangeValues,
   onAddPalletLine,
   onRemovePalletLine,
   onSubmit,
   isSaving,
+  hideSubmit = false,
 }) {
   const allowedSet = new Set(allowedMaterialIds ?? []);
 
@@ -90,6 +119,7 @@ export function CalculatorForm({
   );
 
   const summaryItems = mapCalculationResultToSummaryItems(result);
+  const validationMap = getValidationMap(result);
 
   const handleLineChange = (lineId, patch) => {
     onChangeValues((current) => ({
@@ -105,7 +135,7 @@ export function CalculatorForm({
         };
 
         if (patch.createNextStackGroup) {
-          const nextGroupName = getNextStackGroupName(current.palletLines);
+          const nextGroupName = getNextStackGroupName(sharedStackGroupOptions);
           nextLine.stackGroup = nextGroupName;
           nextLine.stackOrder = getNextSuggestedStackOrder(
             current.palletLines,
@@ -159,6 +189,7 @@ export function CalculatorForm({
         values={values}
         products={products}
         onChange={updateRootValues}
+        hasError={validationMap.hasGeneralError}
       />
 
       <CalculatorContainerSection
@@ -166,12 +197,16 @@ export function CalculatorForm({
         containerOptions={containerOptions}
         vacuumBagOptions={vacuumBagOptions}
         onChange={updateRootValues}
+        hasError={validationMap.hasGeneralError}
       />
 
       <CalculatorPalletLinesSection
         lines={values.palletLines}
         palletOptions={palletOptions}
         lineResults={result.palletLineResults}
+        sharedStackGroupOptions={sharedStackGroupOptions}
+        invalidPalletLineIds={validationMap.palletLineIds}
+        invalidStackGroups={validationMap.stackGroups}
         onLineChange={handleLineChange}
         onAddLine={onAddPalletLine}
         onRemoveLine={onRemovePalletLine}
@@ -181,11 +216,13 @@ export function CalculatorForm({
 
       <CalculatorSummarySection summaryItems={summaryItems} result={result} />
 
-      <div className="lp-form-actions">
-        <button type="submit" className="lp-button" disabled={isSaving}>
-          {isSaving ? 'Kaydediliyor...' : 'Hesaplamayı Kaydet'}
-        </button>
-      </div>
+      {!hideSubmit ? (
+        <div className="lp-form-actions">
+          <button type="submit" className="lp-button" disabled={isSaving}>
+            {isSaving ? 'Kaydediliyor...' : 'Hesaplamayı Kaydet'}
+          </button>
+        </div>
+      ) : null}
     </form>
   );
 }

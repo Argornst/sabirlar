@@ -17,6 +17,8 @@ export function PalletLineEditor({
   palletOptions,
   lineResult,
   stackGroupOptions,
+  hasError = false,
+  stackHasError = false,
   onChange,
   onRemove,
   disableRemove,
@@ -24,7 +26,11 @@ export function PalletLineEditor({
   const selectedStackValue = line.stackGroup || '';
 
   return (
-    <div className="lp-pallet-line">
+    <div
+      className={`lp-pallet-line${hasError ? ' is-invalid' : ''}${
+        stackHasError ? ' is-stack-invalid' : ''
+      }`}
+    >
       <div className="lp-pallet-line__grid">
         <label className="lp-field">
           <span className="lp-field__label">Palet Tipi</span>
@@ -143,6 +149,14 @@ export function PalletLineEditor({
           </select>
         </label>
       </div>
+
+      {(hasError || stackHasError) && (
+        <div className="lp-pallet-line__alert">
+          {hasError
+            ? 'Bu palet satırında doğrulama hatası veya uyarısı var.'
+            : 'Bu istif grubunda sıra veya yükseklik uyarısı var.'}
+        </div>
+      )}
 
       <div className="lp-pallet-line__footer">
         <div className="lp-pallet-line__stats">

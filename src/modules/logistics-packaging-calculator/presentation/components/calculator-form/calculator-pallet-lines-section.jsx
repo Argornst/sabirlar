@@ -4,16 +4,19 @@ export function CalculatorPalletLinesSection({
   lines,
   palletOptions,
   lineResults,
+  sharedStackGroupOptions = [],
+  invalidPalletLineIds = new Set(),
+  invalidStackGroups = new Set(),
   onLineChange,
   onAddLine,
   onRemoveLine,
 }) {
+  const localStackGroups = lines
+    .map((line) => line.stackGroup?.trim())
+    .filter(Boolean);
+
   const stackGroupOptions = Array.from(
-    new Set(
-      lines
-        .map((line) => line.stackGroup?.trim())
-        .filter(Boolean),
-    ),
+    new Set([...(sharedStackGroupOptions ?? []), ...localStackGroups]),
   ).sort((a, b) => a.localeCompare(b, 'tr'));
 
   return (
@@ -23,6 +26,7 @@ export function CalculatorPalletLinesSection({
           <h3 className="lp-section-heading__title">Palet Planı</h3>
           <p className="lp-section-heading__description">
             Aynı lot içinde birden fazla palet tipi ve istif grubu tanımlayabilirsiniz.
+            İsterseniz başka lotlarda kullanılan ortak istif gruplarını da seçebilirsiniz.
           </p>
         </div>
 
@@ -39,6 +43,11 @@ export function CalculatorPalletLinesSection({
             palletOptions={palletOptions}
             stackGroupOptions={stackGroupOptions}
             lineResult={lineResults.find((item) => item.lineId === line.id)}
+            hasError={invalidPalletLineIds.has(line.id)}
+            stackHasError={
+              Boolean(line.stackGroup?.trim()) &&
+              invalidStackGroups.has(line.stackGroup.trim())
+            }
             onChange={onLineChange}
             onRemove={onRemoveLine}
             disableRemove={lines.length === 1}

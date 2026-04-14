@@ -6,6 +6,13 @@ function getStatusClass(status) {
   return 'is-invalid';
 }
 
+function translateValidationStatus(status) {
+  if (status === 'VALID') return 'Uygun';
+  if (status === 'WARNING') return 'Uyarılı';
+  if (status === 'INVALID') return 'Hatalı';
+  return status ?? '-';
+}
+
 export function CalculationResultCards({ items, status }) {
   return (
     <div className="lp-result-cards">
@@ -18,7 +25,9 @@ export function CalculationResultCards({ items, status }) {
 
       <div className={`lp-result-card lp-result-card--status ${getStatusClass(status)}`}>
         <div className="lp-result-card__label">Doğrulama</div>
-        <div className="lp-result-card__value">{status}</div>
+        <div className="lp-result-card__value">
+          {translateValidationStatus(status)}
+        </div>
       </div>
     </div>
   );

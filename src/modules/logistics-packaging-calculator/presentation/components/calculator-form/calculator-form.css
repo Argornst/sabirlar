@@ -1,24 +1,24 @@
 .lp-calculator-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .lp-panel {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem;
-  border-radius: 24px;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 20px;
   border: 1px solid rgba(148, 163, 184, 0.14);
   background: rgba(15, 23, 42, 0.72);
-  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.16);
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.14);
 }
 
 :global(.light) .lp-panel,
 :global([data-theme='light']) .lp-panel {
   background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
 }
 
 .lp-section-heading {
@@ -29,8 +29,8 @@
 }
 
 .lp-section-heading__title {
-  margin: 0 0 0.25rem;
-  font-size: 1.15rem;
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
   font-weight: 800;
   color: #f8fafc;
 }
@@ -42,8 +42,8 @@
 
 .lp-section-heading__description {
   margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.6;
+  font-size: 0.84rem;
+  line-height: 1.55;
   color: #94a3b8;
 }
 
@@ -54,7 +54,7 @@
 
 .lp-form-grid {
   display: grid;
-  gap: 0.9rem;
+  gap: 0.75rem;
 }
 
 .lp-form-grid--3 {
@@ -68,11 +68,11 @@
 .lp-field {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.4rem;
 }
 
 .lp-field__label {
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: #cbd5e1;
 }
@@ -84,12 +84,13 @@
 
 .lp-input {
   width: 100%;
-  min-height: 46px;
-  padding: 0.8rem 0.95rem;
-  border-radius: 14px;
+  min-height: 42px;
+  padding: 0.72rem 0.88rem;
+  border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.16);
   background: rgba(2, 6, 23, 0.32);
   color: #f8fafc;
+  font-size: 0.9rem;
   outline: none;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 120ms ease;
 }
@@ -109,21 +110,22 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0.8rem 1.15rem;
+  min-height: 40px;
+  padding: 0.72rem 1rem;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
   font-weight: 800;
   color: #eff6ff;
   cursor: pointer;
   background: linear-gradient(135deg, #4f46e5, #2563eb);
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
   transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
 }
 
 .lp-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 30px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 14px 24px rgba(37, 99, 235, 0.26);
 }
 
 .lp-button:active {
@@ -156,18 +158,18 @@
 .lp-validation-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.7rem;
 }
 
 .lp-validation-item {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.7rem;
   align-items: flex-start;
-  padding: 0.85rem 1rem;
-  border-radius: 16px;
+  padding: 0.78rem 0.92rem;
+  border-radius: 14px;
   border: 1px solid transparent;
-  font-size: 0.92rem;
-  line-height: 1.55;
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
 
 .lp-validation-item.is-valid {
@@ -220,10 +222,11 @@
 }
 
 .lp-empty-state {
-  padding: 1rem;
-  border-radius: 16px;
+  padding: 0.85rem 0.95rem;
+  border-radius: 14px;
   background: rgba(30, 41, 59, 0.48);
   color: #cbd5e1;
+  font-size: 0.88rem;
 }
 
 :global(.light) .lp-empty-state,

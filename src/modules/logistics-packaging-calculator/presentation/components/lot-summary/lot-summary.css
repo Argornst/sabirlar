@@ -1,0 +1,125 @@
+.lp-lot-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+:global(.light) .lp-lot-summary,
+:global([data-theme='light']) .lp-lot-summary {
+  background: #f8fafc;
+}
+
+.lp-lot-summary__left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.lp-lot-summary__topline {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.lp-lot-summary__title {
+  font-weight: 700;
+  font-size: 0.96rem;
+  color: #f8fafc;
+}
+
+:global(.light) .lp-lot-summary__title,
+:global([data-theme='light']) .lp-lot-summary__title {
+  color: #0f172a;
+}
+
+.lp-lot-summary__status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+.lp-lot-summary__status.is-valid {
+  color: #dcfce7;
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.lp-lot-summary__status.is-warning {
+  color: #fef3c7;
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.22);
+}
+
+.lp-lot-summary__status.is-invalid {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.22);
+}
+
+:global(.light) .lp-lot-summary__status.is-valid,
+:global([data-theme='light']) .lp-lot-summary__status.is-valid {
+  color: #166534;
+}
+
+:global(.light) .lp-lot-summary__status.is-warning,
+:global([data-theme='light']) .lp-lot-summary__status.is-warning {
+  color: #92400e;
+}
+
+:global(.light) .lp-lot-summary__status.is-invalid,
+:global([data-theme='light']) .lp-lot-summary__status.is-invalid {
+  color: #991b1b;
+}
+
+.lp-lot-summary__meta {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.lp-lot-summary__right {
+  display: flex;
+  gap: 1rem;
+}
+
+.lp-lot-summary__metric {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.lp-lot-summary__metric strong {
+  font-size: 0.88rem;
+  color: #e2e8f0;
+}
+
+:global(.light) .lp-lot-summary__metric strong,
+:global([data-theme='light']) .lp-lot-summary__metric strong {
+  color: #0f172a;
+}
+
+@media (max-width: 760px) {
+  .lp-lot-summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lp-lot-summary__right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

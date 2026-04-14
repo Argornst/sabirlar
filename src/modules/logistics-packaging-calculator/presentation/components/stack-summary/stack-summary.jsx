@@ -8,7 +8,7 @@ function formatHeight(value) {
   return `${Number(value ?? 0).toFixed(2)} cm`;
 }
 
-export function StackSummary({ stacks }) {
+export function StackSummary({ stacks = [] }) {
   return (
     <div className="lp-panel">
       <div className="lp-section-heading">

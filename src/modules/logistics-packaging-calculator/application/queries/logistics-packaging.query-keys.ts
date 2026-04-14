@@ -8,4 +8,5 @@ export const logisticsPackagingQueryKeys = {
   calculations: () => [...logisticsPackagingQueryKeys.all, 'calculations'] as const,
   calculation: (id: string) =>
     [...logisticsPackagingQueryKeys.calculations(), id] as const,
+  scenarios: () => [...logisticsPackagingQueryKeys.all, 'scenarios'] as const,
 };
