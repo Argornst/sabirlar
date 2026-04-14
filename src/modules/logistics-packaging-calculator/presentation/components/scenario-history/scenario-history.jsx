@@ -109,6 +109,10 @@ export function ScenarioHistory({
   scenarios = [],
   products = [],
   materials = [],
+  search = '',
+  sort = 'updated_desc',
+  onSearchChange,
+  onSortChange,
   onLoadScenario,
   onDuplicateScenario,
   onDeleteScenario,
@@ -123,8 +127,37 @@ export function ScenarioHistory({
 
   return (
     <div className="lp-scenario-history">
+      <div className="lp-scenario-history__toolbar">
+        <label className="lp-field">
+          <span className="lp-field__label">Ara</span>
+          <input
+            className="lp-input"
+            type="text"
+            value={search}
+            onChange={(event) => onSearchChange?.(event.target.value)}
+            placeholder="Senaryo adı veya lot no"
+          />
+        </label>
+
+        <label className="lp-field lp-scenario-history__sort">
+          <span className="lp-field__label">Sırala</span>
+          <select
+            className="lp-input"
+            value={sort}
+            onChange={(event) => onSortChange?.(event.target.value)}
+          >
+            <option value="updated_desc">Güncelden eskiye</option>
+            <option value="updated_asc">Eskiden yeniye</option>
+            <option value="name_asc">Ada göre A-Z</option>
+            <option value="name_desc">Ada göre Z-A</option>
+          </select>
+        </label>
+      </div>
+
       {scenarios.map((item) => {
         const isDeleting = deletingScenarioId === item.scenario.id;
+        const displayUpdatedAt =
+          item.scenario.updatedAt ?? item.scenario.createdAt ?? null;
 
         return (
           <div key={item.scenario.id} className="lp-panel lp-scenario-history__card">
@@ -134,7 +167,9 @@ export function ScenarioHistory({
                   {item.scenario.name || 'İsimsiz Senaryo'}
                 </h3>
                 <p className="lp-section-heading__description">
-                  {formatDate(item.scenario.createdAt)}
+                  Oluşturma: {formatDate(item.scenario.createdAt)}
+                  {' · '}
+                  Son güncelleme: {formatDate(displayUpdatedAt)}
                 </p>
               </div>
 

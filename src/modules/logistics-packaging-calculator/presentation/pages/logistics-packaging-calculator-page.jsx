@@ -9,6 +9,7 @@ import {
   usePackagingRulesQuery,
   usePackagingScenarioCalculator,
   usePackagingScenariosQuery,
+  useUpdatePackagingScenarioMutation,
 } from '../../application';
 import { SupabasePackagingMaterialsRepository } from '../../infrastructure/repositories/supabase-packaging-materials.repository.js';
 import { SupabasePackagingProductsRepository } from '../../infrastructure/repositories/supabase-packaging-products.repository.js';
@@ -109,6 +110,61 @@ function mapScenarioHistoryItemToDuplicatedFormValues(item) {
   };
 }
 
+function sortScenarios(items, sort) {
+  const list = [...items];
+
+  if (sort === 'name_asc') {
+    return list.sort((a, b) =>
+      String(a.scenario.name || '').localeCompare(String(b.scenario.name || ''), 'tr'),
+    );
+  }
+
+  if (sort === 'name_desc') {
+    return list.sort((a, b) =>
+      String(b.scenario.name || '').localeCompare(String(a.scenario.name || ''), 'tr'),
+    );
+  }
+
+  if (sort === 'updated_asc') {
+    return list.sort((a, b) => {
+      const left = new Date(a.scenario.updatedAt ?? a.scenario.createdAt ?? 0).getTime();
+      const right = new Date(b.scenario.updatedAt ?? b.scenario.createdAt ?? 0).getTime();
+      return left - right;
+    });
+  }
+
+  return list.sort((a, b) => {
+    const left = new Date(a.scenario.updatedAt ?? a.scenario.createdAt ?? 0).getTime();
+    const right = new Date(b.scenario.updatedAt ?? b.scenario.createdAt ?? 0).getTime();
+    return right - left;
+  });
+}
+
+function filterScenarios(items, search) {
+  const normalized = search.trim().toLocaleLowerCase('tr');
+
+  if (!normalized) {
+    return items;
+  }
+
+  return items.filter((item) => {
+    const name = String(item.scenario.name || '').toLocaleLowerCase('tr');
+    const lotNumbers = item.lots
+      .map((lotWrapper) => String(lotWrapper.lot.lotNumber || '').toLocaleLowerCase('tr'))
+      .join(' ');
+
+    return name.includes(normalized) || lotNumbers.includes(normalized);
+  });
+}
+
+function confirmDiscardChanges(isDirty, message) {
+  if (!isDirty) {
+    return true;
+  }
+
+  return window.confirm(message);
+}
+
 export function LogisticsPackagingCalculatorPage() {
   const productsQuery = usePackagingProductsQuery(productsRepository);
   const materialsQuery = usePackagingMaterialsQuery(materialsRepository);
@@ -131,11 +187,19 @@ export function LogisticsPackagingCalculatorPage() {
     productRules: allRules,
   });
 
+  const updateScenarioMutation = useUpdatePackagingScenarioMutation({
+    scenariosRepository,
+    materials,
+    productRules: allRules,
+  });
+
   const deleteScenarioMutation = useDeletePackagingScenarioMutation(
     scenariosRepository,
   );
 
   const [focusedProblemLotId, setFocusedProblemLotId] = useState(null);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historySort, setHistorySort] = useState('updated_desc');
 
   const isLoading =
     productsQuery.isLoading ||
@@ -143,7 +207,8 @@ export function LogisticsPackagingCalculatorPage() {
     rulesQuery.isLoading ||
     scenariosQuery.isLoading;
 
-  const isSaving = createScenarioMutation.isPending;
+  const isSaving =
+    createScenarioMutation.isPending || updateScenarioMutation.isPending;
 
   const sharedStackGroupOptions = useMemo(() => {
     return Array.from(
@@ -156,6 +221,27 @@ export function LogisticsPackagingCalculatorPage() {
       ),
     ).sort((a, b) => a.localeCompare(b, 'tr'));
   }, [scenario.values.lots]);
+
+  const visibleScenarios = useMemo(() => {
+    return sortScenarios(filterScenarios(scenarios, historySearch), historySort);
+  }, [historySearch, historySort, scenarios]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (!scenario.isDirty) {
+        return;
+      }
+
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [scenario.isDirty]);
 
   useEffect(() => {
     scenario.values.lots.forEach((lot) => {
@@ -242,7 +328,31 @@ export function LogisticsPackagingCalculatorPage() {
     const lotStatuses = scenario.values.lots.map((lot) => ({
       lotId: lot.id,
       status: scenario.getLotResult(lot.id).validationStatus,
+      values: lot.values,
     }));
+
+    const duplicateLotNumber = (() => {
+      const normalized = lotStatuses
+        .map((item) => item.values.lotNumber.trim())
+        .filter(Boolean)
+        .map((value) => value.toLocaleLowerCase('tr'));
+
+      const seen = new Set();
+
+      for (const value of normalized) {
+        if (seen.has(value)) {
+          return value;
+        }
+        seen.add(value);
+      }
+
+      return null;
+    })();
+
+    if (duplicateLotNumber) {
+      toast.error('Aynı lot numarası birden fazla kez kullanılamaz.');
+      return;
+    }
 
     const firstInvalidLot = lotStatuses.find((item) => item.status === 'INVALID');
 
@@ -271,12 +381,23 @@ export function LogisticsPackagingCalculatorPage() {
     }
 
     try {
-      await createScenarioMutation.mutateAsync({
-        values: scenario.values,
-      });
+      if (scenario.editingScenarioId) {
+        await updateScenarioMutation.mutateAsync({
+          scenarioId: scenario.editingScenarioId,
+          values: scenario.values,
+        });
 
-      toast.success('Paketleme senaryosu kaydedildi.');
-      scenario.reset();
+        scenario.markSaved(scenario.editingScenarioId);
+        toast.success('Senaryo güncellendi.');
+      } else {
+        const created = await createScenarioMutation.mutateAsync({
+          values: scenario.values,
+        });
+
+        scenario.markSaved(created?.scenario?.id ?? null);
+        toast.success('Paketleme senaryosu kaydedildi.');
+      }
+
       setFocusedProblemLotId(null);
     } catch (error) {
       toast.error(error?.message || 'Kayıt sırasında hata oluştu.');
@@ -284,13 +405,34 @@ export function LogisticsPackagingCalculatorPage() {
   };
 
   const handleLoadScenario = (historyItem) => {
-    scenario.loadScenario(mapScenarioHistoryItemToFormValues(historyItem));
+    const canContinue = confirmDiscardChanges(
+      scenario.isDirty,
+      'Kaydedilmemiş değişiklikler var. Yine de devam etmek istiyor musunuz?',
+    );
+
+    if (!canContinue) {
+      return;
+    }
+
+    scenario.loadScenario(
+      historyItem.scenario.id,
+      mapScenarioHistoryItemToFormValues(historyItem),
+    );
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setFocusedProblemLotId(null);
     toast.success('Senaryo forma yüklendi.');
   };
 
   const handleDuplicateScenario = (historyItem) => {
+    const canContinue = confirmDiscardChanges(
+      scenario.isDirty,
+      'Kaydedilmemiş değişiklikler var. Yine de devam etmek istiyor musunuz?',
+    );
+
+    if (!canContinue) {
+      return;
+    }
+
     scenario.duplicateScenario(
       mapScenarioHistoryItemToDuplicatedFormValues(historyItem),
     );
@@ -312,12 +454,30 @@ export function LogisticsPackagingCalculatorPage() {
     try {
       await deleteScenarioMutation.mutateAsync(historyItem.scenario.id);
       toast.success('Senaryo silindi.');
+
+      if (scenario.editingScenarioId === historyItem.scenario.id) {
+        scenario.startCreateMode();
+      }
     } catch (error) {
       toast.error(
         error?.message ||
           'Silme sırasında hata oluştu. DELETE policy eksik olabilir.',
       );
     }
+  };
+
+  const handleStartNewScenario = () => {
+    const canContinue = confirmDiscardChanges(
+      scenario.isDirty,
+      'Kaydedilmemiş değişiklikler var. Yeni senaryoya geçmek istiyor musunuz?',
+    );
+
+    if (!canContinue) {
+      return;
+    }
+
+    scenario.startCreateMode();
+    setFocusedProblemLotId(null);
   };
 
   if (isLoading) {
@@ -340,9 +500,14 @@ export function LogisticsPackagingCalculatorPage() {
       title="Paketleme Hesaplayıcı"
       subtitle="Aynı sevkiyat içinde birden fazla lotu hesaplayın, lot bazlı planı yönetin ve en altta genel toplamı görün."
       actions={
-        <button type="button" className="lp-button" onClick={scenario.addLot}>
-          Lot Ekle
-        </button>
+        <>
+          <button type="button" className="lp-button lp-button--ghost" onClick={handleStartNewScenario}>
+            Yeni Senaryo
+          </button>
+          <button type="button" className="lp-button" onClick={scenario.addLot}>
+            Lot Ekle
+          </button>
+        </>
       }
     >
       <div className="lp-panel">
@@ -355,7 +520,7 @@ export function LogisticsPackagingCalculatorPage() {
           </div>
         </div>
 
-        <div className="lp-form-grid lp-form-grid--3">
+        <div className="lp-form-grid lp-form-grid--4">
           <label className="lp-field">
             <span className="lp-field__label">Senaryo Adı</span>
             <input
@@ -368,14 +533,22 @@ export function LogisticsPackagingCalculatorPage() {
           </label>
 
           <div className="lp-field">
+            <span className="lp-field__label">Mod</span>
+            <div className="lp-input">
+              {scenario.editingScenarioId ? 'Düzenleme' : 'Yeni kayıt'}
+            </div>
+          </div>
+
+          <div className="lp-field">
             <span className="lp-field__label">Lot Sayısı</span>
             <div className="lp-input">{scenario.values.lots.length}</div>
           </div>
 
           <div className="lp-field">
-            <span className="lp-field__label">Genel Durum</span>
+            <span className="lp-field__label">Durum</span>
             <div className="lp-input">
               {translateValidationStatus(scenario.aggregateResult.validationStatus)}
+              {scenario.isDirty ? ' · Kaydedilmemiş değişiklik var' : ''}
             </div>
           </div>
         </div>
@@ -417,14 +590,37 @@ export function LogisticsPackagingCalculatorPage() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                className="lp-button lp-button--ghost"
-                onClick={() => scenario.removeLot(lot.id)}
-                disabled={scenario.values.lots.length === 1}
-              >
-                Lotu Sil
-              </button>
+              <div className="lp-lot-card-actions">
+                <button
+                  type="button"
+                  className="lp-button lp-button--ghost"
+                  onClick={() => scenario.moveLotUp(lot.id)}
+                  disabled={index === 0}
+                  title="Yukarı taşı"
+                >
+                  ↑
+                </button>
+
+                <button
+                  type="button"
+                  className="lp-button lp-button--ghost"
+                  onClick={() => scenario.moveLotDown(lot.id)}
+                  disabled={index === scenario.values.lots.length - 1}
+                  title="Aşağı taşı"
+                >
+                  ↓
+                </button>
+
+                <button
+                  type="button"
+                  className="lp-button lp-button--ghost"
+                  onClick={() => scenario.removeLot(lot.id)}
+                  disabled={scenario.values.lots.length === 1}
+                  title="Lotu sil"
+                >
+                  Sil
+                </button>
+              </div>
             </div>
 
             <LotSummary
@@ -478,7 +674,11 @@ export function LogisticsPackagingCalculatorPage() {
           disabled={isSaving}
           onClick={handleSaveScenario}
         >
-          {isSaving ? 'Kaydediliyor...' : 'Senaryoyu Kaydet'}
+          {isSaving
+            ? 'Kaydediliyor...'
+            : scenario.editingScenarioId
+              ? 'Senaryoyu Güncelle'
+              : 'Senaryoyu Kaydet'}
         </button>
       </div>
 
@@ -493,9 +693,13 @@ export function LogisticsPackagingCalculatorPage() {
         </div>
 
         <ScenarioHistory
-          scenarios={scenarios}
+          scenarios={visibleScenarios}
           products={products}
           materials={materials}
+          search={historySearch}
+          sort={historySort}
+          onSearchChange={setHistorySearch}
+          onSortChange={setHistorySort}
           onLoadScenario={handleLoadScenario}
           onDuplicateScenario={handleDuplicateScenario}
           onDeleteScenario={handleDeleteScenario}

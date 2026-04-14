@@ -6,6 +6,7 @@ import type {
   PackagingScenarioCalculationResult,
   PackagingScenarioValues,
   PackagingValidationStatus,
+  UpdatePackagingScenarioRepositoryInput,
 } from '../../domain';
 import { PACKAGING_CONSTRAINTS } from '../../domain';
 
@@ -42,15 +43,10 @@ export function buildScenarioAggregateResult(
 
   lotResults.forEach(({ lotId, result }) => {
     result.palletLineResults.forEach((line) => {
-      if (!line.stackGroup) {
-        return;
-      }
+      if (!line.stackGroup) return;
 
       const current = sharedStackLinesMap.get(line.stackGroup) ?? [];
-      current.push({
-        ...line,
-        lotId,
-      });
+      current.push({ ...line, lotId });
       sharedStackLinesMap.set(line.stackGroup, current);
     });
   });
@@ -62,6 +58,12 @@ export function buildScenarioAggregateResult(
         message: `[Lot ${lotId}] ${message.message}`,
       })),
     );
+
+  const normalizedLotNumbers = lotResults
+    .map(({ result }) => result.validationMessages)
+    .flat();
+
+  void normalizedLotNumbers;
 
   const stackSummaries = Array.from(sharedStackLinesMap.entries()).map(
     ([stackGroup, lines]) => {
@@ -128,23 +130,10 @@ export function buildScenarioAggregateResult(
     },
   );
 
-  const stackedLineIds = new Set(
-    lotResults.flatMap(({ result }) =>
-      result.stackSummaries.flatMap((stack) => stack.palletLineIds),
-    ),
+  const totalGroundPalletCount = stackSummaries.reduce(
+    (sum, stack) => sum + stack.groundPalletCount,
+    0,
   );
-
-  const standaloneGroundPalletCount = lotResults.reduce((sum, { result }) => {
-    const standaloneCount = result.palletLineResults
-      .filter((line) => !stackedLineIds.has(line.lineId))
-      .reduce((lineSum, line) => lineSum + line.palletCount, 0);
-
-    return sum + standaloneCount;
-  }, 0);
-
-  const totalGroundPalletCount =
-    standaloneGroundPalletCount +
-    stackSummaries.reduce((sum, stack) => sum + stack.groundPalletCount, 0);
 
   return {
     totalQuantityKg: lotResults.reduce(
@@ -178,47 +167,65 @@ export function buildScenarioAggregateResult(
   };
 }
 
-export function mapScenarioValuesAndResultsToRepositoryInput(
+function mapLots(values: PackagingScenarioValues, result: PackagingScenarioCalculationResult) {
+  const resultByLotId = new Map(result.lots.map((item) => [item.lotId, item.result]));
+
+  return values.lots.map((lot) => {
+    const lotResult = resultByLotId.get(lot.id);
+
+    if (!lotResult) {
+      throw new Error(`Lot sonucu bulunamadı: ${lot.id}`);
+    }
+
+    const lotValues: PackagingCalculatorFormValues = lot.values;
+
+    return {
+      lotNumber: lotValues.lotNumber.trim(),
+      productId: lotValues.productId,
+      totalQuantityKg:
+        lotValues.totalQuantityKg === '' ? 0 : Number(lotValues.totalQuantityKg),
+      unitNetWeightKg:
+        lotValues.unitNetWeightKg === '' ? null : Number(lotValues.unitNetWeightKg),
+      containerMaterialId: lotValues.containerMaterialId,
+      vacuumBagMaterialId: lotValues.vacuumBagMaterialId,
+      notes: lotValues.notes.trim() || null,
+      palletLines: lotResult.palletLineResults.map((line) => ({
+        palletMaterialId: line.palletMaterialId,
+        palletCount: line.palletCount,
+        unitsPerRow: line.unitsPerRow,
+        unitsPerPallet: line.unitsPerPallet,
+        stackGroup: line.stackGroup,
+        stackOrder: line.stackOrder,
+      })),
+    };
+  });
+}
+
+export function mapScenarioValuesAndResultsToCreateRepositoryInput(
   values: PackagingScenarioValues,
   result: PackagingScenarioCalculationResult,
 ): CreatePackagingScenarioRepositoryInput {
-  const resultByLotId = new Map(
-    result.lots.map((item) => [item.lotId, item.result]),
-  );
-
   return {
     scenario: {
       name: values.name.trim() || null,
       createdBy: null,
+      updatedBy: null,
     },
-    lots: values.lots.map((lot) => {
-      const lotResult = resultByLotId.get(lot.id);
+    lots: mapLots(values, result),
+  };
+}
 
-      if (!lotResult) {
-        throw new Error(`Lot sonucu bulunamadı: ${lot.id}`);
-      }
-
-      const lotValues: PackagingCalculatorFormValues = lot.values;
-
-      return {
-        lotNumber: lotValues.lotNumber.trim(),
-        productId: lotValues.productId,
-        totalQuantityKg:
-          lotValues.totalQuantityKg === '' ? 0 : Number(lotValues.totalQuantityKg),
-        unitNetWeightKg:
-          lotValues.unitNetWeightKg === '' ? null : Number(lotValues.unitNetWeightKg),
-        containerMaterialId: lotValues.containerMaterialId,
-        vacuumBagMaterialId: lotValues.vacuumBagMaterialId,
-        notes: lotValues.notes.trim() || null,
-        palletLines: lotResult.palletLineResults.map((line) => ({
-          palletMaterialId: line.palletMaterialId,
-          palletCount: line.palletCount,
-          unitsPerRow: line.unitsPerRow,
-          unitsPerPallet: line.unitsPerPallet,
-          stackGroup: line.stackGroup,
-          stackOrder: line.stackOrder,
-        })),
-      };
-    }),
+export function mapScenarioValuesAndResultsToUpdateRepositoryInput(
+  scenarioId: string,
+  values: PackagingScenarioValues,
+  result: PackagingScenarioCalculationResult,
+): UpdatePackagingScenarioRepositoryInput {
+  return {
+    scenarioId,
+    scenario: {
+      name: values.name.trim() || null,
+      updatedBy: null,
+    },
+    lots: mapLots(values, result),
   };
 }

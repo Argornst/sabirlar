@@ -4,6 +4,16 @@
   gap: 0.85rem;
 }
 
+.lp-scenario-history__toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 0.75rem;
+}
+
+.lp-scenario-history__sort {
+  min-width: 0;
+}
+
 .lp-scenario-history__card {
   padding: 1rem;
 }
@@ -183,6 +193,10 @@
 }
 
 @media (max-width: 760px) {
+  .lp-scenario-history__toolbar {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
   .lp-scenario-history__actions {
     width: 100%;
     justify-content: flex-start;

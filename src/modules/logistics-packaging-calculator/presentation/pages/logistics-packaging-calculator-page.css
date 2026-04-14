@@ -63,6 +63,12 @@
   transform: translateY(-1px);
 }
 
+.lp-lot-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 @media (max-width: 720px) {
   .lp-scenario-lot-card__header {
     flex-direction: column;

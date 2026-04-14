@@ -7,29 +7,29 @@ import type {
 import { CalculatePackagingUseCase } from './calculate-packaging.use-case';
 import {
   buildScenarioAggregateResult,
-  mapScenarioValuesAndResultsToCreateRepositoryInput,
+  mapScenarioValuesAndResultsToUpdateRepositoryInput,
 } from '../mappers/packaging-scenario.mapper';
-import type { CreatePackagingScenarioDto } from '../dto/create-packaging-scenario.dto';
+import type { UpdatePackagingScenarioDto } from '../dto/update-packaging-scenario.dto';
 
-interface CreatePackagingScenarioUseCaseDependencies {
+interface UpdatePackagingScenarioUseCaseDependencies {
   scenariosRepository: PackagingScenariosRepository;
 }
 
-interface CreatePackagingScenarioUseCaseContext {
+interface UpdatePackagingScenarioUseCaseContext {
   materials: PackagingMaterial[];
   productRules: PackagingProductMaterialRule[];
 }
 
-export class CreatePackagingScenarioUseCase {
+export class UpdatePackagingScenarioUseCase {
   private readonly calculatePackagingUseCase = new CalculatePackagingUseCase();
 
   constructor(
-    private readonly dependencies: CreatePackagingScenarioUseCaseDependencies,
+    private readonly dependencies: UpdatePackagingScenarioUseCaseDependencies,
   ) {}
 
   async execute(
-    dto: CreatePackagingScenarioDto,
-    context: CreatePackagingScenarioUseCaseContext,
+    dto: UpdatePackagingScenarioDto,
+    context: UpdatePackagingScenarioUseCaseContext,
   ) {
     const lotResults = dto.values.lots.map((lot) => ({
       lotId: lot.id,
@@ -55,11 +55,12 @@ export class CreatePackagingScenarioUseCase {
       aggregate: buildScenarioAggregateResult(lotResults),
     };
 
-    const payload = mapScenarioValuesAndResultsToCreateRepositoryInput(
+    const payload = mapScenarioValuesAndResultsToUpdateRepositoryInput(
+      dto.scenarioId,
       dto.values,
       scenarioResult,
     );
 
-    return this.dependencies.scenariosRepository.create(payload);
+    return this.dependencies.scenariosRepository.update(payload);
   }
 }

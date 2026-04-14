@@ -2,6 +2,32 @@ export interface CreatePackagingScenarioRepositoryInput {
   scenario: {
     name: string | null;
     createdBy: string | null;
+    updatedBy?: string | null;
+  };
+  lots: Array<{
+    lotNumber: string;
+    productId: string;
+    totalQuantityKg: number;
+    unitNetWeightKg: number | null;
+    containerMaterialId: string;
+    vacuumBagMaterialId: string | null;
+    notes: string | null;
+    palletLines: Array<{
+      palletMaterialId: string;
+      palletCount: number;
+      unitsPerRow: number;
+      unitsPerPallet: number;
+      stackGroup: string | null;
+      stackOrder: number;
+    }>;
+  }>;
+}
+
+export interface UpdatePackagingScenarioRepositoryInput {
+  scenarioId: string;
+  scenario: {
+    name: string | null;
+    updatedBy?: string | null;
   };
   lots: Array<{
     lotNumber: string;
@@ -27,7 +53,9 @@ export interface PackagingScenarioRecord {
   name: string | null;
   organizationId: number | string;
   createdBy: string | null;
+  updatedBy?: string | null;
   createdAt: string;
+  updatedAt?: string | null;
 }
 
 export interface PackagingScenarioLotRecord {
@@ -42,6 +70,7 @@ export interface PackagingScenarioLotRecord {
   vacuumBagMaterialId: string | null;
   notes: string | null;
   createdAt: string;
+  updatedAt?: string | null;
 }
 
 export interface PackagingScenarioPalletLineRecord {
@@ -55,6 +84,7 @@ export interface PackagingScenarioPalletLineRecord {
   stackGroup: string | null;
   stackOrder: number;
   createdAt: string;
+  updatedAt?: string | null;
 }
 
 export interface PackagingScenarioWithLots {
@@ -69,6 +99,9 @@ export interface PackagingScenariosRepository {
   getAll(): Promise<PackagingScenarioWithLots[]>;
   create(
     input: CreatePackagingScenarioRepositoryInput,
+  ): Promise<PackagingScenarioWithLots>;
+  update(
+    input: UpdatePackagingScenarioRepositoryInput,
   ): Promise<PackagingScenarioWithLots>;
   delete(id: string): Promise<void>;
 }

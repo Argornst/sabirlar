@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type {
   PackagingCalculationResult,
   PackagingCalculatorFormValues,
@@ -27,6 +27,32 @@ function createDefaultScenarioValues(): PackagingScenarioValues {
   };
 }
 
+function normalizeScenarioValues(values: PackagingScenarioValues) {
+  return JSON.stringify({
+    name: values.name.trim(),
+    lots: values.lots.map((lot) => ({
+      values: {
+        lotNumber: lot.values.lotNumber.trim(),
+        productId: lot.values.productId,
+        totalQuantityKg: lot.values.totalQuantityKg === '' ? '' : Number(lot.values.totalQuantityKg),
+        containerMaterialId: lot.values.containerMaterialId,
+        vacuumBagMaterialId: lot.values.vacuumBagMaterialId ?? null,
+        unitNetWeightKg:
+          lot.values.unitNetWeightKg === '' ? '' : Number(lot.values.unitNetWeightKg),
+        notes: lot.values.notes.trim(),
+        palletLines: lot.values.palletLines.map((line) => ({
+          palletMaterialId: line.palletMaterialId,
+          palletCount: line.palletCount === '' ? '' : Number(line.palletCount),
+          unitsPerRow: line.unitsPerRow === '' ? '' : Number(line.unitsPerRow),
+          unitsPerPallet: line.unitsPerPallet === '' ? '' : Number(line.unitsPerPallet),
+          stackGroup: line.stackGroup.trim(),
+          stackOrder: line.stackOrder === '' ? '' : Number(line.stackOrder),
+        })),
+      },
+    })),
+  });
+}
+
 interface UsePackagingScenarioCalculatorOptions {
   materials: PackagingMaterial[];
   productRules: PackagingProductMaterialRule[];
@@ -35,13 +61,16 @@ interface UsePackagingScenarioCalculatorOptions {
 
 interface UsePackagingScenarioCalculatorReturn {
   values: PackagingScenarioValues;
+  editingScenarioId: string | null;
+  isDirty: boolean;
   setScenarioName: (name: string) => void;
   setScenarioValues: (
     updater:
       | PackagingScenarioValues
       | ((current: PackagingScenarioValues) => PackagingScenarioValues),
   ) => void;
-  loadScenario: (nextValues: PackagingScenarioValues) => void;
+  startCreateMode: () => void;
+  loadScenario: (scenarioId: string, nextValues: PackagingScenarioValues) => void;
   duplicateScenario: (nextValues: PackagingScenarioValues) => void;
   updateLotValues: (
     lotId: string,
@@ -51,10 +80,13 @@ interface UsePackagingScenarioCalculatorReturn {
   ) => void;
   addLot: () => void;
   removeLot: (lotId: string) => void;
+  moveLotUp: (lotId: string) => void;
+  moveLotDown: (lotId: string) => void;
   addPalletLine: (lotId: string, preferredPalletId?: string) => void;
   removePalletLine: (lotId: string, lineId: string) => void;
   getLotResult: (lotId: string) => PackagingCalculationResult;
   aggregateResult: PackagingScenarioAggregateResult;
+  markSaved: (scenarioId?: string | null) => void;
   reset: () => void;
 }
 
@@ -64,11 +96,15 @@ export function usePackagingScenarioCalculator(
   const [values, setValues] = useState<PackagingScenarioValues>(
     options.initialValues ?? createDefaultScenarioValues(),
   );
+  const [editingScenarioId, setEditingScenarioId] = useState<string | null>(null);
+  const initialSnapshotRef = useRef(normalizeScenarioValues(options.initialValues ?? createDefaultScenarioValues()));
 
   const calculatePackagingUseCase = useMemo(
     () => new CalculatePackagingUseCase(),
     [],
   );
+
+  const isDirty = normalizeScenarioValues(values) !== initialSnapshotRef.current;
 
   const lotResultsMap = useMemo(() => {
     return new Map(
@@ -124,12 +160,23 @@ export function usePackagingScenarioCalculator(
     );
   };
 
-  const loadScenario = (nextValues: PackagingScenarioValues) => {
+  const startCreateMode = () => {
+    const next = createDefaultScenarioValues();
+    setValues(next);
+    setEditingScenarioId(null);
+    initialSnapshotRef.current = normalizeScenarioValues(next);
+  };
+
+  const loadScenario = (scenarioId: string, nextValues: PackagingScenarioValues) => {
     setValues(nextValues);
+    setEditingScenarioId(scenarioId);
+    initialSnapshotRef.current = normalizeScenarioValues(nextValues);
   };
 
   const duplicateScenario = (nextValues: PackagingScenarioValues) => {
     setValues(nextValues);
+    setEditingScenarioId(null);
+    initialSnapshotRef.current = normalizeScenarioValues(nextValues);
   };
 
   const updateLotValues = (
@@ -177,6 +224,44 @@ export function usePackagingScenarioCalculator(
           ? current.lots
           : current.lots.filter((lot) => lot.id !== lotId),
     }));
+  };
+
+  const moveLotUp = (lotId: string) => {
+    setValues((current) => {
+      const index = current.lots.findIndex((lot) => lot.id === lotId);
+
+      if (index <= 0) {
+        return current;
+      }
+
+      const nextLots = [...current.lots];
+      const [item] = nextLots.splice(index, 1);
+      nextLots.splice(index - 1, 0, item);
+
+      return {
+        ...current,
+        lots: nextLots,
+      };
+    });
+  };
+
+  const moveLotDown = (lotId: string) => {
+    setValues((current) => {
+      const index = current.lots.findIndex((lot) => lot.id === lotId);
+
+      if (index < 0 || index >= current.lots.length - 1) {
+        return current;
+      }
+
+      const nextLots = [...current.lots];
+      const [item] = nextLots.splice(index, 1);
+      nextLots.splice(index + 1, 0, item);
+
+      return {
+        ...current,
+        lots: nextLots,
+      };
+    });
   };
 
   const addPalletLine = (lotId: string, preferredPalletId = '') => {
@@ -229,23 +314,34 @@ export function usePackagingScenarioCalculator(
     });
   };
 
+  const markSaved = (scenarioId?: string | null) => {
+    initialSnapshotRef.current = normalizeScenarioValues(values);
+    setEditingScenarioId(scenarioId ?? null);
+  };
+
   const reset = () => {
-    setValues(createDefaultScenarioValues());
+    startCreateMode();
   };
 
   return {
     values,
+    editingScenarioId,
+    isDirty,
     setScenarioName,
     setScenarioValues,
+    startCreateMode,
     loadScenario,
     duplicateScenario,
     updateLotValues,
     addLot,
     removeLot,
+    moveLotUp,
+    moveLotDown,
     addPalletLine,
     removePalletLine,
     getLotResult,
     aggregateResult,
+    markSaved,
     reset,
   };
 }
