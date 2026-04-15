@@ -31,3 +31,4 @@ export * from './use-cases/get-packaging-rules.use-case';
 export * from './use-cases/update-packaging-calculation.use-case';
 export * from './use-cases/update-packaging-scenario.use-case';
 export * from './use-cases/upsert-packaging-rules.use-case';
+export * from './hooks/use-container-load-plan';

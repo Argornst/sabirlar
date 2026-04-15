@@ -19,3 +19,5 @@ export * from './types/packaging-scenario.type';
 export * from './validators/packaging-calculation.validator';
 export * from './value-objects/pallet-dimensions.vo';
 export * from './value-objects/stack-summary.vo';
+export * from './types/container-load-plan.type';
+export * from './services/container-load-plan.service';

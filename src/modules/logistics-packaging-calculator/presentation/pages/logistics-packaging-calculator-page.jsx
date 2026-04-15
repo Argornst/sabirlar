@@ -22,6 +22,7 @@ import { ScenarioHistory } from '../components/scenario-history/scenario-history
 import { StackSummary } from '../components/stack-summary/stack-summary';
 import { LotSummary } from '../components/lot-summary/lot-summary';
 import './logistics-packaging-calculator-page.css';
+import { ContainerLoadPlan } from '../components/container-load-plan/container-load-plan';
 
 const productsRepository = new SupabasePackagingProductsRepository();
 const materialsRepository = new SupabasePackagingMaterialsRepository();
@@ -666,7 +667,11 @@ export function LogisticsPackagingCalculatorPage() {
       <div className="lp-panel">
         <StackSummary stacks={scenario.aggregateResult.stackSummaries} />
       </div>
-
+      <ContainerLoadPlan
+        scenario={scenario}
+        products={products}
+        materials={materials}
+      />
       <div className="lp-form-actions">
         <button
           type="button"
