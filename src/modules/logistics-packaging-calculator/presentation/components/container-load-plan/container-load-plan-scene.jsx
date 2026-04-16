@@ -58,7 +58,7 @@ function FloorGrid({ container }) {
   );
 }
 
-function TooltipCard({ item, packed }) {
+function TooltipCard({ item }) {
   return (
     <div className="lp-load-plan-tooltip">
       <div className="lp-load-plan-tooltip__title">
@@ -101,48 +101,20 @@ function TooltipCard({ item, packed }) {
           {item.widthCm} × {item.lengthCm} × {item.heightCm} cm
         </strong>
       </div>
-
-      {packed ? (
-        <>
-          <div className="lp-load-plan-tooltip__row">
-            <span>Yerleşim</span>
-            <strong>
-              {packed.rows}×{packed.cols}
-            </strong>
-          </div>
-
-          <div className="lp-load-plan-tooltip__row">
-            <span>Gap</span>
-            <strong>{packed.chosenGapCm} cm</strong>
-          </div>
-        </>
-      ) : null}
     </div>
   );
 }
 
-/**
- * Premium EPAL pallet model
- * Logic:
- * - top deck boards
- * - 9 blocks
- * - 3 bottom long boards
- * No piece passes through blocks.
- * All contacts are flush: top boards -> blocks -> bottom boards
- */
 function PremiumEPALPallet({ item }) {
-  // Tiny visual inset so adjacent pallets don't look fused.
   const visualInsetCm = 4;
   const palletWidthCm = Math.max(10, item.widthCm - visualInsetCm);
   const palletLengthCm = Math.max(10, item.lengthCm - visualInsetCm);
   const palletHeightCm = Math.max(14, item.palletBaseHeightCm);
 
-  const width = cmToScene(palletWidthCm);   // short side: 80 cm
-  const length = cmToScene(palletLengthCm); // long side: 120 cm
-  const height = cmToScene(palletHeightCm); // ~14 cm
+  const width = cmToScene(palletWidthCm);
+  const length = cmToScene(palletLengthCm);
+  const height = cmToScene(palletHeightCm);
 
-  // EPAL-ish vertical split:
-  // top board + block + bottom board = full pallet height
   const topDeckHeight = height * 0.22;
   const bottomDeckHeight = height * 0.22;
   const blockHeight = height - topDeckHeight - bottomDeckHeight;
@@ -155,8 +127,6 @@ function PremiumEPALPallet({ item }) {
   const woodMid = '#c78d58';
   const woodDark = '#ac723f';
 
-  // ---- Top boards ----
-  // 5 long boards along 120 cm direction.
   const topBoardCount = 5;
   const topBoardGap = width * 0.035;
   const totalTopGap = topBoardGap * (topBoardCount - 1);
@@ -166,8 +136,6 @@ function PremiumEPALPallet({ item }) {
     -width / 2 + topBoardWidth / 2 + index * (topBoardWidth + topBoardGap)
   ));
 
-  // ---- 9 blocks ----
-  // 3 columns on width, 3 rows on length.
   const blockWidth = width * 0.18;
   const blockLength = length * 0.12;
 
@@ -186,9 +154,6 @@ function PremiumEPALPallet({ item }) {
     length / 2 - blockEdgeInsetZ,
   ];
 
-  // ---- Bottom boards ----
-  // Exactly 3 long boards along 120 cm direction.
-  // Centered under block rows, flush touching blocks.
   const bottomBoardWidth = width * 0.19;
   const bottomBoardLength = length;
 
@@ -200,7 +165,6 @@ function PremiumEPALPallet({ item }) {
 
   return (
     <group position={[0, height / 2, 0]}>
-      {/* Top deck boards */}
       {topBoardXs.map((x, index) => (
         <mesh key={`top-board-${index}`} position={[x, topY, 0]}>
           <boxGeometry args={[topBoardWidth, topDeckHeight, length]} />
@@ -208,7 +172,6 @@ function PremiumEPALPallet({ item }) {
         </mesh>
       ))}
 
-      {/* 9 blocks */}
       {blockXs.flatMap((x, xi) =>
         blockZs.map((z, zi) => (
           <mesh key={`block-${xi}-${zi}`} position={[x, blockY, z]}>
@@ -218,7 +181,6 @@ function PremiumEPALPallet({ item }) {
         )),
       )}
 
-      {/* Bottom 3 long boards (120 cm) */}
       {bottomBoardXs.map((x, index) => (
         <mesh key={`bottom-board-${index}`} position={[x, bottomY, 0]}>
           <boxGeometry args={[bottomBoardWidth, bottomDeckHeight, bottomBoardLength]} />
@@ -234,6 +196,7 @@ function DrumUnit({
   heightCm,
   xCm,
   zCm,
+  yOffsetCm = 0,
   palletBaseHeightCm,
   color,
   isHovered,
@@ -242,7 +205,7 @@ function DrumUnit({
   const height = cmToScene(heightCm);
   const x = cmToScene(xCm);
   const z = cmToScene(zCm);
-  const y = cmToScene(palletBaseHeightCm) + height / 2;
+  const y = cmToScene(palletBaseHeightCm + yOffsetCm) + height / 2;
   const emissiveColor = isHovered ? new THREE.Color(color) : new THREE.Color('#000000');
 
   return (
@@ -277,22 +240,36 @@ function BoxUnit({
   heightCm,
   xCm,
   zCm,
+  yOffsetCm = 0,
   palletBaseHeightCm,
   color,
   isHovered,
 }) {
+  const visualInsetCm = 1.2;
+  const visualHeightInsetCm = 0.8;
+
+  const renderWidthCm = Math.max(1, widthCm - visualInsetCm);
+  const renderLengthCm = Math.max(1, lengthCm - visualInsetCm);
+  const renderHeightCm = Math.max(1, heightCm - visualHeightInsetCm);
+
   const x = cmToScene(xCm);
   const z = cmToScene(zCm);
-  const y = cmToScene(palletBaseHeightCm) + cmToScene(heightCm) / 2;
+  const y = cmToScene(palletBaseHeightCm + yOffsetCm) + cmToScene(renderHeightCm) / 2;
   const emissiveColor = isHovered ? new THREE.Color(color) : new THREE.Color('#000000');
 
   return (
     <mesh position={[x, y, z]}>
-      <boxGeometry args={[cmToScene(widthCm), cmToScene(heightCm), cmToScene(lengthCm)]} />
+      <boxGeometry
+        args={[
+          cmToScene(renderWidthCm),
+          cmToScene(renderHeightCm),
+          cmToScene(renderLengthCm),
+        ]}
+      />
       <meshStandardMaterial
         color={color}
-        roughness={0.5}
-        metalness={0.06}
+        roughness={0.56}
+        metalness={0.03}
         emissive={emissiveColor}
         emissiveIntensity={isHovered ? 0.14 : 0}
       />
@@ -300,8 +277,8 @@ function BoxUnit({
   );
 }
 
-function LoadUnits({ item, isHovered, unitsPerPallet }) {
-  const packed = buildLoadUnitsForPlacement(item, unitsPerPallet);
+function LoadUnits({ item, isHovered, packingConfig }) {
+  const packed = buildLoadUnitsForPlacement(item, packingConfig);
   const unitPlacements = packed?.placements ?? [];
 
   return (
@@ -315,9 +292,10 @@ function LoadUnits({ item, isHovered, unitsPerPallet }) {
             {item.shape === 'cylinder' ? (
               <DrumUnit
                 diameterCm={unit.diameterCm || Math.min(item.loadWidthCm, item.loadLengthCm)}
-                heightCm={item.loadHeightCm}
+                heightCm={unit.heightCm || item.loadHeightCm}
                 xCm={localXcm}
                 zCm={localZcm}
+                yOffsetCm={unit.yOffsetCm || 0}
                 palletBaseHeightCm={item.palletBaseHeightCm}
                 color={item.color}
                 isHovered={isHovered}
@@ -326,9 +304,10 @@ function LoadUnits({ item, isHovered, unitsPerPallet }) {
               <BoxUnit
                 widthCm={unit.widthCm || item.loadWidthCm}
                 lengthCm={unit.lengthCm || item.loadLengthCm}
-                heightCm={item.loadHeightCm}
+                heightCm={unit.heightCm || item.loadHeightCm}
                 xCm={localXcm}
                 zCm={localZcm}
+                yOffsetCm={unit.yOffsetCm || 0}
                 palletBaseHeightCm={item.palletBaseHeightCm}
                 color={item.color}
                 isHovered={isHovered}
@@ -346,7 +325,7 @@ function PlacementMesh({
   selectedLotIds,
   onHover,
   isHovered,
-  unitsPerPallet,
+  packingConfig,
 }) {
   const isVisible =
     selectedLotIds.length === 0 || selectedLotIds.includes(item.lotId);
@@ -361,8 +340,6 @@ function PlacementMesh({
   const centerX = cmToScene(item.xCm) + width / 2;
   const centerZ = cmToScene(item.zCm) + length / 2;
 
-  const packed = buildLoadUnitsForPlacement(item, unitsPerPallet);
-
   return (
     <group
       position={[centerX, cmToScene(item.yCm), centerZ]}
@@ -376,11 +353,11 @@ function PlacementMesh({
       }}
     >
       <PremiumEPALPallet item={item} />
-      <LoadUnits item={item} isHovered={isHovered} unitsPerPallet={unitsPerPallet} />
+      <LoadUnits item={item} isHovered={isHovered} packingConfig={packingConfig} />
 
       {isHovered ? (
         <Html distanceFactor={8} position={[0, cmToScene(item.heightCm + 16), 0]}>
-          <TooltipCard item={item} packed={packed} />
+          <TooltipCard item={item} />
         </Html>
       ) : null}
     </group>
@@ -390,7 +367,7 @@ function PlacementMesh({
 function SceneContent({
   data,
   selectedLotIds,
-  unitsPerPalletByLineId,
+  loadUnitPackingByLineId,
 }) {
   const [hoveredId, setHoveredId] = useState(null);
 
@@ -411,7 +388,7 @@ function SceneContent({
           selectedLotIds={selectedLotIds}
           onHover={(value) => setHoveredId(value?.id ?? null)}
           isHovered={hoveredId === item.id}
-          unitsPerPallet={unitsPerPalletByLineId.get(item.palletLineId)}
+          packingConfig={loadUnitPackingByLineId.get(item.palletLineId)}
         />
       ))}
     </>
@@ -424,7 +401,7 @@ export function ContainerLoadPlanScene({
   cameraPreset = 'iso',
   controlsRef,
   sceneCanvasRef,
-  unitsPerPalletByLineId,
+  loadUnitPackingByLineId,
 }) {
   const cameraPosition = useMemo(() => {
     if (!data) {
@@ -466,7 +443,7 @@ export function ContainerLoadPlanScene({
         <SceneContent
           data={data}
           selectedLotIds={selectedLotIds}
-          unitsPerPalletByLineId={unitsPerPalletByLineId}
+          loadUnitPackingByLineId={loadUnitPackingByLineId}
         />
       </Bounds>
       <OrbitControls

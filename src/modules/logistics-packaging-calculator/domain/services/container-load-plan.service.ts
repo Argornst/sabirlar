@@ -26,9 +26,11 @@ interface StackBaseSlot {
 type LoadUnitPlacement = {
   xOffsetCm: number;
   zOffsetCm: number;
+  yOffsetCm?: number;
   diameterCm?: number;
   widthCm?: number;
   lengthCm?: number;
+  heightCm?: number;
 };
 
 type DebugPackedLayout = {
@@ -45,6 +47,48 @@ type DebugPackedLayout = {
   axis: 'row-major' | 'col-major' | 'single';
   placements: LoadUnitPlacement[];
 };
+
+type LoadUnitPackingConfig =
+  | number
+  | string
+  | null
+  | undefined
+  | {
+      unitsPerPallet?: number | string | null;
+      unitsPerRow?: number | string | null;
+    };
+
+interface FloorRequest {
+  placementId: string;
+  lot: ContainerLoadPlanLotInput;
+  line: ContainerLoadPlanLotInputPalletLine;
+  lotColor: string;
+  baseWidth: number;
+  baseLength: number;
+  baseHeight: number;
+  baseWeight: number;
+  stackGroup: string | null;
+  stackOrder: number;
+}
+
+interface FreeRect {
+  xCm: number;
+  zCm: number;
+  widthCm: number;
+  lengthCm: number;
+}
+
+interface PlacementCandidate {
+  rectIndex: number;
+  xCm: number;
+  zCm: number;
+  widthCm: number;
+  lengthCm: number;
+  rotated: boolean;
+  shortSideFit: number;
+  longSideFit: number;
+  areaFit: number;
+}
 
 const LOT_COLORS = [
   '#6366f1',
@@ -181,23 +225,23 @@ function calculateBalance(
   const halfLength = container.innerLengthCm / 2;
 
   const leftWeightKg = placements
-    .filter((item) => item.xCm + item.widthCm / 2 <= halfWidth)
-    .reduce((sum, item) => sum + item.weightKg, 0);
+    .filter((item: ContainerLoadPlanPlacement) => item.xCm + item.widthCm / 2 <= halfWidth)
+    .reduce((sum: number, item: ContainerLoadPlanPlacement) => sum + item.weightKg, 0);
 
   const rightWeightKg = placements
-    .filter((item) => item.xCm + item.widthCm / 2 > halfWidth)
-    .reduce((sum, item) => sum + item.weightKg, 0);
+    .filter((item: ContainerLoadPlanPlacement) => item.xCm + item.widthCm / 2 > halfWidth)
+    .reduce((sum: number, item: ContainerLoadPlanPlacement) => sum + item.weightKg, 0);
 
   const frontWeightKg = placements
-    .filter((item) => item.zCm + item.lengthCm / 2 <= halfLength)
-    .reduce((sum, item) => sum + item.weightKg, 0);
+    .filter((item: ContainerLoadPlanPlacement) => item.zCm + item.lengthCm / 2 <= halfLength)
+    .reduce((sum: number, item: ContainerLoadPlanPlacement) => sum + item.weightKg, 0);
 
   const rearWeightKg = placements
-    .filter((item) => item.zCm + item.lengthCm / 2 > halfLength)
-    .reduce((sum, item) => sum + item.weightKg, 0);
+    .filter((item: ContainerLoadPlanPlacement) => item.zCm + item.lengthCm / 2 > halfLength)
+    .reduce((sum: number, item: ContainerLoadPlanPlacement) => sum + item.weightKg, 0);
 
   const totalWeightKg = round(
-    placements.reduce((sum, item) => sum + item.weightKg, 0),
+    placements.reduce((sum: number, item: ContainerLoadPlanPlacement) => sum + item.weightKg, 0),
     3,
   );
 
@@ -212,42 +256,6 @@ function calculateBalance(
   };
 }
 
-function canPlaceAt(
-  candidate: {
-    xCm: number;
-    zCm: number;
-    widthCm: number;
-    lengthCm: number;
-    totalHeightCm: number;
-  },
-  placedOnFloor: ContainerLoadPlanPlacement[],
-  container: ContainerDimensions,
-): boolean {
-  if (candidate.xCm + candidate.widthCm > container.innerWidthCm) {
-    return false;
-  }
-
-  if (candidate.zCm + candidate.lengthCm > container.innerLengthCm) {
-    return false;
-  }
-
-  if (candidate.totalHeightCm > container.innerHeightCm) {
-    return false;
-  }
-
-  return !placedOnFloor.some((existing) => {
-    const separatedX =
-      candidate.xCm + candidate.widthCm <= existing.xCm ||
-      existing.xCm + existing.widthCm <= candidate.xCm;
-
-    const separatedZ =
-      candidate.zCm + candidate.lengthCm <= existing.zCm ||
-      existing.zCm + existing.lengthCm <= candidate.zCm;
-
-    return !(separatedX || separatedZ);
-  });
-}
-
 function fitDrumsOnPallet(
   palletWidthCm: number,
   palletLengthCm: number,
@@ -260,8 +268,6 @@ function fitDrumsOnPallet(
   );
 
   const candidateGaps = [8, 6, 4, 2, 1, 0];
-
-  let best: DebugPackedLayout | null = null;
 
   for (const gap of candidateGaps) {
     for (let rows = 1; rows <= unitCount; rows += 1) {
@@ -285,7 +291,9 @@ function fitDrumsOnPallet(
             placements.push({
               xOffsetCm: round(startX + col * (diameter + gap), 2),
               zOffsetCm: round(startZ + row * (diameter + gap), 2),
+              yOffsetCm: 0,
               diameterCm: round(diameter, 2),
+              heightCm: round(toPositiveNumber(lot.loadUnitHeightCm, diameter), 2),
             });
           }
         }
@@ -326,7 +334,9 @@ function fitDrumsOnPallet(
             placements.push({
               xOffsetCm: round(startX + col * (diameter + gap), 2),
               zOffsetCm: round(startZ + row * (diameter + gap), 2),
+              yOffsetCm: 0,
               diameterCm: round(diameter, 2),
+              heightCm: round(toPositiveNumber(lot.loadUnitHeightCm, diameter), 2),
             });
           }
         }
@@ -347,7 +357,7 @@ function fitDrumsOnPallet(
     }
   }
 
-  best = {
+  return {
     kind: 'cylinder',
     palletWidthCm,
     palletLengthCm,
@@ -358,15 +368,15 @@ function fitDrumsOnPallet(
     cols: 1,
     axis: 'single',
     placements: [
-      {
-        xOffsetCm: round(palletWidthCm / 2, 2),
-        zOffsetCm: round(palletLengthCm / 2, 2),
-        diameterCm: round(Math.min(diameter, Math.min(palletWidthCm, palletLengthCm) - 4), 2),
-      },
+  {
+    xOffsetCm: round(palletWidthCm / 2, 2),
+    zOffsetCm: round(palletLengthCm / 2, 2),
+    yOffsetCm: 0,
+    diameterCm: round(Math.min(diameter, Math.min(palletWidthCm, palletLengthCm) - 4), 2),
+    heightCm: round(toPositiveNumber(lot.loadUnitHeightCm, diameter), 2),
+       },
     ],
   };
-
-  return best;
 }
 
 function fitBoxesOnPallet(
@@ -374,82 +384,270 @@ function fitBoxesOnPallet(
   palletLengthCm: number,
   unitCount: number,
   lot: ContainerLoadPlanLotInput,
+  unitsPerRowRaw?: number | string | null,
+  totalLoadHeightCm?: number,
 ): DebugPackedLayout {
-  const boxWidth = toPositiveNumber(
-    lot.loadUnitWidthCm,
-    Math.max(18, palletWidthCm * 0.3),
-  );
-  const boxLength = toPositiveNumber(
-    lot.loadUnitLengthCm,
-    Math.max(18, palletLengthCm * 0.3),
+  const requestedUnitsPerRow = Math.max(
+    1,
+    Math.min(unitCount, toPositiveNumber(unitsPerRowRaw, unitCount)),
   );
 
-  const candidateGaps = [6, 4, 2, 1, 0];
+  const rawBoxWidth = toPositiveNumber(
+    lot.loadUnitWidthCm,
+    Math.max(10, palletWidthCm * 0.2),
+  );
+  const rawBoxLength = toPositiveNumber(
+    lot.loadUnitLengthCm,
+    Math.max(10, palletLengthCm * 0.2),
+  );
+
+  const resolvedTotalLoadHeightCm = Math.max(
+    10,
+    toPositiveNumber(lot.loadUnitHeightCm, totalLoadHeightCm ?? 30),
+  );
+
+  const candidateGaps = [2, 1, 0];
+
+  type BaseGrid = {
+    rows: number;
+    cols: number;
+    gap: number;
+    boxWidthCm: number;
+    boxLengthCm: number;
+    positions: Array<{ xOffsetCm: number; zOffsetCm: number }>;
+    capacity: number;
+    score: number;
+  };
+
+  let bestGrid: BaseGrid | null = null;
 
   for (const gap of candidateGaps) {
-    const cols = Math.max(1, Math.floor((palletWidthCm + gap) / (boxWidth + gap)));
-    const rows = Math.max(1, Math.floor((palletLengthCm + gap) / (boxLength + gap)));
+    for (let rows = 1; rows <= requestedUnitsPerRow; rows += 1) {
+      const cols = Math.ceil(requestedUnitsPerRow / rows);
 
-    if (cols * rows < unitCount) {
-      continue;
-    }
+      const availableWidth = palletWidthCm - (cols - 1) * gap;
+      const availableLength = palletLengthCm - (rows - 1) * gap;
 
-    const requiredWidth = cols * boxWidth + (cols - 1) * gap;
-    const requiredLength = rows * boxLength + (rows - 1) * gap;
-    const startX = (palletWidthCm - requiredWidth) / 2 + boxWidth / 2;
-    const startZ = (palletLengthCm - requiredLength) / 2 + boxLength / 2;
+      if (availableWidth <= 0 || availableLength <= 0) {
+        continue;
+      }
 
-    const placements: LoadUnitPlacement[] = [];
+      const cellWidth = availableWidth / cols;
+      const cellLength = availableLength / rows;
 
-    for (let row = 0; row < rows; row += 1) {
-      for (let col = 0; col < cols; col += 1) {
-        if (placements.length >= unitCount) {
-          break;
+      if (cellWidth <= 0 || cellLength <= 0) {
+        continue;
+      }
+
+      const widthScale = cellWidth / rawBoxWidth;
+      const lengthScale = cellLength / rawBoxLength;
+      const scale = Math.min(widthScale, lengthScale, 1);
+
+      const boxWidthCm = Math.max(4, rawBoxWidth * scale - 0.8);
+      const boxLengthCm = Math.max(4, rawBoxLength * scale - 0.8);
+
+      const usedWidth = cols * boxWidthCm + (cols - 1) * gap;
+      const usedLength = rows * boxLengthCm + (rows - 1) * gap;
+
+      if (usedWidth > palletWidthCm || usedLength > palletLengthCm) {
+        continue;
+      }
+
+      const startX = (palletWidthCm - usedWidth) / 2 + boxWidthCm / 2;
+      const startZ = (palletLengthCm - usedLength) / 2 + boxLengthCm / 2;
+
+      const positions: Array<{ xOffsetCm: number; zOffsetCm: number }> = [];
+
+      // Soldan saga, ondeki satirdan arkaya dogru
+      for (let row = 0; row < rows; row += 1) {
+        for (let col = 0; col < cols; col += 1) {
+          positions.push({
+            xOffsetCm: round(startX + col * (boxWidthCm + gap), 2),
+            zOffsetCm: round(startZ + row * (boxLengthCm + gap), 2),
+          });
         }
+      }
 
-        placements.push({
-          xOffsetCm: round(startX + col * (boxWidth + gap), 2),
-          zOffsetCm: round(startZ + row * (boxLength + gap), 2),
-          widthCm: round(boxWidth, 2),
-          lengthCm: round(boxLength, 2),
-        });
+      const capacity = rows * cols;
+      const emptySlots = capacity - requestedUnitsPerRow;
+      const footprintScore = usedWidth * usedLength;
+      const proportionPenalty =
+        Math.abs((boxWidthCm / boxLengthCm) - (rawBoxWidth / rawBoxLength)) * 100;
+      const wastedSlotsPenalty = emptySlots * 12;
+      const rowPenalty = Math.abs(capacity - requestedUnitsPerRow) * 8;
+
+      const score =
+        footprintScore - proportionPenalty - wastedSlotsPenalty - rowPenalty;
+
+      const candidate: BaseGrid = {
+        rows,
+        cols,
+        gap,
+        boxWidthCm,
+        boxLengthCm,
+        positions,
+        capacity,
+        score,
+      };
+
+      if (!bestGrid || candidate.score > bestGrid.score) {
+        bestGrid = candidate;
       }
     }
+  }
+
+  if (!bestGrid) {
+    const fallbackHeight = resolvedTotalLoadHeightCm / Math.max(1, unitCount);
 
     return {
       kind: 'box',
       palletWidthCm,
       palletLengthCm,
       unitCount,
-      unitWidthCm: round(boxWidth, 2),
-      unitLengthCm: round(boxLength, 2),
-      chosenGapCm: gap,
-      rows,
-      cols,
-      axis: 'row-major',
-      placements,
+      unitWidthCm: round(Math.min(rawBoxWidth, palletWidthCm - 1), 2),
+      unitLengthCm: round(Math.min(rawBoxLength, palletLengthCm - 1), 2),
+      chosenGapCm: 0,
+      rows: 1,
+      cols: 1,
+      axis: 'single',
+      placements: Array.from({ length: unitCount }).map((_, layerIndex) => ({
+        xOffsetCm: round(palletWidthCm / 2, 2),
+        zOffsetCm: round(palletLengthCm / 2, 2),
+        yOffsetCm: round(layerIndex * fallbackHeight, 2),
+        widthCm: round(Math.min(rawBoxWidth, palletWidthCm - 1), 2),
+        lengthCm: round(Math.min(rawBoxLength, palletLengthCm - 1), 2),
+        heightCm: round(fallbackHeight, 2),
+      })),
     };
   }
+
+  const layerCapacity = bestGrid.capacity;
+  const layerCount = Math.max(1, Math.ceil(unitCount / layerCapacity));
+  const verticalGapCm = layerCount > 1 ? 0.8 : 0;
+
+  const unitHeightCm = Math.max(
+    2,
+    (resolvedTotalLoadHeightCm - verticalGapCm * (layerCount - 1)) / layerCount,
+  );
+
+  const placements: LoadUnitPlacement[] = [];
+
+ let placedCount = 0;
+
+function buildCenteredBlockPositions(
+  count: number,
+  rows: number,
+  cols: number,
+  palletWidthCm: number,
+  palletLengthCm: number,
+  boxWidthCm: number,
+  boxLengthCm: number,
+  gapCm: number,
+): Array<{ xOffsetCm: number; zOffsetCm: number }> {
+  if (count <= 0) {
+    return [];
+  }
+
+  let bestRows = 1;
+  let bestCols = count;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (let candidateRows = 1; candidateRows <= count; candidateRows += 1) {
+    const candidateCols = Math.ceil(count / candidateRows);
+
+    if (candidateRows > rows || candidateCols > cols) {
+      continue;
+    }
+
+    const diff = Math.abs(candidateRows - candidateCols);
+    const area = candidateRows * candidateCols;
+    const emptyCells = area - count;
+
+    const score = diff * 100 + emptyCells * 10 + area;
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestRows = candidateRows;
+      bestCols = candidateCols;
+    }
+  }
+
+  const blockWidthCm = bestCols * boxWidthCm + (bestCols - 1) * gapCm;
+  const blockLengthCm = bestRows * boxLengthCm + (bestRows - 1) * gapCm;
+
+  const startX = (palletWidthCm - blockWidthCm) / 2 + boxWidthCm / 2;
+  const startZ = (palletLengthCm - blockLengthCm) / 2 + boxLengthCm / 2;
+
+  const positions: Array<{ xOffsetCm: number; zOffsetCm: number }> = [];
+
+  for (let row = 0; row < bestRows; row += 1) {
+    for (let col = 0; col < bestCols; col += 1) {
+      if (positions.length >= count) {
+        break;
+      }
+
+      positions.push({
+        xOffsetCm: round(startX + col * (boxWidthCm + gapCm), 2),
+        zOffsetCm: round(startZ + row * (boxLengthCm + gapCm), 2),
+      });
+    }
+  }
+
+  return positions;
+}
+
+// Mantik:
+// - tam dolu katlar bestGrid uzerinden ayni duzende gider
+// - eksik son kat varsa kutular kompakt bir blok halinde dizilir
+// - bu blok hem X hem Z ekseninde palet ustunde ortalanir
+for (let layerIndex = 0; layerIndex < layerCount; layerIndex += 1) {
+  const remaining = unitCount - placedCount;
+  const countInThisLayer = Math.min(bestGrid.positions.length, remaining);
+
+  const positionsForLayer =
+    countInThisLayer === bestGrid.positions.length
+      ? bestGrid.positions
+      : buildCenteredBlockPositions(
+          countInThisLayer,
+          bestGrid.rows,
+          bestGrid.cols,
+          palletWidthCm,
+          palletLengthCm,
+          bestGrid.boxWidthCm,
+          bestGrid.boxLengthCm,
+          bestGrid.gap,
+        );
+
+  for (const position of positionsForLayer) {
+    if (placedCount >= unitCount) {
+      break;
+    }
+
+    placements.push({
+      xOffsetCm: position.xOffsetCm,
+      zOffsetCm: position.zOffsetCm,
+      yOffsetCm: round(layerIndex * (unitHeightCm + verticalGapCm), 2),
+      widthCm: round(bestGrid.boxWidthCm, 2),
+      lengthCm: round(bestGrid.boxLengthCm, 2),
+      heightCm: round(unitHeightCm, 2),
+    });
+
+    placedCount += 1;
+  }
+}
 
   return {
     kind: 'box',
     palletWidthCm,
     palletLengthCm,
     unitCount,
-    unitWidthCm: round(Math.min(boxWidth, palletWidthCm - 4), 2),
-    unitLengthCm: round(Math.min(boxLength, palletLengthCm - 4), 2),
-    chosenGapCm: 0,
-    rows: 1,
-    cols: 1,
-    axis: 'single',
-    placements: [
-      {
-        xOffsetCm: round(palletWidthCm / 2, 2),
-        zOffsetCm: round(palletLengthCm / 2, 2),
-        widthCm: round(Math.min(boxWidth, palletWidthCm - 4), 2),
-        lengthCm: round(Math.min(boxLength, palletLengthCm - 4), 2),
-      },
-    ],
+    unitWidthCm: round(rawBoxWidth, 2),
+    unitLengthCm: round(rawBoxLength, 2),
+    chosenGapCm: bestGrid.gap,
+    rows: bestGrid.rows,
+    cols: bestGrid.cols,
+    axis: 'row-major',
+    placements,
   };
 }
 
@@ -539,23 +737,18 @@ function createPlacement(params: {
   };
 }
 
-export function buildContainerLoadPlan({
-  lots,
-  container,
-}: BuildContainerLoadPlanParams): ContainerLoadPlan {
-  const placements: ContainerLoadPlanPlacement[] = [];
-  const unplaced: ContainerLoadPlanUnplacedItem[] = [];
-  const legend = buildLegend(lots);
-  const colorByLotId = new Map(legend.map((item) => [item.lotId, item.color]));
-  const floorPlaced: ContainerLoadPlanPlacement[] = [];
-  const stackSlotsByGroup = new Map<string, StackBaseSlot[]>();
+function buildFloorRequests(
+  lots: ContainerLoadPlanLotInput[],
+  colorByLotId: Map<string, string>,
+): {
+  floorRequests: FloorRequest[];
+  upperStackRequests: FloorRequest[];
+} {
+  const floorRequests: FloorRequest[] = [];
+  const upperStackRequests: FloorRequest[] = [];
 
-  let cursorX = 0;
-  let cursorZ = 0;
-  let rowDepth = 0;
-
-  lots.forEach((lot, lotIndex) => {
-    lot.palletLines.forEach((line) => {
+  lots.forEach((lot: ContainerLoadPlanLotInput, lotIndex: number) => {
+    lot.palletLines.forEach((line: ContainerLoadPlanLotInputPalletLine) => {
       const palletCount = toPositiveNumber(line.palletCount, 1);
       const footprint = getDefaultFootprint(lot);
       const baseWidth = toPositiveNumber(line.palletWidthCm, footprint.widthCm);
@@ -566,202 +759,411 @@ export function buildContainerLoadPlan({
       const stackOrder = toPositiveNumber(line.stackOrder, 1);
       const lotColor = colorByLotId.get(lot.id) || getLotColor(lotIndex);
 
-      if (baseWidth <= 0 || baseLength <= 0 || baseHeight <= 0) {
-        unplaced.push({
-          id: `${lot.id}:${line.id}:invalid`,
-          lotId: lot.id,
-          lotNumber: lot.lotNumber || `Lot ${lotIndex + 1}`,
-          palletLineId: line.id,
-          palletMaterialCode: line.palletMaterialCode || line.palletMaterialName || '-',
-          reason: 'INVALID_DIMENSIONS',
-          widthCm: baseWidth,
-          lengthCm: baseLength,
-          heightCm: baseHeight,
-          weightKg: baseWeight,
-        });
-        return;
-      }
-
-      if (stackGroup && stackOrder > 1) {
-        const slots = stackSlotsByGroup.get(stackGroup) ?? [];
-
-        if (slots.length === 0) {
-          for (let i = 0; i < palletCount; i += 1) {
-            unplaced.push({
-              id: `${lot.id}:${line.id}:${i + 1}`,
-              lotId: lot.id,
-              lotNumber: lot.lotNumber || `Lot ${lotIndex + 1}`,
-              palletLineId: line.id,
-              palletMaterialCode: line.palletMaterialCode || line.palletMaterialName || '-',
-              reason: 'MISSING_STACK_BASE',
-              widthCm: baseWidth,
-              lengthCm: baseLength,
-              heightCm: baseHeight,
-              weightKg: baseWeight,
-            });
-          }
-          return;
-        }
-
-        for (let i = 0; i < palletCount; i += 1) {
-          const slot = slots[i % slots.length];
-          const placementId = `${lot.id}:${line.id}:${i + 1}`;
-
-          if (slot.baseTopYForNextLevelCm + baseHeight > container.innerHeightCm) {
-            unplaced.push({
-              id: placementId,
-              lotId: lot.id,
-              lotNumber: lot.lotNumber || `Lot ${lotIndex + 1}`,
-              palletLineId: line.id,
-              palletMaterialCode: line.palletMaterialCode || line.palletMaterialName || '-',
-              reason: 'HEIGHT_LIMIT',
-              widthCm: slot.widthCm,
-              lengthCm: slot.lengthCm,
-              heightCm: baseHeight,
-              weightKg: baseWeight,
-            });
-            continue;
-          }
-
-          const placement = createPlacement({
-            placementId,
-            lot,
-            line,
-            lotColor,
-            xCm: slot.xCm,
-            yCm: slot.baseTopYForNextLevelCm,
-            zCm: slot.zCm,
-            widthCm: slot.widthCm,
-            lengthCm: slot.lengthCm,
-            rotated: slot.rotated,
-            stackGroup,
-            stackOrder,
-          });
-
-          placements.push(placement);
-          slot.baseTopYForNextLevelCm += placement.heightCm;
-        }
-
-        return;
-      }
-
-      const currentGroupSlots: StackBaseSlot[] = [];
-
       for (let i = 0; i < palletCount; i += 1) {
-        const placementId = `${lot.id}:${line.id}:${i + 1}`;
-
-        let chosenWidth = baseWidth;
-        let chosenLength = baseLength;
-        let rotated = false;
-
-        let candidate = {
-          xCm: cursorX,
-          zCm: cursorZ,
-          widthCm: chosenWidth,
-          lengthCm: chosenLength,
-          totalHeightCm: baseHeight,
-        };
-
-        if (!canPlaceAt(candidate, floorPlaced, container)) {
-          const rotatedCandidate = {
-            xCm: cursorX,
-            zCm: cursorZ,
-            widthCm: baseLength,
-            lengthCm: baseWidth,
-            totalHeightCm: baseHeight,
-          };
-
-          if (canPlaceAt(rotatedCandidate, floorPlaced, container)) {
-            chosenWidth = baseLength;
-            chosenLength = baseWidth;
-            rotated = true;
-            candidate = rotatedCandidate;
-          } else {
-            cursorX = 0;
-            cursorZ += rowDepth;
-            rowDepth = 0;
-
-            candidate = {
-              xCm: cursorX,
-              zCm: cursorZ,
-              widthCm: chosenWidth,
-              lengthCm: chosenLength,
-              totalHeightCm: baseHeight,
-            };
-
-            if (!canPlaceAt(candidate, floorPlaced, container)) {
-              const rotatedNextRowCandidate = {
-                xCm: cursorX,
-                zCm: cursorZ,
-                widthCm: baseLength,
-                lengthCm: baseWidth,
-                totalHeightCm: baseHeight,
-              };
-
-              if (canPlaceAt(rotatedNextRowCandidate, floorPlaced, container)) {
-                chosenWidth = baseLength;
-                chosenLength = baseWidth;
-                rotated = true;
-                candidate = rotatedNextRowCandidate;
-              } else {
-                unplaced.push({
-                  id: placementId,
-                  lotId: lot.id,
-                  lotNumber: lot.lotNumber || `Lot ${lotIndex + 1}`,
-                  palletLineId: line.id,
-                  palletMaterialCode: line.palletMaterialCode || line.palletMaterialName || '-',
-                  reason: 'NO_FLOOR_SPACE',
-                  widthCm: baseWidth,
-                  lengthCm: baseLength,
-                  heightCm: baseHeight,
-                  weightKg: baseWeight,
-                });
-                continue;
-              }
-            }
-          }
-        }
-
-        const placement = createPlacement({
-          placementId,
+        const request: FloorRequest = {
+          placementId: `${lot.id}:${line.id}:${i + 1}`,
           lot,
           line,
           lotColor,
-          xCm: candidate.xCm,
-          yCm: 0,
-          zCm: candidate.zCm,
-          widthCm: chosenWidth,
-          lengthCm: chosenLength,
-          rotated,
+          baseWidth,
+          baseLength,
+          baseHeight,
+          baseWeight,
           stackGroup,
           stackOrder,
-        });
+        };
 
-        placements.push(placement);
-        floorPlaced.push(placement);
-
-        currentGroupSlots.push({
-          xCm: placement.xCm,
-          zCm: placement.zCm,
-          widthCm: placement.widthCm,
-          lengthCm: placement.lengthCm,
-          baseTopYForNextLevelCm: placement.heightCm,
-          rotated: placement.rotated,
-        });
-
-        cursorX += chosenWidth;
-        rowDepth = Math.max(rowDepth, chosenLength);
-      }
-
-      if (stackGroup && currentGroupSlots.length > 0) {
-        stackSlotsByGroup.set(stackGroup, currentGroupSlots);
+        if (stackGroup && stackOrder > 1) {
+          upperStackRequests.push(request);
+        } else {
+          floorRequests.push(request);
+        }
       }
     });
   });
 
+  return {
+    floorRequests,
+    upperStackRequests,
+  };
+}
+
+function chooseBestCandidate(
+  request: FloorRequest,
+  freeRects: FreeRect[],
+): PlacementCandidate | null {
+  let best: PlacementCandidate | null = null;
+
+  const orientations = [
+    {
+      widthCm: request.baseWidth,
+      lengthCm: request.baseLength,
+      rotated: false,
+    },
+    {
+      widthCm: request.baseLength,
+      lengthCm: request.baseWidth,
+      rotated: true,
+    },
+  ].filter(
+    (item, index, list) =>
+      index ===
+      list.findIndex(
+        (other) =>
+          other.widthCm === item.widthCm &&
+          other.lengthCm === item.lengthCm &&
+          other.rotated === item.rotated,
+      ),
+  );
+
+  freeRects.forEach((rect: FreeRect, rectIndex: number) => {
+    orientations.forEach((orientation) => {
+      if (
+        orientation.widthCm > rect.widthCm ||
+        orientation.lengthCm > rect.lengthCm
+      ) {
+        return;
+      }
+
+      const leftoverHoriz = rect.widthCm - orientation.widthCm;
+      const leftoverVert = rect.lengthCm - orientation.lengthCm;
+
+      const candidate: PlacementCandidate = {
+        rectIndex,
+        xCm: rect.xCm,
+        zCm: rect.zCm,
+        widthCm: orientation.widthCm,
+        lengthCm: orientation.lengthCm,
+        rotated: orientation.rotated,
+        shortSideFit: Math.min(leftoverHoriz, leftoverVert),
+        longSideFit: Math.max(leftoverHoriz, leftoverVert),
+        areaFit: rect.widthCm * rect.lengthCm - orientation.widthCm * orientation.lengthCm,
+      };
+
+      if (!best) {
+        best = candidate;
+        return;
+      }
+
+      if (candidate.shortSideFit < best.shortSideFit) {
+        best = candidate;
+        return;
+      }
+
+      if (
+        candidate.shortSideFit === best.shortSideFit &&
+        candidate.longSideFit < best.longSideFit
+      ) {
+        best = candidate;
+        return;
+      }
+
+      if (
+        candidate.shortSideFit === best.shortSideFit &&
+        candidate.longSideFit === best.longSideFit &&
+        candidate.areaFit < best.areaFit
+      ) {
+        best = candidate;
+      }
+    });
+  });
+
+  return best;
+}
+
+function splitFreeRect(
+  rect: FreeRect,
+  placed: PlacementCandidate,
+): FreeRect[] {
+  const result: FreeRect[] = [];
+
+  const rightWidth = rect.widthCm - placed.widthCm;
+  if (rightWidth > 0) {
+    result.push({
+      xCm: rect.xCm + placed.widthCm,
+      zCm: rect.zCm,
+      widthCm: rightWidth,
+      lengthCm: rect.lengthCm,
+    });
+  }
+
+  const bottomLength = rect.lengthCm - placed.lengthCm;
+  if (bottomLength > 0) {
+    result.push({
+      xCm: rect.xCm,
+      zCm: rect.zCm + placed.lengthCm,
+      widthCm: placed.widthCm,
+      lengthCm: bottomLength,
+    });
+  }
+
+  return result;
+}
+
+function rectContains(a: FreeRect, b: FreeRect): boolean {
+  return (
+    b.xCm >= a.xCm &&
+    b.zCm >= a.zCm &&
+    b.xCm + b.widthCm <= a.xCm + a.widthCm &&
+    b.zCm + b.lengthCm <= a.zCm + a.lengthCm
+  );
+}
+
+function pruneFreeRects(rects: FreeRect[]): FreeRect[] {
+  return rects.filter((rect: FreeRect, index: number) => {
+    return !rects.some((other: FreeRect, otherIndex: number) => {
+      if (index === otherIndex) {
+        return false;
+      }
+
+      return rectContains(other, rect);
+    });
+  });
+}
+
+function sortRequestsForPacking(requests: FloorRequest[]): FloorRequest[] {
+  return [...requests].sort((a: FloorRequest, b: FloorRequest) => {
+    const areaA = a.baseWidth * a.baseLength;
+    const areaB = b.baseWidth * b.baseLength;
+
+    if (areaA !== areaB) {
+      return areaB - areaA;
+    }
+
+    if (a.baseHeight !== b.baseHeight) {
+      return b.baseHeight - a.baseHeight;
+    }
+
+    return b.baseWeight - a.baseWeight;
+  });
+}
+
+function packFloorRequests(params: {
+  floorRequests: FloorRequest[];
+  container: ContainerDimensions;
+}): {
+  placements: ContainerLoadPlanPlacement[];
+  unplaced: ContainerLoadPlanUnplacedItem[];
+  stackSlotsByGroup: Map<string, StackBaseSlot[]>;
+} {
+  const { floorRequests, container } = params;
+
+  const placements: ContainerLoadPlanPlacement[] = [];
+  const unplaced: ContainerLoadPlanUnplacedItem[] = [];
+  const stackSlotsByGroup = new Map<string, StackBaseSlot[]>();
+
+  let freeRects: FreeRect[] = [
+    {
+      xCm: 0,
+      zCm: 0,
+      widthCm: container.innerWidthCm,
+      lengthCm: container.innerLengthCm,
+    },
+  ];
+
+  const sortedRequests = sortRequestsForPacking(floorRequests);
+
+  for (const request of sortedRequests) {
+    if (request.baseHeight > container.innerHeightCm) {
+      unplaced.push({
+        id: request.placementId,
+        lotId: request.lot.id,
+        lotNumber: request.lot.lotNumber || '-',
+        palletLineId: request.line.id,
+        palletMaterialCode:
+          request.line.palletMaterialCode || request.line.palletMaterialName || '-',
+        reason: 'HEIGHT_LIMIT',
+        widthCm: request.baseWidth,
+        lengthCm: request.baseLength,
+        heightCm: request.baseHeight,
+        weightKg: request.baseWeight,
+      });
+      continue;
+    }
+
+    const candidate = chooseBestCandidate(request, freeRects);
+
+    if (!candidate) {
+      unplaced.push({
+        id: request.placementId,
+        lotId: request.lot.id,
+        lotNumber: request.lot.lotNumber || '-',
+        palletLineId: request.line.id,
+        palletMaterialCode:
+          request.line.palletMaterialCode || request.line.palletMaterialName || '-',
+        reason: 'NO_FLOOR_SPACE',
+        widthCm: request.baseWidth,
+        lengthCm: request.baseLength,
+        heightCm: request.baseHeight,
+        weightKg: request.baseWeight,
+      });
+      continue;
+    }
+
+    const placement = createPlacement({
+      placementId: request.placementId,
+      lot: request.lot,
+      line: request.line,
+      lotColor: request.lotColor,
+      xCm: candidate.xCm,
+      yCm: 0,
+      zCm: candidate.zCm,
+      widthCm: candidate.widthCm,
+      lengthCm: candidate.lengthCm,
+      rotated: candidate.rotated,
+      stackGroup: request.stackGroup,
+      stackOrder: request.stackOrder,
+    });
+
+    placements.push(placement);
+
+    const targetRect = freeRects[candidate.rectIndex];
+    const nextRects = splitFreeRect(targetRect, candidate);
+
+    freeRects = freeRects.filter((_, index: number) => index !== candidate.rectIndex);
+    freeRects.push(...nextRects);
+    freeRects = pruneFreeRects(freeRects);
+
+    if (request.stackGroup) {
+      const slots = stackSlotsByGroup.get(request.stackGroup) ?? [];
+      slots.push({
+        xCm: placement.xCm,
+        zCm: placement.zCm,
+        widthCm: placement.widthCm,
+        lengthCm: placement.lengthCm,
+        baseTopYForNextLevelCm: placement.heightCm,
+        rotated: placement.rotated,
+      });
+      stackSlotsByGroup.set(request.stackGroup, slots);
+    }
+  }
+
+  return {
+    placements,
+    unplaced,
+    stackSlotsByGroup,
+  };
+}
+
+function packUpperStacks(params: {
+  upperStackRequests: FloorRequest[];
+  stackSlotsByGroup: Map<string, StackBaseSlot[]>;
+  container: ContainerDimensions;
+}): {
+  placements: ContainerLoadPlanPlacement[];
+  unplaced: ContainerLoadPlanUnplacedItem[];
+} {
+  const { upperStackRequests, stackSlotsByGroup, container } = params;
+  const placements: ContainerLoadPlanPlacement[] = [];
+  const unplaced: ContainerLoadPlanUnplacedItem[] = [];
+
+  upperStackRequests.forEach((request: FloorRequest) => {
+    const slots = request.stackGroup
+      ? stackSlotsByGroup.get(request.stackGroup) ?? []
+      : [];
+
+    if (slots.length === 0) {
+      unplaced.push({
+        id: request.placementId,
+        lotId: request.lot.id,
+        lotNumber: request.lot.lotNumber || '-',
+        palletLineId: request.line.id,
+        palletMaterialCode:
+          request.line.palletMaterialCode || request.line.palletMaterialName || '-',
+        reason: 'MISSING_STACK_BASE',
+        widthCm: request.baseWidth,
+        lengthCm: request.baseLength,
+        heightCm: request.baseHeight,
+        weightKg: request.baseWeight,
+      });
+      return;
+    }
+
+    const slot = slots.shift();
+
+    if (!slot) {
+      return;
+    }
+
+    if (slot.baseTopYForNextLevelCm + request.baseHeight > container.innerHeightCm) {
+      unplaced.push({
+        id: request.placementId,
+        lotId: request.lot.id,
+        lotNumber: request.lot.lotNumber || '-',
+        palletLineId: request.line.id,
+        palletMaterialCode:
+          request.line.palletMaterialCode || request.line.palletMaterialName || '-',
+        reason: 'HEIGHT_LIMIT',
+        widthCm: slot.widthCm,
+        lengthCm: slot.lengthCm,
+        heightCm: request.baseHeight,
+        weightKg: request.baseWeight,
+      });
+      return;
+    }
+
+    const placement = createPlacement({
+      placementId: request.placementId,
+      lot: request.lot,
+      line: request.line,
+      lotColor: request.lotColor,
+      xCm: slot.xCm,
+      yCm: slot.baseTopYForNextLevelCm,
+      zCm: slot.zCm,
+      widthCm: slot.widthCm,
+      lengthCm: slot.lengthCm,
+      rotated: slot.rotated,
+      stackGroup: request.stackGroup,
+      stackOrder: request.stackOrder,
+    });
+
+    placements.push(placement);
+
+    slot.baseTopYForNextLevelCm += placement.heightCm;
+    slots.push(slot);
+
+    if (request.stackGroup) {
+      stackSlotsByGroup.set(request.stackGroup, slots);
+    }
+  });
+
+  return {
+    placements,
+    unplaced,
+  };
+}
+
+export function buildContainerLoadPlan({
+  lots,
+  container,
+}: BuildContainerLoadPlanParams): ContainerLoadPlan {
+  const legend = buildLegend(lots);
+  const colorByLotId = new Map(
+    legend.map((item: ContainerLoadPlanLegendItem) => [item.lotId, item.color]),
+  );
+
+  const { floorRequests, upperStackRequests } = buildFloorRequests(
+    lots,
+    colorByLotId,
+  );
+
+  const floorResult = packFloorRequests({
+    floorRequests,
+    container,
+  });
+
+  const upperResult = packUpperStacks({
+    upperStackRequests,
+    stackSlotsByGroup: floorResult.stackSlotsByGroup,
+    container,
+  });
+
+  const placements = [...floorResult.placements, ...upperResult.placements];
+  const unplaced = [...floorResult.unplaced, ...upperResult.unplaced];
+
   const containerFloorArea = container.innerWidthCm * container.innerLengthCm;
-  const occupiedArea = floorPlaced.reduce(
-    (sum, item) => sum + item.widthCm * item.lengthCm,
+  const occupiedArea = floorResult.placements.reduce(
+    (sum: number, item: ContainerLoadPlanPlacement) => sum + item.widthCm * item.lengthCm,
     0,
   );
 
@@ -774,7 +1176,7 @@ export function buildContainerLoadPlan({
     occupancyPercent:
       containerFloorArea > 0 ? round((occupiedArea / containerFloorArea) * 100, 2) : 0,
     totalPlacedWeightKg: round(
-      placements.reduce((sum, item) => sum + item.weightKg, 0),
+      placements.reduce((sum: number, item: ContainerLoadPlanPlacement) => sum + item.weightKg, 0),
       3,
     ),
     totalPlacedUnits: placements.length,
@@ -793,52 +1195,64 @@ export function mapLoadPlanReasonToLabel(
 
 export function buildLoadUnitsForPlacement(
   placement: ContainerLoadPlanPlacement,
-  unitsPerPalletRaw?: number | string | null,
-) {
-  const unitsPerPallet = Math.max(1, toPositiveNumber(unitsPerPalletRaw, 1));
+  config?: LoadUnitPackingConfig,
+): DebugPackedLayout {
+  const unitsPerPallet =
+    typeof config === 'object' && config !== null
+      ? Math.max(1, toPositiveNumber(config.unitsPerPallet, 1))
+      : Math.max(1, toPositiveNumber(config, 1));
 
-  const packed =
-    placement.shape === 'cylinder'
-      ? fitDrumsOnPallet(
-          placement.widthCm,
-          placement.lengthCm,
-          unitsPerPallet,
-          {
-            id: placement.lotId,
-            lotNumber: placement.lotNumber,
-            productId: placement.productId,
-            productName: placement.productName,
-            productCode: placement.productCode,
-            loadMaterialId: placement.loadMaterialId,
-            loadMaterialCode: placement.loadMaterialCode,
-            loadMaterialName: placement.loadMaterialName,
-            loadMaterialType: placement.loadMaterialType,
-            loadUnitWidthCm: placement.loadWidthCm,
-            loadUnitLengthCm: placement.loadLengthCm,
-            loadUnitHeightCm: placement.loadHeightCm,
-            palletLines: [],
-          },
+  const unitsPerRow =
+    typeof config === 'object' && config !== null
+      ? Math.max(
+          1,
+          toPositiveNumber(config.unitsPerRow, unitsPerPallet),
         )
-      : fitBoxesOnPallet(
-          placement.widthCm,
-          placement.lengthCm,
-          unitsPerPallet,
-          {
-            id: placement.lotId,
-            lotNumber: placement.lotNumber,
-            productId: placement.productId,
-            productName: placement.productName,
-            productCode: placement.productCode,
-            loadMaterialId: placement.loadMaterialId,
-            loadMaterialCode: placement.loadMaterialCode,
-            loadMaterialName: placement.loadMaterialName,
-            loadMaterialType: placement.loadMaterialType,
-            loadUnitWidthCm: placement.loadWidthCm,
-            loadUnitLengthCm: placement.loadLengthCm,
-            loadUnitHeightCm: placement.loadHeightCm,
-            palletLines: [],
-          },
-        );
+      : unitsPerPallet;
 
-  return packed;
+  if (placement.shape === 'cylinder') {
+    return fitDrumsOnPallet(
+      placement.widthCm,
+      placement.lengthCm,
+      unitsPerPallet,
+      {
+        id: placement.lotId,
+        lotNumber: placement.lotNumber,
+        productId: placement.productId,
+        productName: placement.productName,
+        productCode: placement.productCode,
+        loadMaterialId: placement.loadMaterialId,
+        loadMaterialCode: placement.loadMaterialCode,
+        loadMaterialName: placement.loadMaterialName,
+        loadMaterialType: placement.loadMaterialType,
+        loadUnitWidthCm: placement.loadWidthCm,
+        loadUnitLengthCm: placement.loadLengthCm,
+        loadUnitHeightCm: placement.loadHeightCm,
+        palletLines: [],
+      },
+    );
+  }
+
+  return fitBoxesOnPallet(
+    placement.widthCm,
+    placement.lengthCm,
+    unitsPerPallet,
+    {
+      id: placement.lotId,
+      lotNumber: placement.lotNumber,
+      productId: placement.productId,
+      productName: placement.productName,
+      productCode: placement.productCode,
+      loadMaterialId: placement.loadMaterialId,
+      loadMaterialCode: placement.loadMaterialCode,
+      loadMaterialName: placement.loadMaterialName,
+      loadMaterialType: placement.loadMaterialType,
+      loadUnitWidthCm: placement.loadWidthCm,
+      loadUnitLengthCm: placement.loadLengthCm,
+      loadUnitHeightCm: placement.loadHeightCm,
+      palletLines: [],
+    },
+    unitsPerRow,
+    placement.loadHeightCm,
+  );
 }

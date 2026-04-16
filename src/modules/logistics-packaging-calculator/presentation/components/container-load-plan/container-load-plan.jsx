@@ -3,6 +3,8 @@ import { CONTAINER_TYPES } from '../../../domain/types/container-load-plan.type'
 import { useContainerLoadPlan } from '../../../application/hooks/use-container-load-plan';
 import { ContainerLoadPlanScene } from './container-load-plan-scene';
 import { mapLoadPlanReasonToLabel } from '../../../domain/services/container-load-plan.service';
+import { exportContainerLoadPlanPdf } from '../../utils/export-container-load-plan-pdf';
+import logoLogin from '../../../../../assets/logo-login.png';
 import './container-load-plan.css';
 
 function buildLotInputs(scenario, products = [], materials = []) {
@@ -118,17 +120,33 @@ export function ContainerLoadPlan({
     },
   });
 
-  const unitsPerPalletByLineId = useMemo(() => {
-    const map = new Map();
+  const loadUnitPackingByLineId = useMemo(() => {
+  const map = new Map();
 
-    scenario.values.lots.forEach((lot) => {
-      lot.values.palletLines.forEach((line) => {
-        map.set(line.id, line.unitsPerPallet);
+  scenario.values.lots.forEach((lot) => {
+    lot.values.palletLines.forEach((line) => {
+      map.set(line.id, {
+        unitsPerPallet:
+          line.unitsPerPallet ??
+          line.totalPackagesPerPallet ??
+          line.packageCount ??
+          1,
+        unitsPerRow:
+          line.unitsPerRow ??
+          line.packagesPerRow ??
+          line.itemsPerRow ??
+          line.perRowCount ??
+          line.unitsPerSequence ??
+          line.sequenceCount ??
+          line.packagesInRow ??
+          line.rowCount ??
+          null,
       });
     });
+  });
 
-    return map;
-  }, [scenario.values.lots]);
+  return map;
+}, [scenario.values.lots]);
 
   const handleToggleLot = (lotId) => {
     setSelectedLotIds((current) =>
@@ -165,6 +183,31 @@ export function ContainerLoadPlan({
     downloadDataUrl(dataUrl, `container-load-plan-${containerType}.png`);
   };
 
+  const handleExportPdf = async () => {
+    const snapshotDataUrl = sceneCanvasRef.current
+      ? sceneCanvasRef.current.toDataURL('image/png')
+      : null;
+
+    await exportContainerLoadPlanPdf({
+      scenario,
+      products,
+      materials,
+      logoSrc: logoLogin,
+      snapshotDataUrl,
+      companyName: 'Sabirlar Findik',
+      containerSummary: {
+        containerLabel: container.label,
+        totalPlacedUnits: data?.totalPlacedUnits ?? 0,
+        totalWeightKg: data?.totalPlacedWeightKg ?? 0,
+        occupancyPercent: data?.occupancyPercent ?? 0,
+        unplacedCount: data?.unplaced.length ?? 0,
+        containerWidth: container.innerWidthCm,
+        containerLength: container.innerLengthCm,
+        containerHeight: container.innerHeightCm,
+      },
+    });
+  };
+
   const handleResetCamera = () => {
     setCameraPreset('iso');
 
@@ -192,6 +235,9 @@ export function ContainerLoadPlan({
         <div className="lp-load-plan__actions">
           <ActionButton variant="ghost" onClick={handleExportJson} title="JSON dışa aktar">
             {'{}'}
+          </ActionButton>
+          <ActionButton variant="ghost" onClick={handleExportPdf} title="PDF dışa aktar">
+            PDF
           </ActionButton>
           <ActionButton variant="primary" onClick={handleExportPng} title="PNG dışa aktar">
             PNG
@@ -302,7 +348,7 @@ export function ContainerLoadPlan({
             cameraPreset={cameraPreset}
             controlsRef={controlsRef}
             sceneCanvasRef={sceneCanvasRef}
-            unitsPerPalletByLineId={unitsPerPalletByLineId}
+            loadUnitPackingByLineId={loadUnitPackingByLineId}
           />
         ) : (
           <div className="lp-empty-state">Henüz görselleştirilecek veri yok.</div>
