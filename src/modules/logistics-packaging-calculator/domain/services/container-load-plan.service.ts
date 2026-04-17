@@ -406,97 +406,107 @@ function fitBoxesOnPallet(
     toPositiveNumber(lot.loadUnitHeightCm, totalLoadHeightCm ?? 30),
   );
 
-  const candidateGaps = [2, 1, 0];
+  const candidateGaps = [1, 0];
+  const softOverflowToleranceCm = 5;
 
   type BaseGrid = {
     rows: number;
     cols: number;
     gap: number;
-    boxWidthCm: number;
-    boxLengthCm: number;
+    unitWidthCm: number;
+    unitLengthCm: number;
     positions: Array<{ xOffsetCm: number; zOffsetCm: number }>;
     capacity: number;
+    overflowCm: number;
     score: number;
   };
 
   let bestGrid: BaseGrid | null = null;
+  let bestFallbackGrid: BaseGrid | null = null;
+
+  const orientationOptions = [
+    { unitWidthCm: rawBoxWidth, unitLengthCm: rawBoxLength },
+    { unitWidthCm: rawBoxLength, unitLengthCm: rawBoxWidth },
+  ].filter(
+    (item, index, list) =>
+      index ===
+      list.findIndex(
+        (other) =>
+          other.unitWidthCm === item.unitWidthCm &&
+          other.unitLengthCm === item.unitLengthCm,
+      ),
+  );
 
   for (const gap of candidateGaps) {
-    for (let rows = 1; rows <= requestedUnitsPerRow; rows += 1) {
-      const cols = Math.ceil(requestedUnitsPerRow / rows);
-
-      const availableWidth = palletWidthCm - (cols - 1) * gap;
-      const availableLength = palletLengthCm - (rows - 1) * gap;
-
-      if (availableWidth <= 0 || availableLength <= 0) {
-        continue;
-      }
-
-      const cellWidth = availableWidth / cols;
-      const cellLength = availableLength / rows;
-
-      if (cellWidth <= 0 || cellLength <= 0) {
-        continue;
-      }
-
-      const widthScale = cellWidth / rawBoxWidth;
-      const lengthScale = cellLength / rawBoxLength;
-      const scale = Math.min(widthScale, lengthScale, 1);
-
-      const boxWidthCm = Math.max(4, rawBoxWidth * scale - 0.8);
-      const boxLengthCm = Math.max(4, rawBoxLength * scale - 0.8);
-
-      const usedWidth = cols * boxWidthCm + (cols - 1) * gap;
-      const usedLength = rows * boxLengthCm + (rows - 1) * gap;
-
-      if (usedWidth > palletWidthCm || usedLength > palletLengthCm) {
-        continue;
-      }
-
-      const startX = (palletWidthCm - usedWidth) / 2 + boxWidthCm / 2;
-      const startZ = (palletLengthCm - usedLength) / 2 + boxLengthCm / 2;
-
-      const positions: Array<{ xOffsetCm: number; zOffsetCm: number }> = [];
-
-      // Soldan saga, ondeki satirdan arkaya dogru
-      for (let row = 0; row < rows; row += 1) {
-        for (let col = 0; col < cols; col += 1) {
-          positions.push({
-            xOffsetCm: round(startX + col * (boxWidthCm + gap), 2),
-            zOffsetCm: round(startZ + row * (boxLengthCm + gap), 2),
-          });
+    for (const orientation of orientationOptions) {
+      for (let rows = 1; rows <= requestedUnitsPerRow; rows += 1) {
+        if (requestedUnitsPerRow % rows !== 0) {
+          continue;
         }
-      }
 
-      const capacity = rows * cols;
-      const emptySlots = capacity - requestedUnitsPerRow;
-      const footprintScore = usedWidth * usedLength;
-      const proportionPenalty =
-        Math.abs((boxWidthCm / boxLengthCm) - (rawBoxWidth / rawBoxLength)) * 100;
-      const wastedSlotsPenalty = emptySlots * 12;
-      const rowPenalty = Math.abs(capacity - requestedUnitsPerRow) * 8;
+        const cols = requestedUnitsPerRow / rows;
 
-      const score =
-        footprintScore - proportionPenalty - wastedSlotsPenalty - rowPenalty;
+        const usedWidth = cols * orientation.unitWidthCm + (cols - 1) * gap;
+        const usedLength = rows * orientation.unitLengthCm + (rows - 1) * gap;
 
-      const candidate: BaseGrid = {
-        rows,
-        cols,
-        gap,
-        boxWidthCm,
-        boxLengthCm,
-        positions,
-        capacity,
-        score,
-      };
+        const overflowWidth = Math.max(0, usedWidth - palletWidthCm);
+        const overflowLength = Math.max(0, usedLength - palletLengthCm);
+        const overflowCm = overflowWidth + overflowLength;
 
-      if (!bestGrid || candidate.score > bestGrid.score) {
-        bestGrid = candidate;
+        const startX =
+          (palletWidthCm - usedWidth) / 2 + orientation.unitWidthCm / 2;
+        const startZ =
+          (palletLengthCm - usedLength) / 2 + orientation.unitLengthCm / 2;
+
+        const positions: Array<{ xOffsetCm: number; zOffsetCm: number }> = [];
+
+        for (let row = 0; row < rows; row += 1) {
+          for (let col = 0; col < cols; col += 1) {
+            positions.push({
+              xOffsetCm: round(
+                startX + col * (orientation.unitWidthCm + gap),
+                2,
+              ),
+              zOffsetCm: round(
+                startZ + row * (orientation.unitLengthCm + gap),
+                2,
+              ),
+            });
+          }
+        }
+
+        const shapePenalty = Math.abs(rows - cols) * 4;
+        const overflowPenalty = overflowCm * 1000;
+        const score = overflowPenalty + shapePenalty + gap * 10;
+
+        const candidate: BaseGrid = {
+          rows,
+          cols,
+          gap,
+          unitWidthCm: orientation.unitWidthCm,
+          unitLengthCm: orientation.unitLengthCm,
+          positions,
+          capacity: rows * cols,
+          overflowCm,
+          score,
+        };
+
+        if (overflowCm <= softOverflowToleranceCm) {
+          if (!bestGrid || candidate.score < bestGrid.score) {
+            bestGrid = candidate;
+          }
+        }
+
+        if (!bestFallbackGrid || candidate.score < bestFallbackGrid.score) {
+          bestFallbackGrid = candidate;
+        }
       }
     }
   }
 
-  if (!bestGrid) {
+  const chosenGrid = bestGrid ?? bestFallbackGrid;
+
+  if (!chosenGrid) {
     const fallbackHeight = resolvedTotalLoadHeightCm / Math.max(1, unitCount);
 
     return {
@@ -504,8 +514,8 @@ function fitBoxesOnPallet(
       palletWidthCm,
       palletLengthCm,
       unitCount,
-      unitWidthCm: round(Math.min(rawBoxWidth, palletWidthCm - 1), 2),
-      unitLengthCm: round(Math.min(rawBoxLength, palletLengthCm - 1), 2),
+      unitWidthCm: round(rawBoxWidth, 2),
+      unitLengthCm: round(rawBoxLength, 2),
       chosenGapCm: 0,
       rows: 1,
       cols: 1,
@@ -514,14 +524,14 @@ function fitBoxesOnPallet(
         xOffsetCm: round(palletWidthCm / 2, 2),
         zOffsetCm: round(palletLengthCm / 2, 2),
         yOffsetCm: round(layerIndex * fallbackHeight, 2),
-        widthCm: round(Math.min(rawBoxWidth, palletWidthCm - 1), 2),
-        lengthCm: round(Math.min(rawBoxLength, palletLengthCm - 1), 2),
+        widthCm: round(rawBoxWidth, 2),
+        lengthCm: round(rawBoxLength, 2),
         heightCm: round(fallbackHeight, 2),
       })),
     };
   }
 
-  const layerCapacity = bestGrid.capacity;
+  const layerCapacity = chosenGrid.capacity;
   const layerCount = Math.max(1, Math.ceil(unitCount / layerCapacity));
   const verticalGapCm = layerCount > 1 ? 0.8 : 0;
 
@@ -531,121 +541,119 @@ function fitBoxesOnPallet(
   );
 
   const placements: LoadUnitPlacement[] = [];
+  let placedCount = 0;
 
- let placedCount = 0;
-
-function buildCenteredBlockPositions(
-  count: number,
-  rows: number,
-  cols: number,
-  palletWidthCm: number,
-  palletLengthCm: number,
-  boxWidthCm: number,
-  boxLengthCm: number,
-  gapCm: number,
-): Array<{ xOffsetCm: number; zOffsetCm: number }> {
-  if (count <= 0) {
-    return [];
-  }
-
-  let bestRows = 1;
-  let bestCols = count;
-  let bestScore = Number.POSITIVE_INFINITY;
-
-  for (let candidateRows = 1; candidateRows <= count; candidateRows += 1) {
-    const candidateCols = Math.ceil(count / candidateRows);
-
-    if (candidateRows > rows || candidateCols > cols) {
-      continue;
+  function buildCenteredBlockPositions(
+    count: number,
+    rows: number,
+    cols: number,
+    palletWidthCmLocal: number,
+    palletLengthCmLocal: number,
+    unitWidthCmLocal: number,
+    unitLengthCmLocal: number,
+    gapCm: number,
+  ): Array<{ xOffsetCm: number; zOffsetCm: number }> {
+    if (count <= 0) {
+      return [];
     }
 
-    const diff = Math.abs(candidateRows - candidateCols);
-    const area = candidateRows * candidateCols;
-    const emptyCells = area - count;
+    let bestRows = 1;
+    let bestCols = count;
+    let bestScore = Number.POSITIVE_INFINITY;
 
-    const score = diff * 100 + emptyCells * 10 + area;
+    for (let candidateRows = 1; candidateRows <= count; candidateRows += 1) {
+      const candidateCols = Math.ceil(count / candidateRows);
 
-    if (score < bestScore) {
-      bestScore = score;
-      bestRows = candidateRows;
-      bestCols = candidateCols;
+      if (candidateRows > rows || candidateCols > cols) {
+        continue;
+      }
+
+      const diff = Math.abs(candidateRows - candidateCols);
+      const area = candidateRows * candidateCols;
+      const emptyCells = area - count;
+      const score = diff * 100 + emptyCells * 10 + area;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestRows = candidateRows;
+        bestCols = candidateCols;
+      }
     }
+
+    const blockWidthCm =
+      bestCols * unitWidthCmLocal + (bestCols - 1) * gapCm;
+    const blockLengthCm =
+      bestRows * unitLengthCmLocal + (bestRows - 1) * gapCm;
+
+    const startX =
+      (palletWidthCmLocal - blockWidthCm) / 2 + unitWidthCmLocal / 2;
+    const startZ =
+      (palletLengthCmLocal - blockLengthCm) / 2 + unitLengthCmLocal / 2;
+
+    const positions: Array<{ xOffsetCm: number; zOffsetCm: number }> = [];
+
+    for (let row = 0; row < bestRows; row += 1) {
+      for (let col = 0; col < bestCols; col += 1) {
+        if (positions.length >= count) {
+          break;
+        }
+
+        positions.push({
+          xOffsetCm: round(startX + col * (unitWidthCmLocal + gapCm), 2),
+          zOffsetCm: round(startZ + row * (unitLengthCmLocal + gapCm), 2),
+        });
+      }
+    }
+
+    return positions;
   }
 
-  const blockWidthCm = bestCols * boxWidthCm + (bestCols - 1) * gapCm;
-  const blockLengthCm = bestRows * boxLengthCm + (bestRows - 1) * gapCm;
+  for (let layerIndex = 0; layerIndex < layerCount; layerIndex += 1) {
+    const remaining = unitCount - placedCount;
+    const countInThisLayer = Math.min(chosenGrid.positions.length, remaining);
 
-  const startX = (palletWidthCm - blockWidthCm) / 2 + boxWidthCm / 2;
-  const startZ = (palletLengthCm - blockLengthCm) / 2 + boxLengthCm / 2;
+    const positionsForLayer =
+      countInThisLayer === chosenGrid.positions.length
+        ? chosenGrid.positions
+        : buildCenteredBlockPositions(
+            countInThisLayer,
+            chosenGrid.rows,
+            chosenGrid.cols,
+            palletWidthCm,
+            palletLengthCm,
+            chosenGrid.unitWidthCm,
+            chosenGrid.unitLengthCm,
+            chosenGrid.gap,
+          );
 
-  const positions: Array<{ xOffsetCm: number; zOffsetCm: number }> = [];
-
-  for (let row = 0; row < bestRows; row += 1) {
-    for (let col = 0; col < bestCols; col += 1) {
-      if (positions.length >= count) {
+    for (const position of positionsForLayer) {
+      if (placedCount >= unitCount) {
         break;
       }
 
-      positions.push({
-        xOffsetCm: round(startX + col * (boxWidthCm + gapCm), 2),
-        zOffsetCm: round(startZ + row * (boxLengthCm + gapCm), 2),
+      placements.push({
+        xOffsetCm: position.xOffsetCm,
+        zOffsetCm: position.zOffsetCm,
+        yOffsetCm: round(layerIndex * (unitHeightCm + verticalGapCm), 2),
+        widthCm: round(chosenGrid.unitWidthCm, 2),
+        lengthCm: round(chosenGrid.unitLengthCm, 2),
+        heightCm: round(unitHeightCm, 2),
       });
+
+      placedCount += 1;
     }
   }
-
-  return positions;
-}
-
-// Mantik:
-// - tam dolu katlar bestGrid uzerinden ayni duzende gider
-// - eksik son kat varsa kutular kompakt bir blok halinde dizilir
-// - bu blok hem X hem Z ekseninde palet ustunde ortalanir
-for (let layerIndex = 0; layerIndex < layerCount; layerIndex += 1) {
-  const remaining = unitCount - placedCount;
-  const countInThisLayer = Math.min(bestGrid.positions.length, remaining);
-
-  const positionsForLayer =
-    countInThisLayer === bestGrid.positions.length
-      ? bestGrid.positions
-      : buildCenteredBlockPositions(
-          countInThisLayer,
-          bestGrid.rows,
-          bestGrid.cols,
-          palletWidthCm,
-          palletLengthCm,
-          bestGrid.boxWidthCm,
-          bestGrid.boxLengthCm,
-          bestGrid.gap,
-        );
-
-  for (const position of positionsForLayer) {
-    if (placedCount >= unitCount) {
-      break;
-    }
-
-    placements.push({
-      xOffsetCm: position.xOffsetCm,
-      zOffsetCm: position.zOffsetCm,
-      yOffsetCm: round(layerIndex * (unitHeightCm + verticalGapCm), 2),
-      widthCm: round(bestGrid.boxWidthCm, 2),
-      lengthCm: round(bestGrid.boxLengthCm, 2),
-      heightCm: round(unitHeightCm, 2),
-    });
-
-    placedCount += 1;
-  }
-}
 
   return {
     kind: 'box',
     palletWidthCm,
     palletLengthCm,
     unitCount,
-    unitWidthCm: round(rawBoxWidth, 2),
-    unitLengthCm: round(rawBoxLength, 2),
-    chosenGapCm: bestGrid.gap,
-    rows: bestGrid.rows,
-    cols: bestGrid.cols,
+    unitWidthCm: round(chosenGrid.unitWidthCm, 2),
+    unitLengthCm: round(chosenGrid.unitLengthCm, 2),
+    chosenGapCm: chosenGrid.gap,
+    rows: chosenGrid.rows,
+    cols: chosenGrid.cols,
     axis: 'row-major',
     placements,
   };
@@ -1204,16 +1212,20 @@ export function buildLoadUnitsForPlacement(
 
   const unitsPerRow =
     typeof config === 'object' && config !== null
-      ? Math.max(
-          1,
-          toPositiveNumber(config.unitsPerRow, unitsPerPallet),
-        )
+      ? Math.max(1, toPositiveNumber(config.unitsPerRow, unitsPerPallet))
       : unitsPerPallet;
+
+  // ÖNEMLİ:
+  // Palet üstü pattern konteyner içindeki döndürülmüş footprint'e göre değil,
+  // fiziksel palet ölçüsüne göre hesaplanmalı.
+  // Döndürme render tarafında uygulanacak.
+  const physicalPalletWidthCm = Math.min(placement.widthCm, placement.lengthCm);
+  const physicalPalletLengthCm = Math.max(placement.widthCm, placement.lengthCm);
 
   if (placement.shape === 'cylinder') {
     return fitDrumsOnPallet(
-      placement.widthCm,
-      placement.lengthCm,
+      physicalPalletWidthCm,
+      physicalPalletLengthCm,
       unitsPerPallet,
       {
         id: placement.lotId,
@@ -1234,8 +1246,8 @@ export function buildLoadUnitsForPlacement(
   }
 
   return fitBoxesOnPallet(
-    placement.widthCm,
-    placement.lengthCm,
+    physicalPalletWidthCm,
+    physicalPalletLengthCm,
     unitsPerPallet,
     {
       id: placement.lotId,

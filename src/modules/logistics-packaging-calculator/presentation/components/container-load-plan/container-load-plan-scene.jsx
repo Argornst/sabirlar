@@ -106,7 +106,7 @@ function TooltipCard({ item }) {
 }
 
 function PremiumEPALPallet({ item }) {
-  const visualInsetCm = 4;
+  const visualInsetCm = 8;
   const palletWidthCm = Math.max(10, item.widthCm - visualInsetCm);
   const palletLengthCm = Math.max(10, item.lengthCm - visualInsetCm);
   const palletHeightCm = Math.max(14, item.palletBaseHeightCm);
@@ -126,6 +126,7 @@ function PremiumEPALPallet({ item }) {
   const woodLight = '#deb07b';
   const woodMid = '#c78d58';
   const woodDark = '#ac723f';
+  const shadowColor = '#8b5e34';
 
   const topBoardCount = 5;
   const topBoardGap = width * 0.035;
@@ -165,6 +166,17 @@ function PremiumEPALPallet({ item }) {
 
   return (
     <group position={[0, height / 2, 0]}>
+      <mesh position={[0, -height / 2 - 0.003, 0]}>
+        <boxGeometry args={[width * 0.98, 0.006, length * 0.98]} />
+        <meshStandardMaterial
+          color={shadowColor}
+          transparent
+          opacity={0.18}
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
+
       {topBoardXs.map((x, index) => (
         <mesh key={`top-board-${index}`} position={[x, topY, 0]}>
           <boxGeometry args={[topBoardWidth, topDeckHeight, length]} />
@@ -245,7 +257,7 @@ function BoxUnit({
   color,
   isHovered,
 }) {
-  const visualInsetCm = 1.2;
+  const visualInsetCm = 4;
   const visualHeightInsetCm = 0.8;
 
   const renderWidthCm = Math.max(1, widthCm - visualInsetCm);
@@ -254,8 +266,12 @@ function BoxUnit({
 
   const x = cmToScene(xCm);
   const z = cmToScene(zCm);
-  const y = cmToScene(palletBaseHeightCm + yOffsetCm) + cmToScene(renderHeightCm) / 2;
-  const emissiveColor = isHovered ? new THREE.Color(color) : new THREE.Color('#000000');
+  const y =
+    cmToScene(palletBaseHeightCm + yOffsetCm) + cmToScene(renderHeightCm) / 2;
+
+  const emissiveColor = isHovered
+    ? new THREE.Color(color)
+    : new THREE.Color('#000000');
 
   return (
     <mesh position={[x, y, z]}>
@@ -281,11 +297,16 @@ function LoadUnits({ item, isHovered, packingConfig }) {
   const packed = buildLoadUnitsForPlacement(item, packingConfig);
   const unitPlacements = packed?.placements ?? [];
 
+  const physicalWidthCm = Math.min(item.widthCm, item.lengthCm);
+  const physicalLengthCm = Math.max(item.widthCm, item.lengthCm);
+  const isRotatedOnFloor = item.widthCm > item.lengthCm;
+  const rotationY = isRotatedOnFloor ? Math.PI / 2 : 0;
+
   return (
-    <group>
+    <group rotation={[0, rotationY, 0]}>
       {unitPlacements.map((unit, index) => {
-        const localXcm = unit.xOffsetCm - item.widthCm / 2;
-        const localZcm = unit.zOffsetCm - item.lengthCm / 2;
+        const localXcm = unit.xOffsetCm - physicalWidthCm / 2;
+        const localZcm = unit.zOffsetCm - physicalLengthCm / 2;
 
         return (
           <group key={`${item.id}-unit-${index + 1}`}>

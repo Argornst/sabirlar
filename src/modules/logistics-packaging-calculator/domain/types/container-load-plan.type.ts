@@ -10,7 +10,7 @@ export const CONTAINER_TYPES = {
   '40HC': {
     key: '40HC',
     label: '40 HC',
-    innerLengthCm: 1203,
+    innerLengthCm: 1190,
     innerWidthCm: 235,
     innerHeightCm: 269,
     maxPayloadKg: 28600,
