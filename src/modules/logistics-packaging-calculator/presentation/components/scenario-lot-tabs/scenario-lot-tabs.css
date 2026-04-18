@@ -1,0 +1,145 @@
+.scenario-lot-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scenario-lot-tabs__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.scenario-lot-tabs__header h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.scenario-lot-tabs__header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.scenario-lot-tabs__add-button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.scenario-lot-tabs__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.scenario-lot-tab-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: 0.18s ease;
+}
+
+.scenario-lot-tab-card:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.scenario-lot-tab-card.is-active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.scenario-lot-tab-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scenario-lot-tab-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.scenario-lot-tab-card__subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+.scenario-lot-tab-card__badge {
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.scenario-lot-tab-card__badge.status-valid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.scenario-lot-tab-card__badge.status-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.scenario-lot-tab-card__badge.status-invalid {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.scenario-lot-tab-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.scenario-lot-tab-card__stats span {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.scenario-lot-tab-card__stats strong {
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.scenario-lot-tab-card__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.scenario-lot-tab-card__actions button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.scenario-lot-tab-card__actions button.danger {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.scenario-lot-tab-card__actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

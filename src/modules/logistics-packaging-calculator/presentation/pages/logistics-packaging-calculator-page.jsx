@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
-  mapAggregateResultToSummaryItems,
+  BrushCleaning,
+  ChevronLeft,
+  ChevronRight,
+  FilePlus2,
+  Grid2X2,
+  History,
+  Loader2,
+  Package2,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
+import {
   useCreatePackagingScenarioMutation,
   useDeletePackagingScenarioMutation,
   usePackagingMaterialsQuery,
@@ -16,13 +29,13 @@ import { SupabasePackagingProductsRepository } from '../../infrastructure/reposi
 import { SupabasePackagingRulesRepository } from '../../infrastructure/repositories/supabase-packaging-rules.repository.js';
 import { SupabasePackagingScenariosRepository } from '../../infrastructure/repositories/supabase-packaging-scenarios.repository.js';
 import { CalculatorForm } from '../components/calculator-form/calculator-form';
-import { CalculationResultCards } from '../components/calculation-result-cards/calculation-result-cards';
 import { LogisticsPackagingLayout } from '../components/logistics-packaging-layout/logistics-packaging-layout';
 import { ScenarioHistory } from '../components/scenario-history/scenario-history';
 import { StackSummary } from '../components/stack-summary/stack-summary';
 import { LotSummary } from '../components/lot-summary/lot-summary';
-import './logistics-packaging-calculator-page.css';
 import { ContainerLoadPlan } from '../components/container-load-plan/container-load-plan';
+import { AggregateBar } from '../components/aggregate-bar/aggregate-bar';
+import './logistics-packaging-calculator-page.css';
 
 const productsRepository = new SupabasePackagingProductsRepository();
 const materialsRepository = new SupabasePackagingMaterialsRepository();
@@ -177,6 +190,11 @@ export function LogisticsPackagingCalculatorPage() {
   const allRules = rulesQuery.data ?? [];
   const scenarios = scenariosQuery.data ?? [];
 
+  const productMap = useMemo(
+    () => new Map(products.map((product) => [product.id, product])),
+    [products],
+  );
+
   const scenario = usePackagingScenarioCalculator({
     materials,
     productRules: allRules,
@@ -199,8 +217,11 @@ export function LogisticsPackagingCalculatorPage() {
   );
 
   const [focusedProblemLotId, setFocusedProblemLotId] = useState(null);
+  const [activeLotId, setActiveLotId] = useState(null);
   const [historySearch, setHistorySearch] = useState('');
   const [historySort, setHistorySort] = useState('updated_desc');
+  const [activeBottomTab, setActiveBottomTab] = useState('stack');
+  const [headerActionLoading, setHeaderActionLoading] = useState(null);
 
   const isLoading =
     productsQuery.isLoading ||
@@ -227,6 +248,20 @@ export function LogisticsPackagingCalculatorPage() {
     return sortScenarios(filterScenarios(scenarios, historySearch), historySort);
   }, [historySearch, historySort, scenarios]);
 
+  const runHeaderAction = (key, callback) => {
+    setHeaderActionLoading(key);
+
+    window.setTimeout(() => {
+      try {
+        callback();
+      } finally {
+        window.setTimeout(() => {
+          setHeaderActionLoading((current) => (current === key ? null : current));
+        }, 450);
+      }
+    }, 120);
+  };
+
   useEffect(() => {
     const handleBeforeUnload = (event) => {
       if (!scenario.isDirty) {
@@ -243,6 +278,55 @@ export function LogisticsPackagingCalculatorPage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [scenario.isDirty]);
+
+  useEffect(() => {
+    const handleShortcuts = (event) => {
+      if (!event.altKey) return;
+
+      const tag = String(document.activeElement?.tagName || '').toLowerCase();
+      const isTyping =
+        tag === 'input' || tag === 'textarea' || tag === 'select' || document.activeElement?.isContentEditable;
+
+      if (isTyping) return;
+
+      const key = event.key.toLowerCase();
+
+      if (key === 'c') {
+        event.preventDefault();
+        runHeaderAction('clear', handleClearScenario);
+      }
+
+      if (key === 'n') {
+        event.preventDefault();
+        runHeaderAction('new', handleStartNewScenario);
+      }
+
+      if (key === 'l') {
+        event.preventDefault();
+        runHeaderAction('add', handleAddLot);
+      }
+    };
+
+    window.addEventListener('keydown', handleShortcuts);
+    return () => {
+      window.removeEventListener('keydown', handleShortcuts);
+    };
+  });
+
+  useEffect(() => {
+    const firstLotId = scenario.values.lots[0]?.id ?? null;
+
+    if (!firstLotId) {
+      setActiveLotId(null);
+      return;
+    }
+
+    const exists = scenario.values.lots.some((lot) => lot.id === activeLotId);
+
+    if (!exists) {
+      setActiveLotId(firstLotId);
+    }
+  }, [activeLotId, scenario.values.lots]);
 
   useEffect(() => {
     scenario.values.lots.forEach((lot) => {
@@ -279,7 +363,10 @@ export function LogisticsPackagingCalculatorPage() {
           return line;
         }
 
-        if (!line.palletMaterialId && preferredPalletId) {
+        if (
+          (!line.palletMaterialId || !allowedSet.has(line.palletMaterialId)) &&
+          preferredPalletId
+        ) {
           hasChanges = true;
           return {
             ...line,
@@ -290,21 +377,32 @@ export function LogisticsPackagingCalculatorPage() {
         return line;
       });
 
-      if (
+      const shouldFixContainer =
         lot.values.productId &&
-        (!lot.values.containerMaterialId ||
-          (preferredContainerId &&
-            lot.values.containerMaterialId !== preferredContainerId &&
-            !allowedSet.has(lot.values.containerMaterialId)))
-      ) {
-        hasChanges = true;
-      }
+        ((!lot.values.containerMaterialId && preferredContainerId) ||
+          (lot.values.containerMaterialId &&
+            !allowedSet.has(lot.values.containerMaterialId)));
 
-      if (
+      const shouldFixVacuumBag =
         lot.values.productId &&
-        lot.values.vacuumBagMaterialId == null &&
-        preferredVacuumBagId
-      ) {
+        (
+          (
+            (!lot.values.vacuumBagMaterialId || lot.values.vacuumBagMaterialId === '') &&
+            preferredVacuumBagId
+          ) ||
+          (
+            lot.values.vacuumBagMaterialId &&
+            !allowedSet.has(lot.values.vacuumBagMaterialId) &&
+            preferredVacuumBagId
+          ) ||
+          (
+            lot.values.vacuumBagMaterialId &&
+            !allowedSet.has(lot.values.vacuumBagMaterialId) &&
+            !preferredVacuumBagId
+          )
+        );
+
+      if (shouldFixContainer || shouldFixVacuumBag) {
         hasChanges = true;
       }
 
@@ -312,18 +410,70 @@ export function LogisticsPackagingCalculatorPage() {
         scenario.updateLotValues(lot.id, (current) => ({
           ...current,
           containerMaterialId:
-            current.containerMaterialId && allowedSet.has(current.containerMaterialId)
-              ? current.containerMaterialId
-              : preferredContainerId || current.containerMaterialId,
+            shouldFixContainer
+              ? preferredContainerId || ''
+              : current.containerMaterialId,
           vacuumBagMaterialId:
-            current.vacuumBagMaterialId == null && preferredVacuumBagId
-              ? preferredVacuumBagId
+            shouldFixVacuumBag
+              ? preferredVacuumBagId || null
               : current.vacuumBagMaterialId,
           palletLines: nextPalletLines,
         }));
       }
     });
   }, [allRules, materials, scenario]);
+
+  const activeLot = useMemo(
+    () => scenario.values.lots.find((lot) => lot.id === activeLotId) ?? null,
+    [activeLotId, scenario.values.lots],
+  );
+
+  const activeLotIndex = useMemo(
+    () => scenario.values.lots.findIndex((lot) => lot.id === activeLotId),
+    [activeLotId, scenario.values.lots],
+  );
+
+  const activeLotResult = useMemo(() => {
+    if (!activeLot) {
+      return null;
+    }
+
+    return scenario.getLotResult(activeLot.id);
+  }, [activeLot, scenario]);
+
+  const activeLotRules = useMemo(() => {
+    if (!activeLot) {
+      return [];
+    }
+
+    return allRules.filter((rule) => rule.productId === activeLot.values.productId);
+  }, [activeLot, allRules]);
+
+  const activeAllowedMaterialIds = useMemo(
+    () => activeLotRules.map((rule) => rule.materialId),
+    [activeLotRules],
+  );
+
+  const activeAllowedSet = useMemo(
+    () => new Set(activeAllowedMaterialIds),
+    [activeAllowedMaterialIds],
+  );
+
+  const activeAllowedMaterials = useMemo(() => {
+    return activeAllowedSet.size > 0
+      ? materials.filter((item) => activeAllowedSet.has(item.id))
+      : materials;
+  }, [activeAllowedSet, materials]);
+
+  const activeAllowedPallets = useMemo(
+    () => activeAllowedMaterials.filter((item) => item.materialType === 'PALLET'),
+    [activeAllowedMaterials],
+  );
+
+  const activePreferredPalletId = useMemo(
+    () => pickPreferredMaterial(activeAllowedPallets, activeLotRules),
+    [activeAllowedPallets, activeLotRules],
+  );
 
   const handleSaveScenario = async () => {
     const lotStatuses = scenario.values.lots.map((lot) => ({
@@ -359,15 +509,17 @@ export function LogisticsPackagingCalculatorPage() {
 
     if (firstInvalidLot) {
       setFocusedProblemLotId(firstInvalidLot.lotId);
+      setActiveLotId(firstInvalidLot.lotId);
 
       requestAnimationFrame(() => {
         const element = document.getElementById(
-          `lp-scenario-lot-card-${firstInvalidLot.lotId}`,
+          `lp-scenario-lot-tab-${firstInvalidLot.lotId}`,
         );
 
         element?.scrollIntoView({
           behavior: 'smooth',
-          block: 'start',
+          block: 'nearest',
+          inline: 'nearest',
         });
       });
 
@@ -415,10 +567,10 @@ export function LogisticsPackagingCalculatorPage() {
       return;
     }
 
-    scenario.loadScenario(
-      historyItem.scenario.id,
-      mapScenarioHistoryItemToFormValues(historyItem),
-    );
+    const nextValues = mapScenarioHistoryItemToFormValues(historyItem);
+    scenario.loadScenario(historyItem.scenario.id, nextValues);
+    setActiveLotId(nextValues.lots[0]?.id ?? null);
+    setActiveBottomTab('stack');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setFocusedProblemLotId(null);
     toast.success('Senaryo forma yüklendi.');
@@ -434,9 +586,10 @@ export function LogisticsPackagingCalculatorPage() {
       return;
     }
 
-    scenario.duplicateScenario(
-      mapScenarioHistoryItemToDuplicatedFormValues(historyItem),
-    );
+    const nextValues = mapScenarioHistoryItemToDuplicatedFormValues(historyItem);
+    scenario.duplicateScenario(nextValues);
+    setActiveLotId(nextValues.lots[0]?.id ?? null);
+    setActiveBottomTab('stack');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setFocusedProblemLotId(null);
     toast.success('Senaryo kopyalanıp forma yüklendi.');
@@ -458,6 +611,8 @@ export function LogisticsPackagingCalculatorPage() {
 
       if (scenario.editingScenarioId === historyItem.scenario.id) {
         scenario.startCreateMode();
+        setActiveLotId(null);
+        setActiveBottomTab('stack');
       }
     } catch (error) {
       toast.error(
@@ -478,6 +633,33 @@ export function LogisticsPackagingCalculatorPage() {
     }
 
     scenario.startCreateMode();
+    setActiveLotId(null);
+    setFocusedProblemLotId(null);
+    setActiveBottomTab('stack');
+  };
+
+  const handleClearScenario = () => {
+    const canContinue = confirmDiscardChanges(
+      scenario.isDirty,
+      'Ekrandaki tüm lot ve alanlar temizlenecek. Devam etmek istiyor musunuz?',
+    );
+
+    if (!canContinue) {
+      return;
+    }
+
+    scenario.startCreateMode();
+    setActiveLotId(null);
+    setFocusedProblemLotId(null);
+    toast.success('Senaryo ekranı temizlendi.');
+  };
+
+  const handleAddLot = () => {
+    scenario.addLot();
+  };
+
+  const handleSelectLot = (lotId) => {
+    setActiveLotId(lotId);
     setFocusedProblemLotId(null);
   };
 
@@ -492,224 +674,432 @@ export function LogisticsPackagingCalculatorPage() {
     );
   }
 
-  const aggregateSummaryItems = mapAggregateResultToSummaryItems(
-    scenario.aggregateResult,
-  );
-
   return (
     <LogisticsPackagingLayout
       title="Paketleme Hesaplayıcı"
-      subtitle="Aynı sevkiyat içinde birden fazla lotu hesaplayın, lot bazlı planı yönetin ve en altta genel toplamı görün."
+      subtitle="Aynı sevkiyat içinde birden fazla lotu hesaplayın, lot bazlı planı yönetin ve toplam durumu üstte görün."
       actions={
-        <>
-          <button type="button" className="lp-button lp-button--ghost" onClick={handleStartNewScenario}>
-            Yeni Senaryo
+        <div className="lp-header-actions">
+          <button
+            type="button"
+            className="lp-button lp-button--ghost lp-button--iconic lp-button--sweep lp-button--tooltip"
+            onClick={() => runHeaderAction('clear', handleClearScenario)}
+            data-tooltip="Formu ve lotları temizle"
+          >
+            {headerActionLoading === 'clear' ? (
+              <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
+            ) : (
+              <BrushCleaning size={18} className="lp-button__icon" />
+            )}
+            <span>Temizle</span>
+            <kbd className="lp-shortcut-badge">Alt+C</kbd>
           </button>
-          <button type="button" className="lp-button" onClick={scenario.addLot}>
-            Lot Ekle
+
+          <button
+            type="button"
+            className="lp-button lp-button--ghost lp-button--iconic lp-button--new lp-button--tooltip"
+            onClick={() => runHeaderAction('new', handleStartNewScenario)}
+            data-tooltip="Yeni boş senaryo başlat"
+          >
+            {headerActionLoading === 'new' ? (
+              <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
+            ) : (
+              <FilePlus2 size={18} className="lp-button__icon" />
+            )}
+            <span>Yeni Senaryo</span>
+            <kbd className="lp-shortcut-badge">Alt+N</kbd>
           </button>
-        </>
+
+          <button
+            type="button"
+            className="lp-button lp-button--iconic lp-button--primary-glow lp-button--tooltip"
+            onClick={() => runHeaderAction('add', handleAddLot)}
+            data-tooltip="Yeni lot ekle"
+          >
+            {headerActionLoading === 'add' ? (
+              <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
+            ) : (
+              <Plus size={18} className="lp-button__icon" />
+            )}
+            <span>Lot Ekle</span>
+            <kbd className="lp-shortcut-badge">Alt+L</kbd>
+          </button>
+        </div>
       }
     >
-      <div className="lp-panel">
-        <div className="lp-section-heading">
-          <div>
-            <h3 className="lp-section-heading__title">Senaryo Bilgisi</h3>
-            <p className="lp-section-heading__description">
-              Aynı sevkiyat içinde yer alan lotları tek senaryo altında yönetin.
-            </p>
-          </div>
-        </div>
-
-        <div className="lp-form-grid lp-form-grid--4">
-          <label className="lp-field">
-            <span className="lp-field__label">Senaryo Adı</span>
-            <input
-              className="lp-input"
-              type="text"
-              value={scenario.values.name}
-              onChange={(event) => scenario.setScenarioName(event.target.value)}
-              placeholder="Örn: Müşteri X / 14 Nisan Sevkiyatı"
-            />
-          </label>
-
-          <div className="lp-field">
-            <span className="lp-field__label">Mod</span>
-            <div className="lp-input">
-              {scenario.editingScenarioId ? 'Düzenleme' : 'Yeni kayıt'}
+      <div className="lp-page-stack">
+        <div className="lp-panel">
+          <div className="lp-section-heading">
+            <div>
+              <h3 className="lp-section-heading__title">Senaryo Bilgisi</h3>
+              <p className="lp-section-heading__description">
+                Aynı sevkiyat içinde yer alan lotları tek senaryo altında yönetin.
+              </p>
             </div>
           </div>
 
-          <div className="lp-field">
-            <span className="lp-field__label">Lot Sayısı</span>
-            <div className="lp-input">{scenario.values.lots.length}</div>
-          </div>
+          <div className="lp-form-grid lp-form-grid--4">
+            <label className="lp-field">
+              <span className="lp-field__label">Senaryo Adı</span>
+              <input
+                className="lp-input"
+                type="text"
+                value={scenario.values.name}
+                onChange={(event) => scenario.setScenarioName(event.target.value)}
+                placeholder="Örn: Müşteri X / 14 Nisan Sevkiyatı"
+              />
+            </label>
 
-          <div className="lp-field">
-            <span className="lp-field__label">Durum</span>
-            <div className="lp-input">
-              {translateValidationStatus(scenario.aggregateResult.validationStatus)}
-              {scenario.isDirty ? ' · Kaydedilmemiş değişiklik var' : ''}
+            <div className="lp-field">
+              <span className="lp-field__label">Mod</span>
+              <div className="lp-input">
+                {scenario.editingScenarioId ? 'Düzenleme' : 'Yeni kayıt'}
+              </div>
+            </div>
+
+            <div className="lp-field">
+              <span className="lp-field__label">Lot Sayısı</span>
+              <div className="lp-input">{scenario.values.lots.length}</div>
+            </div>
+
+            <div className="lp-field">
+              <span className="lp-field__label">Durum</span>
+              <div className="lp-input">
+                {translateValidationStatus(scenario.aggregateResult.validationStatus)}
+                {scenario.isDirty ? ' · Kaydedilmemiş değişiklik var' : ''}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {scenario.values.lots.map((lot, index) => {
-        const lotRules = allRules.filter(
-          (rule) => rule.productId === lot.values.productId,
-        );
+        <AggregateBar
+          aggregate={scenario.aggregateResult}
+          lots={scenario.values.lots}
+        />
 
-        const allowedMaterialIds = lotRules.map((rule) => rule.materialId);
-        const allowedSet = new Set(allowedMaterialIds);
+        <div className="lp-panel lp-lot-tabs-panel">
+          <div className="lp-section-heading">
+            <div>
+              <h3 className="lp-section-heading__title">Lotlar</h3>
+              <p className="lp-section-heading__description">
+                Yeni lotlar sağa doğru eklenir, alan biterse alt satıra geçer. Düzenlemek için bir lot seçin.
+              </p>
+            </div>
+          </div>
 
-        const allowedMaterials =
-          allowedSet.size > 0
-            ? materials.filter((item) => allowedSet.has(item.id))
-            : materials;
+          <div className="lp-lot-tabs-grid">
+            {scenario.values.lots.map((lot, index) => {
+              const lotRules = allRules.filter(
+                (rule) => rule.productId === lot.values.productId,
+              );
 
-        const allowedPallets = allowedMaterials.filter(
-          (item) => item.materialType === 'PALLET',
-        );
+              const allowedMaterialIds = lotRules.map((rule) => rule.materialId);
+              const allowedSet = new Set(allowedMaterialIds);
 
-        const preferredPalletId = pickPreferredMaterial(allowedPallets, lotRules);
-        const lotResult = scenario.getLotResult(lot.id);
+              const allowedMaterials =
+                allowedSet.size > 0
+                  ? materials.filter((item) => allowedSet.has(item.id))
+                  : materials;
 
-        return (
-          <div
-            key={lot.id}
-            id={`lp-scenario-lot-card-${lot.id}`}
-            className={`lp-panel lp-scenario-lot-card ${getStatusClass(
-              lotResult.validationStatus,
-            )} ${focusedProblemLotId === lot.id ? 'is-focused' : ''}`}
+              const allowedPallets = allowedMaterials.filter(
+                (item) => item.materialType === 'PALLET',
+              );
+
+              const preferredPalletId = pickPreferredMaterial(allowedPallets, lotRules);
+              const lotResult = scenario.getLotResult(lot.id);
+              const isActive = lot.id === activeLotId;
+              const product = productMap.get(lot.values.productId);
+
+              return (
+                <div
+                  key={lot.id}
+                  id={`lp-scenario-lot-tab-${lot.id}`}
+                  className={`lp-panel lp-scenario-lot-tab ${getStatusClass(
+                    lotResult.validationStatus,
+                  )} ${focusedProblemLotId === lot.id ? 'is-focused' : ''} ${
+                    isActive ? 'is-active' : ''
+                  }`}
+                  onClick={() => handleSelectLot(lot.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleSelectLot(lot.id);
+                    }
+                  }}
+                >
+                  <div className="lp-scenario-lot-tab__header">
+                    <div className="lp-scenario-lot-tab__meta">
+                      <h3 className="lp-scenario-lot-tab__title">
+                        {lot.values.lotNumber?.trim() || `Lot ${index + 1}`}
+                      </h3>
+                      <p className="lp-scenario-lot-tab__description">
+                        {product
+                          ? `${product.code} - ${product.name}`
+                          : 'Ürün seçilmedi'}
+                      </p>
+                    </div>
+
+                    <div className="lp-lot-card-actions">
+                      <button
+                        type="button"
+                        className="lp-button lp-button--ghost lp-button--iconic-sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          scenario.moveLotUp(lot.id);
+                        }}
+                        disabled={index === 0}
+                        title="Sola taşı"
+                      >
+                        <ChevronLeft size={16} className="lp-button__icon" />
+                      </button>
+
+                      <button
+                        type="button"
+                        className="lp-button lp-button--ghost lp-button--iconic-sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          scenario.moveLotDown(lot.id);
+                        }}
+                        disabled={index === scenario.values.lots.length - 1}
+                        title="Sağa taşı"
+                      >
+                        <ChevronRight size={16} className="lp-button__icon" />
+                      </button>
+
+                      <button
+                        type="button"
+                        className="lp-button lp-button--ghost lp-button--iconic-sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          scenario.removeLot(lot.id);
+                        }}
+                        disabled={scenario.values.lots.length === 1}
+                        title="Lotu sil"
+                      >
+                        <Trash2 size={16} className="lp-button__icon" />
+                        <span>Sil</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {lotResult.stackSummaries?.length ? (
+                    <div className="lp-scenario-lot-tab__stack-chips">
+                      {lotResult.stackSummaries.slice(0, 3).map((stack) => (
+                        <span
+                          key={stack.stackGroup}
+                          className={`lp-scenario-lot-tab__stack-chip ${
+                            stack.exceedsStackHeightLimit ? 'is-warning' : 'is-valid'
+                          }`}
+                        >
+                          {stack.stackGroup} · {Number(stack.totalHeightCm ?? 0).toFixed(0)} cm
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="lp-scenario-lot-tab__stats">
+                    <div className="lp-scenario-lot-tab__stat">
+                      <span>Durum</span>
+                      <strong>{translateValidationStatus(lotResult.validationStatus)}</strong>
+                    </div>
+                    <div className="lp-scenario-lot-tab__stat">
+                      <span>Brüt</span>
+                      <strong>{lotResult.totalGrossWeightKg.toFixed(3)} kg</strong>
+                    </div>
+                    <div className="lp-scenario-lot-tab__stat">
+                      <span>Palet</span>
+                      <strong>{lotResult.totalPalletCount}</strong>
+                    </div>
+                  </div>
+
+                  <div className="lp-scenario-lot-tab__footer">
+                    <button
+                      type="button"
+                      className="lp-button lp-button--ghost lp-button--iconic"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleSelectLot(lot.id);
+                      }}
+                    >
+                      <Sparkles size={16} className="lp-button__icon" />
+                      <span>Düzenle</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="lp-button lp-button--iconic"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleSelectLot(lot.id);
+                        scenario.addPalletLine(lot.id, preferredPalletId);
+                      }}
+                    >
+                      <Plus size={16} className="lp-button__icon" />
+                      <span>Palet Satırı Ekle</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {activeLot && activeLotResult ? (
+          <div className="lp-editor-layout lp-editor-layout--single">
+            <div className="lp-editor-layout__main">
+              <div className="lp-panel lp-scenario-lot-card">
+                <div className="lp-scenario-lot-card__header">
+                  <div className="lp-scenario-lot-card__meta">
+                    <h3 className="lp-scenario-lot-card__title">
+                      Seçili Lot · {activeLot.values.lotNumber?.trim() || `Lot ${activeLotIndex + 1}`}
+                    </h3>
+                    <p className="lp-scenario-lot-card__description">
+                      Seçili lotun detaylarını düzenleyin. Diğer lotlar üst kartlarda kalır.
+                    </p>
+                  </div>
+
+                  <div className="lp-scenario-lot-card__active-badge">
+                    {translateValidationStatus(activeLotResult.validationStatus)}
+                  </div>
+                </div>
+
+                <LotSummary
+                  values={activeLot.values}
+                  result={activeLotResult}
+                  products={products}
+                />
+
+                <CalculatorForm
+                  values={activeLot.values}
+                  result={activeLotResult}
+                  products={products}
+                  materials={materials}
+                  allowedMaterialIds={activeAllowedMaterialIds}
+                  sharedStackGroupOptions={sharedStackGroupOptions}
+                  onChangeValues={(updater) => scenario.updateLotValues(activeLot.id, updater)}
+                  onAddPalletLine={() =>
+                    scenario.addPalletLine(activeLot.id, activePreferredPalletId)
+                  }
+                  onRemovePalletLine={(lineId) =>
+                    scenario.removePalletLine(activeLot.id, lineId)
+                  }
+                  onSubmit={handleSaveScenario}
+                  isSaving={isSaving}
+                  hideSubmit
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="lp-panel lp-bottom-tabs-panel">
+          <div className="lp-bottom-tabs">
+            <button
+              type="button"
+              className={`lp-bottom-tabs__button ${activeBottomTab === 'stack' ? 'is-active' : ''}`}
+              onClick={() => setActiveBottomTab('stack')}
+            >
+              <Grid2X2 size={16} className="lp-tab-icon" />
+              <span>Genel İstif Özeti</span>
+            </button>
+
+            <button
+              type="button"
+              className={`lp-bottom-tabs__button ${activeBottomTab === 'loadPlan' ? 'is-active' : ''}`}
+              onClick={() => setActiveBottomTab('loadPlan')}
+            >
+              <Package2 size={16} className="lp-tab-icon" />
+              <span>3D Konteyner Planı</span>
+            </button>
+
+            <button
+              type="button"
+              className={`lp-bottom-tabs__button ${activeBottomTab === 'history' ? 'is-active' : ''}`}
+              onClick={() => setActiveBottomTab('history')}
+            >
+              <History size={16} className="lp-tab-icon" />
+              <span>Geçmiş Senaryolar</span>
+            </button>
+          </div>
+
+          <div className="lp-bottom-tabs__content">
+            {activeBottomTab === 'stack' ? (
+              <div className="lp-bottom-tabs__pane">
+                <div className="lp-section-heading">
+                  <div>
+                    <h3 className="lp-section-heading__title">Genel İstif Özeti</h3>
+                    <p className="lp-section-heading__description">
+                      Tüm lotların ortak istif çıktıları.
+                    </p>
+                  </div>
+                </div>
+
+                <StackSummary stacks={scenario.aggregateResult.stackSummaries} />
+              </div>
+            ) : null}
+
+            {activeBottomTab === 'loadPlan' ? (
+              <div className="lp-bottom-tabs__pane">
+                <ContainerLoadPlan
+                  scenario={scenario}
+                  products={products}
+                  materials={materials}
+                />
+              </div>
+            ) : null}
+
+            {activeBottomTab === 'history' ? (
+              <div className="lp-bottom-tabs__pane">
+                <div className="lp-section-heading">
+                  <div>
+                    <h3 className="lp-section-heading__title">Geçmiş Senaryolar</h3>
+                    <p className="lp-section-heading__description">
+                      Daha önce kaydedilen çoklu lot paketleme senaryoları.
+                    </p>
+                  </div>
+                </div>
+
+                <ScenarioHistory
+                  scenarios={visibleScenarios}
+                  products={products}
+                  materials={materials}
+                  search={historySearch}
+                  sort={historySort}
+                  onSearchChange={setHistorySearch}
+                  onSortChange={setHistorySort}
+                  onLoadScenario={handleLoadScenario}
+                  onDuplicateScenario={handleDuplicateScenario}
+                  onDeleteScenario={handleDeleteScenario}
+                  deletingScenarioId={deleteScenarioMutation.variables ?? null}
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="lp-form-actions lp-form-actions--safe">
+          <button
+            type="button"
+            className="lp-button lp-button--iconic lp-button--primary-glow"
+            disabled={isSaving}
+            onClick={handleSaveScenario}
           >
-            <div className="lp-scenario-lot-card__header">
-              <div className="lp-scenario-lot-card__meta">
-                <h3 className="lp-scenario-lot-card__title">Lot {index + 1}</h3>
-                <p className="lp-scenario-lot-card__description">
-                  Her lot kendi ürün, ambalaj, palet ve istif planını ayrı hesaplar.
-                </p>
-              </div>
-
-              <div className="lp-lot-card-actions">
-                <button
-                  type="button"
-                  className="lp-button lp-button--ghost"
-                  onClick={() => scenario.moveLotUp(lot.id)}
-                  disabled={index === 0}
-                  title="Yukarı taşı"
-                >
-                  ↑
-                </button>
-
-                <button
-                  type="button"
-                  className="lp-button lp-button--ghost"
-                  onClick={() => scenario.moveLotDown(lot.id)}
-                  disabled={index === scenario.values.lots.length - 1}
-                  title="Aşağı taşı"
-                >
-                  ↓
-                </button>
-
-                <button
-                  type="button"
-                  className="lp-button lp-button--ghost"
-                  onClick={() => scenario.removeLot(lot.id)}
-                  disabled={scenario.values.lots.length === 1}
-                  title="Lotu sil"
-                >
-                  Sil
-                </button>
-              </div>
-            </div>
-
-            <LotSummary
-              values={lot.values}
-              result={lotResult}
-              products={products}
-            />
-
-            <CalculatorForm
-              values={lot.values}
-              result={lotResult}
-              products={products}
-              materials={materials}
-              allowedMaterialIds={allowedMaterialIds}
-              sharedStackGroupOptions={sharedStackGroupOptions}
-              onChangeValues={(updater) => scenario.updateLotValues(lot.id, updater)}
-              onAddPalletLine={() => scenario.addPalletLine(lot.id, preferredPalletId)}
-              onRemovePalletLine={(lineId) => scenario.removePalletLine(lot.id, lineId)}
-              onSubmit={handleSaveScenario}
-              isSaving={isSaving}
-              hideSubmit
-            />
-          </div>
-        );
-      })}
-
-      <div className="lp-panel lp-scenario-summary-panel">
-        <div className="lp-section-heading">
-          <div>
-            <h3 className="lp-section-heading__title">Genel Toplam</h3>
-            <p className="lp-section-heading__description">
-              Tüm lotların toplam net, dara, brüt ve palet özeti.
-            </p>
-          </div>
+            {isSaving ? (
+              <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
+            ) : (
+              <Save size={18} className="lp-button__icon" />
+            )}
+            <span>
+              {isSaving
+                ? 'Kaydediliyor...'
+                : scenario.editingScenarioId
+                  ? 'Senaryoyu Güncelle'
+                  : 'Senaryoyu Kaydet'}
+            </span>
+          </button>
         </div>
-
-        <CalculationResultCards
-          items={aggregateSummaryItems}
-          status={scenario.aggregateResult.validationStatus}
-        />
-      </div>
-
-      <div className="lp-panel">
-        <StackSummary stacks={scenario.aggregateResult.stackSummaries} />
-      </div>
-      <ContainerLoadPlan
-        scenario={scenario}
-        products={products}
-        materials={materials}
-      />
-      <div className="lp-form-actions">
-        <button
-          type="button"
-          className="lp-button"
-          disabled={isSaving}
-          onClick={handleSaveScenario}
-        >
-          {isSaving
-            ? 'Kaydediliyor...'
-            : scenario.editingScenarioId
-              ? 'Senaryoyu Güncelle'
-              : 'Senaryoyu Kaydet'}
-        </button>
-      </div>
-
-      <div className="lp-panel">
-        <div className="lp-section-heading">
-          <div>
-            <h3 className="lp-section-heading__title">Geçmiş Senaryolar</h3>
-            <p className="lp-section-heading__description">
-              Daha önce kaydedilen çoklu lot paketleme senaryoları.
-            </p>
-          </div>
-        </div>
-
-        <ScenarioHistory
-          scenarios={visibleScenarios}
-          products={products}
-          materials={materials}
-          search={historySearch}
-          sort={historySort}
-          onSearchChange={setHistorySearch}
-          onSortChange={setHistorySort}
-          onLoadScenario={handleLoadScenario}
-          onDuplicateScenario={handleDuplicateScenario}
-          onDeleteScenario={handleDeleteScenario}
-          deletingScenarioId={deleteScenarioMutation.variables ?? null}
-        />
       </div>
     </LogisticsPackagingLayout>
   );

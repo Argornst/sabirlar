@@ -3,7 +3,6 @@ import { mapCalculationResultToSummaryItems } from '../../../application';
 import { CalculatorContainerSection } from './calculator-container-section';
 import { CalculatorLotSection } from './calculator-lot-section';
 import { CalculatorPalletLinesSection } from './calculator-pallet-lines-section';
-import { CalculatorStackSection } from './calculator-stack-section';
 import { CalculatorSummarySection } from './calculator-summary-section';
 
 function getNextSuggestedStackOrder(lines, lineId, stackGroup) {
@@ -86,6 +85,60 @@ function getValidationMap(result) {
       stackGroups: new Set(),
       hasGeneralError: false,
     },
+  );
+}
+
+function CompactStackPreview({ stacks = [] }) {
+  if (!stacks.length) {
+    return null;
+  }
+
+  return (
+    <div className="lp-panel lp-compact-stack-preview">
+      <div className="lp-compact-stack-preview__header">
+        <div>
+          <h3>İstif Kısa Özeti</h3>
+          <p>Lot içindeki istif bilgileri küçük kartlar halinde gösterilir.</p>
+        </div>
+      </div>
+
+      <div className="lp-compact-stack-preview__grid">
+        {stacks.map((stack) => (
+          <div
+            key={stack.stackGroup}
+            className={`lp-compact-stack-preview__card ${
+              stack.exceedsStackHeightLimit ? 'is-warning' : 'is-valid'
+            }`}
+          >
+            <div className="lp-compact-stack-preview__card-top">
+              <strong>{stack.stackGroup}</strong>
+              <span>
+                {stack.exceedsStackHeightLimit ? 'Limit Aşıldı' : 'Uygun'}
+              </span>
+            </div>
+
+            <div className="lp-compact-stack-preview__card-metrics">
+              <div>
+                <small>Yükseklik</small>
+                <b>{Number(stack.totalHeightCm ?? 0).toFixed(2)} cm</b>
+              </div>
+              <div>
+                <small>Brüt</small>
+                <b>{Number(stack.totalGrossWeightKg ?? 0).toFixed(3)} kg</b>
+              </div>
+              <div>
+                <small>Zemin</small>
+                <b>{stack.groundPalletCount}</b>
+              </div>
+              <div>
+                <small>Satır</small>
+                <b>{stack.palletLineIds?.length ?? 0}</b>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -212,7 +265,7 @@ export function CalculatorForm({
         onRemoveLine={onRemovePalletLine}
       />
 
-      <CalculatorStackSection stacks={result.stackSummaries} />
+      <CompactStackPreview stacks={result.stackSummaries} />
 
       <CalculatorSummarySection summaryItems={summaryItems} result={result} />
 
