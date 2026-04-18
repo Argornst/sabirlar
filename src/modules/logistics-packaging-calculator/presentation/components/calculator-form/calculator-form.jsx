@@ -7,14 +7,14 @@ import { CalculatorStackSection } from './calculator-stack-section';
 import { CalculatorSummarySection } from './calculator-summary-section';
 
 function getNextSuggestedStackOrder(lines, lineId, stackGroup) {
-  const normalized = stackGroup.trim();
+  const normalized = String(stackGroup ?? '').trim();
 
   if (!normalized) {
     return 1;
   }
 
   const matchingOrders = lines
-    .filter((line) => line.id !== lineId && line.stackGroup.trim() === normalized)
+    .filter((line) => line.id !== lineId && String(line.stackGroup ?? '').trim() === normalized)
     .map((line) => (line.stackOrder === '' ? 1 : Number(line.stackOrder)))
     .filter((value) => Number.isFinite(value) && value > 0);
 
@@ -97,12 +97,24 @@ export function CalculatorForm({
   allowedMaterialIds,
   sharedStackGroupOptions = [],
   onChangeValues,
+  setValues,
   onAddPalletLine,
   onRemovePalletLine,
   onSubmit,
   isSaving,
   hideSubmit = false,
+  sections = ['lot', 'container', 'pallet', 'stack', 'summary'],
 }) {
+  const applyValuesChange = onChangeValues ?? setValues;
+
+  if (typeof applyValuesChange !== 'function') {
+    console.error(
+      'CalculatorForm: onChangeValues/setValues prop eksik.',
+      { onChangeValues, setValues },
+    );
+    return null;
+  }
+
   const allowedSet = new Set(allowedMaterialIds ?? []);
 
   const filteredMaterials =
@@ -122,7 +134,7 @@ export function CalculatorForm({
   const validationMap = getValidationMap(result);
 
   const handleLineChange = (lineId, patch) => {
-    onChangeValues((current) => ({
+    applyValuesChange((current) => ({
       ...current,
       palletLines: current.palletLines.map((line) => {
         if (line.id !== lineId) {
@@ -151,8 +163,8 @@ export function CalculatorForm({
 
         if (
           patch.stackGroup !== undefined &&
-          nextStackGroup.trim() &&
-          line.stackGroup.trim() !== nextStackGroup.trim()
+          String(nextStackGroup ?? '').trim() &&
+          String(line.stackGroup ?? '').trim() !== String(nextStackGroup ?? '').trim()
         ) {
           nextLine.stackOrder = getNextSuggestedStackOrder(
             current.palletLines,
@@ -171,54 +183,76 @@ export function CalculatorForm({
   };
 
   const updateRootValues = (patch) => {
-    onChangeValues((current) => ({
+    applyValuesChange((current) => ({
       ...current,
       ...patch,
     }));
   };
+
+  const showLot = sections.includes('lot');
+  const showContainer = sections.includes('container');
+  const showPallet = sections.includes('pallet');
+  const showStack = sections.includes('stack');
+  const showSummary = sections.includes('summary');
 
   return (
     <form
       className="lp-calculator-form"
       onSubmit={(event) => {
         event.preventDefault();
-        onSubmit();
+        onSubmit?.();
       }}
     >
-      <CalculatorLotSection
-        values={values}
-        products={products}
-        onChange={updateRootValues}
-        hasError={validationMap.hasGeneralError}
-      />
+      {showLot ? (
+        <CalculatorLotSection
+          values={values}
+          products={products}
+          onChange={updateRootValues}
+        />
+      ) : null}
 
-      <CalculatorContainerSection
-        values={values}
-        containerOptions={containerOptions}
-        vacuumBagOptions={vacuumBagOptions}
-        onChange={updateRootValues}
-        hasError={validationMap.hasGeneralError}
-      />
+      {showContainer ? (
+        <CalculatorContainerSection
+          values={values}
+          containerOptions={containerOptions}
+          vacuumBagOptions={vacuumBagOptions}
+          onChange={updateRootValues}
+        />
+      ) : null}
 
-      <CalculatorPalletLinesSection
-        lines={values.palletLines}
-        palletOptions={palletOptions}
-        lineResults={result.palletLineResults}
-        sharedStackGroupOptions={sharedStackGroupOptions}
-        invalidPalletLineIds={validationMap.palletLineIds}
-        invalidStackGroups={validationMap.stackGroups}
-        onLineChange={handleLineChange}
-        onAddLine={onAddPalletLine}
-        onRemoveLine={onRemovePalletLine}
-      />
+      {showPallet ? (
+        <CalculatorPalletLinesSection
+          lines={values.palletLines}
+          palletOptions={palletOptions}
+          stackGroupOptions={sharedStackGroupOptions}
+          validationMap={validationMap}
+          onAddLine={onAddPalletLine}
+          onRemoveLine={onRemovePalletLine}
+          onChangeLine={handleLineChange}
+        />
+      ) : null}
 
-      <CalculatorStackSection stacks={result.stackSummaries} />
+      {showStack ? (
+        <CalculatorStackSection
+          stackSummaries={result?.stackSummaries ?? []}
+        />
+      ) : null}
 
-      <CalculatorSummarySection summaryItems={summaryItems} result={result} />
+      {showSummary ? (
+        <CalculatorSummarySection
+          items={summaryItems}
+          validationMessages={result?.validationMessages ?? []}
+          validationStatus={result?.validationStatus}
+        />
+      ) : null}
 
       {!hideSubmit ? (
         <div className="lp-form-actions">
-          <button type="submit" className="lp-button" disabled={isSaving}>
+          <button
+            type="submit"
+            className="lp-button"
+            disabled={isSaving}
+          >
             {isSaving ? 'Kaydediliyor...' : 'Hesaplamayı Kaydet'}
           </button>
         </div>

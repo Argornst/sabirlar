@@ -41,9 +41,15 @@ function getMessageCounts(messages = []) {
 }
 
 export function LotSummary({ values, result, products = [] }) {
-  const product = products.find((p) => p.id === values.productId);
+  if (!values) {
+    return null;
+  }
+
+  const product = products.find((p) => p.id === values?.productId);
   const stackCount = result?.stackSummaries?.length ?? 0;
-  const { errorCount, warningCount } = getMessageCounts(result?.validationMessages ?? []);
+  const { errorCount, warningCount } = getMessageCounts(
+    result?.validationMessages ?? [],
+  );
 
   return (
     <div className="lp-lot-summary">
@@ -52,7 +58,7 @@ export function LotSummary({ values, result, products = [] }) {
           <div className="lp-lot-summary__title">
             {product
               ? `${product.code} - ${product.name}`
-              : values.productId || 'Ürün seçilmedi'}
+              : values?.productId || 'Ürün seçilmedi'}
           </div>
 
           <span
@@ -65,7 +71,7 @@ export function LotSummary({ values, result, products = [] }) {
         </div>
 
         <div className="lp-lot-summary__meta">
-          <span>Lot: {values.lotNumber || '-'}</span>
+          <span>Lot: {values?.lotNumber || '-'}</span>
           <span>İstif: {stackCount}</span>
           <span>Hata: {errorCount}</span>
           <span>Uyarı: {warningCount}</span>

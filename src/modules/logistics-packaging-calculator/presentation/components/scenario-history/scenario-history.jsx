@@ -1,129 +1,60 @@
+import { useMemo, useState } from 'react';
 import './scenario-history.css';
 
-function formatDate(value) {
+function formatDateTime(value) {
   if (!value) return '-';
 
-  const date = new Date(value);
-
   return new Intl.DateTimeFormat('tr-TR', {
-    year: 'numeric',
-    month: '2-digit',
     day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(date);
+  }).format(new Date(value));
 }
 
-function LoadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="lp-icon-button__icon" aria-hidden="true">
-      <path
-        d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function getProductLabel(productId, products = []) {
+  const product = products.find((item) => item.id === productId);
+  if (!product) return '-';
+  return `${product.code} - ${product.name}`;
 }
 
-function CopyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="lp-icon-button__icon" aria-hidden="true">
-      <rect
-        x="9"
-        y="9"
-        width="11"
-        height="11"
-        rx="2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        d="M15 9V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+function getMaterialLabel(materialId, materials = []) {
+  if (!materialId) return '-';
 
-function TrashIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="lp-icon-button__icon" aria-hidden="true">
-      <path
-        d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+  const material = materials.find((item) => item.id === materialId);
+  if (!material) return '-';
 
-function SpinnerIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="lp-icon-button__icon lp-icon-button__icon--spin" aria-hidden="true">
-      <path
-        d="M21 12a9 9 0 1 1-9-9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function ActionIconButton({
-  label,
-  icon,
-  variant = 'ghost',
-  onClick,
-  disabled = false,
-}) {
-  return (
-    <button
-      type="button"
-      className={`lp-icon-button lp-icon-button--${variant}`}
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      data-tooltip={label}
-      title={label}
-    >
-      {icon}
-    </button>
-  );
+  return `${material.code} - ${material.name}`;
 }
 
 export function ScenarioHistory({
   scenarios = [],
   products = [],
   materials = [],
-  search = '',
-  sort = 'updated_desc',
+  search,
+  sort,
   onSearchChange,
   onSortChange,
   onLoadScenario,
   onDuplicateScenario,
   onDeleteScenario,
-  deletingScenarioId = null,
+  deletingScenarioId,
 }) {
-  const productMap = new Map(products.map((product) => [product.id, product]));
-  const materialMap = new Map(materials.map((material) => [material.id, material]));
+  const [expandedScenarioIds, setExpandedScenarioIds] = useState([]);
 
-  if (!scenarios.length) {
-    return <div className="lp-empty-state">Henüz kayıt yok.</div>;
-  }
+  const toggleExpanded = (scenarioId) => {
+    setExpandedScenarioIds((current) =>
+      current.includes(scenarioId)
+        ? current.filter((id) => id !== scenarioId)
+        : [...current, scenarioId],
+    );
+  };
+
+  const normalizedDeletingId = useMemo(
+    () => String(deletingScenarioId ?? ''),
+    [deletingScenarioId],
+  );
 
   return (
     <div className="lp-scenario-history">
@@ -132,9 +63,8 @@ export function ScenarioHistory({
           <span className="lp-field__label">Ara</span>
           <input
             className="lp-input"
-            type="text"
             value={search}
-            onChange={(event) => onSearchChange?.(event.target.value)}
+            onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Senaryo adı veya lot no"
           />
         </label>
@@ -144,7 +74,7 @@ export function ScenarioHistory({
           <select
             className="lp-input"
             value={sort}
-            onChange={(event) => onSortChange?.(event.target.value)}
+            onChange={(event) => onSortChange(event.target.value)}
           >
             <option value="updated_desc">Güncelden eskiye</option>
             <option value="updated_asc">Eskiden yeniye</option>
@@ -154,122 +84,128 @@ export function ScenarioHistory({
         </label>
       </div>
 
-      {scenarios.map((item) => {
-        const isDeleting = deletingScenarioId === item.scenario.id;
-        const displayUpdatedAt =
-          item.scenario.updatedAt ?? item.scenario.createdAt ?? null;
+      <div className="lp-scenario-history__list">
+        {scenarios.length === 0 ? (
+          <div className="lp-empty-state">Kaydedilmiş senaryo bulunamadı.</div>
+        ) : null}
 
-        return (
-          <div key={item.scenario.id} className="lp-panel lp-scenario-history__card">
-            <div className="lp-section-heading">
-              <div>
-                <h3 className="lp-section-heading__title">
-                  {item.scenario.name || 'İsimsiz Senaryo'}
-                </h3>
-                <p className="lp-section-heading__description">
-                  Oluşturma: {formatDate(item.scenario.createdAt)}
-                  {' · '}
-                  Son güncelleme: {formatDate(displayUpdatedAt)}
-                </p>
-              </div>
+        {scenarios.map((record) => {
+          const scenarioId = record.scenario.id;
+          const isExpanded = expandedScenarioIds.includes(scenarioId);
+          const isDeleting = normalizedDeletingId === String(scenarioId);
 
-              <div className="lp-scenario-history__actions">
-                <ActionIconButton
-                  label="Forma yükle"
-                  icon={<LoadIcon />}
-                  variant="ghost"
-                  onClick={() => onLoadScenario?.(item)}
-                  disabled={isDeleting}
-                />
+          return (
+            <div key={scenarioId} className="lp-history-card">
+              <div className="lp-history-card__header">
+                <div>
+                  <h4 className="lp-history-card__title">
+                    {record.scenario.name || 'Adsız Senaryo'}
+                  </h4>
 
-                <ActionIconButton
-                  label="Kopyala"
-                  icon={<CopyIcon />}
-                  variant="primary"
-                  onClick={() => onDuplicateScenario?.(item)}
-                  disabled={isDeleting}
-                />
-
-                <ActionIconButton
-                  label={isDeleting ? 'Siliniyor' : 'Sil'}
-                  icon={isDeleting ? <SpinnerIcon /> : <TrashIcon />}
-                  variant="danger"
-                  onClick={() => onDeleteScenario?.(item)}
-                  disabled={isDeleting}
-                />
-              </div>
-            </div>
-
-            {item.lots.map((lotWrapper, index) => {
-              const lot = lotWrapper.lot;
-              const product = productMap.get(lot.productId);
-
-              return (
-                <div key={lot.id} className="lp-scenario-history-lot">
-                  <div className="lp-scenario-history-lot__header">
-                    <strong>Lot {index + 1}</strong>
-                    <span>{lot.lotNumber}</span>
-                  </div>
-
-                  <div className="lp-scenario-history-lot__grid">
-                    <div>
-                      Ürün:{' '}
-                      {product ? `${product.code} - ${product.name}` : lot.productId}
-                    </div>
-                    <div>Miktar: {Number(lot.totalQuantityKg ?? 0).toFixed(3)} kg</div>
-                    <div>
-                      Ambalaj:{' '}
-                      {materialMap.get(lot.containerMaterialId)
-                        ? `${materialMap.get(lot.containerMaterialId).code} - ${materialMap.get(lot.containerMaterialId).name}`
-                        : lot.containerMaterialId}
-                    </div>
-                    <div>
-                      Vakum:{' '}
-                      {lot.vacuumBagMaterialId
-                        ? materialMap.get(lot.vacuumBagMaterialId)
-                          ? `${materialMap.get(lot.vacuumBagMaterialId).code} - ${materialMap.get(lot.vacuumBagMaterialId).name}`
-                          : lot.vacuumBagMaterialId
-                        : '-'}
-                    </div>
-                  </div>
-
-                  {lot.notes ? (
-                    <div className="lp-scenario-history-lot__notes">
-                      <strong>Not:</strong> <span>{lot.notes}</span>
-                    </div>
-                  ) : null}
-
-                  <div className="lp-scenario-history-pallets">
-                    {lotWrapper.palletLines.length === 0 ? (
-                      <div className="lp-empty-state">Palet satırı yok.</div>
-                    ) : (
-                      lotWrapper.palletLines.map((line) => {
-                        const palletMaterial = materialMap.get(line.palletMaterialId);
-
-                        return (
-                          <div key={line.id} className="lp-scenario-history-pallet">
-                            <span>
-                              Palet:{' '}
-                              {palletMaterial
-                                ? `${palletMaterial.code} - ${palletMaterial.name}`
-                                : line.palletMaterialId}
-                            </span>
-                            <span>Adet: {line.palletCount}</span>
-                            <span>Bir Sıra: {line.unitsPerRow}</span>
-                            <span>Paletteki Toplam: {line.unitsPerPallet}</span>
-                            <span>İstif: {line.stackGroup || '-'}</span>
-                            <span>Sıra: {line.stackOrder}</span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                  <p className="lp-history-card__meta">
+                    Oluşturma: {formatDateTime(record.scenario.createdAt)} · Son güncelleme:{' '}
+                    {formatDateTime(record.scenario.updatedAt)}
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        );
-      })}
+
+                <div className="lp-history-card__actions">
+                  <button
+                    type="button"
+                    className="lp-button lp-button--ghost"
+                    onClick={() => toggleExpanded(scenarioId)}
+                  >
+                    {isExpanded ? 'Detayı Gizle' : 'Detay'}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="lp-button lp-button--ghost"
+                    onClick={() => onLoadScenario(record)}
+                  >
+                    ⤓
+                  </button>
+
+                  <button
+                    type="button"
+                    className="lp-button lp-button--ghost"
+                    onClick={() => onDuplicateScenario(record)}
+                  >
+                    ⧉
+                  </button>
+
+                  <button
+                    type="button"
+                    className="lp-button lp-button--ghost is-danger"
+                    onClick={() => onDeleteScenario(scenarioId)}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? '…' : '🗑'}
+                  </button>
+                </div>
+              </div>
+
+              {isExpanded ? (
+                <div className="lp-history-card__details">
+                  {(record.lots ?? []).map((lotItem, index) => {
+                    const lot = lotItem.lot;
+                    const palletLines = lotItem.palletLines ?? [];
+
+                    return (
+                      <div key={lot.id} className="lp-history-lot">
+                        <div className="lp-history-lot__top">
+                          <strong>Lot {index + 1}</strong>
+                          <span>{lot.lotNumber || '-'}</span>
+                        </div>
+
+                        <div className="lp-history-lot__grid">
+                          <div>
+                            <span>Ürün</span>
+                            <strong>{getProductLabel(lot.productId, products)}</strong>
+                          </div>
+
+                          <div>
+                            <span>Miktar</span>
+                            <strong>{lot.totalQuantityKg ?? 0} kg</strong>
+                          </div>
+
+                          <div>
+                            <span>Ambalaj</span>
+                            <strong>
+                              {getMaterialLabel(lot.containerMaterialId, materials)}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>Vakum</span>
+                            <strong>
+                              {getMaterialLabel(lot.vacuumBagMaterialId, materials)}
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className="lp-history-lot__pallet-lines">
+                          {palletLines.map((line) => (
+                            <div key={line.id} className="lp-history-lot__pallet-line">
+                              <span>
+                                Palet: {getMaterialLabel(line.palletMaterialId, materials)}
+                              </span>
+                              <span>Adet: {line.palletCount}</span>
+                              <span>Bir Sıra: {line.unitsPerRow}</span>
+                              <span>Paletteki Toplam: {line.unitsPerPallet}</span>
+                              <span>İstif: {line.stackGroup || 'Yok'}</span>
+                              <span>Sıra: {line.stackOrder || 1}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
