@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import AppProviders from "./app/providers/AppProviders";
 import AppRouter from "./app/router";
 import "./app/styles/index.css";
+import "./shared/styles/ui.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>

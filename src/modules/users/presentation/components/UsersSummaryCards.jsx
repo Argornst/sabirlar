@@ -1,6 +1,5 @@
 import StatCard from "../../../../shared/components/ui/StatCard";
-import StatusBadge from "../../../../shared/components/ui/StatusBadge";
-import { formatRoleName, getRoleTone } from "../../../../shared/lib/formatters";
+import { formatRoleName } from "../../../../shared/lib/formatters";
 
 export default function UsersSummaryCards({ summary }) {
   const roleEntries = Object.entries(summary.byRole || {});

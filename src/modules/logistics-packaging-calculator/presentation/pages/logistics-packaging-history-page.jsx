@@ -3,15 +3,15 @@ import {
   usePackagingMaterialsQuery,
   usePackagingProductsQuery,
 } from '../../application';
-import { SupabasePackagingCalculationsRepository } from '../../infrastructure/repositories/supabase-packaging-calculations.repository.js';
-import { SupabasePackagingMaterialsRepository } from '../../infrastructure/repositories/supabase-packaging-materials.repository.js';
-import { SupabasePackagingProductsRepository } from '../../infrastructure/repositories/supabase-packaging-products.repository.js';
+import { logisticsPackagingRuntime } from '../../runtime/logistics-packaging.runtime.js';
 import { CalculationsHistoryTable } from '../components/calculations-history-table/calculations-history-table';
 import { LogisticsPackagingLayout } from '../components/logistics-packaging-layout/logistics-packaging-layout';
 
-const calculationsRepository = new SupabasePackagingCalculationsRepository();
-const productsRepository = new SupabasePackagingProductsRepository();
-const materialsRepository = new SupabasePackagingMaterialsRepository();
+const {
+  calculationsRepository,
+  productsRepository,
+  materialsRepository,
+} = logisticsPackagingRuntime;
 
 export function LogisticsPackagingHistoryPage() {
   const calculationsQuery = usePackagingCalculationsQuery(calculationsRepository);

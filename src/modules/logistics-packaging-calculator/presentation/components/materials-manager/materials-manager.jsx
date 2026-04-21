@@ -1,4 +1,8 @@
 import { useMemo, useState } from 'react';
+import Select from '../../../../../shared/components/ui/Select';
+import Table, {
+  TableScroll,
+} from '../../../../../shared/components/ui/Table';
 import './materials-manager.css';
 import { MaterialFormModal } from './material-form-modal';
 
@@ -43,7 +47,7 @@ export function MaterialsManager({
 
           <label className="lp-field lp-field--inline">
             <span className="lp-field__label">Filtre</span>
-            <select
+            <Select
               className="lp-input"
               value={filter}
               onChange={(event) => setFilter(event.target.value)}
@@ -53,12 +57,12 @@ export function MaterialsManager({
               <option value="BOX">Kutu</option>
               <option value="VACUUM_BAG">Vakum Torbası</option>
               <option value="DRUM">Varil</option>
-            </select>
+            </Select>
           </label>
         </div>
 
-        <div className="lp-materials-table-wrapper">
-          <table className="lp-materials-table">
+        <TableScroll className="lp-materials-table-wrapper">
+          <Table className="lp-materials-table">
             <thead>
               <tr>
                 <th>Kod</th>
@@ -91,8 +95,8 @@ export function MaterialsManager({
                 ))
               )}
             </tbody>
-          </table>
-        </div>
+          </Table>
+        </TableScroll>
       </div>
 
       <div className="lp-panel">

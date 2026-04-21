@@ -1,3 +1,4 @@
+import IconButton from "../../../../shared/components/ui/IconButton";
 import { useDeleteProductionMutation } from "../hooks/useDeleteProductionMutation";
 
 export function ProductionRowActions({
@@ -31,7 +32,7 @@ export function ProductionRowActions({
 
   return (
     <div className="production-row-actions production-row-actions--table">
-      <button
+      <IconButton
         type="button"
         className={`production-icon-button production-icon-button--glow ${
           isExpanded ? "production-icon-button--active" : ""
@@ -42,9 +43,9 @@ export function ProductionRowActions({
         aria-label={isExpanded ? "Detayı kapat" : "Detayı aç"}
       >
         <DetailsIcon />
-      </button>
+      </IconButton>
 
-      <button
+      <IconButton
         type="button"
         className={`production-icon-button production-icon-button--glow ${
           isEditing ? "production-icon-button--active" : ""
@@ -55,10 +56,11 @@ export function ProductionRowActions({
         aria-label="Düzenle"
       >
         <EditIcon />
-      </button>
+      </IconButton>
 
-      <button
+      <IconButton
         type="button"
+        variant="danger"
         className="production-icon-button production-icon-button--glow production-icon-button--danger"
         onClick={handleDelete}
         disabled={isBusy}
@@ -66,7 +68,7 @@ export function ProductionRowActions({
         aria-label="Sil"
       >
         <DeleteIcon />
-      </button>
+      </IconButton>
     </div>
   );
 }

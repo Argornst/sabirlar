@@ -14,9 +14,8 @@ import {
   createSaleDefaultValues,
   createSaleSchema,
 } from "../../application/dto/createSaleSchema";
-import { createSale } from "../../application/use-cases/createSale";
-import { salesRepository } from "../../infrastructure/repositories/salesRepository";
-import { productsRepository } from "../../../products/infrastructure/repositories/productsRepository";
+import { invalidateSalesRelatedQueries } from "../../application/queryKeys";
+import { createSaleRecord } from "../../runtime/sales.runtime";
 import { ROUTES } from "../../../../shared/constants/routes";
 
 export function useCreateSaleForm() {
@@ -42,9 +41,7 @@ export function useCreateSaleForm() {
         throw new Error("Organizasyon bilgisi yüklenemedi.");
       }
 
-      return createSale({
-        salesRepository,
-        productsRepository,
+      return createSaleRecord({
         userId: user?.id ?? null,
         organizationId: organization.id,
         values,
@@ -65,10 +62,7 @@ export function useCreateSaleForm() {
         },
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["sales"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["reports-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      await invalidateSalesRelatedQueries(queryClient);
 
       navigate(ROUTES.SALES);
     },

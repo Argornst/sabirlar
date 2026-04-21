@@ -1,3 +1,4 @@
+import Button from '../../../../../shared/components/ui/Button';
 import './calculator-form.css';
 import { mapCalculationResultToSummaryItems } from '../../../application';
 import { CalculatorContainerSection } from './calculator-container-section';
@@ -271,9 +272,9 @@ export function CalculatorForm({
 
       {!hideSubmit ? (
         <div className="lp-form-actions">
-          <button type="submit" className="lp-button" disabled={isSaving}>
+          <Button type="submit" className="lp-button" disabled={isSaving}>
             {isSaving ? 'Kaydediliyor...' : 'Hesaplamayı Kaydet'}
-          </button>
+          </Button>
         </div>
       ) : null}
     </form>

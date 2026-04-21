@@ -1,0 +1,43 @@
+.auth-card,
+.loader-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow:
+    0 16px 30px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease,
+    background 0.22s ease;
+}
+
+.auth-card,
+.loader-card {
+  background:
+    linear-gradient(180deg, rgba(10, 18, 34, 0.96), rgba(11, 20, 37, 0.98)),
+    rgba(10, 18, 34, 0.8);
+  border-radius: var(--radius-xl);
+  padding: 26px;
+  box-shadow: var(--shadow-lg);
+}
+
+.loader-card,
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+}
+
+.loader-card h2,
+.auth-card h1 {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.loader-card p,
+.auth-card p {
+  margin-top: 0;
+  color: var(--muted);
+}
+

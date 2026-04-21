@@ -3,7 +3,7 @@ import {
   PRODUCTION_STATUSES,
   QUANTITY_UNITS,
 } from "../../domain/entities/production.entity";
-import { getProductionProductOptions } from "../../application/use-cases/getProductionProductOptions";
+import { listProductionProductOptions } from "../../runtime/productions.runtime";
 
 import Field from "../../../../shared/components/ui/Field";
 import Input from "../../../../shared/components/ui/Input";
@@ -27,7 +27,7 @@ export function ProductionForm({
   submitLabel = "Kaydet",
   onSubmit,
 }) {
-  const productOptions = useMemo(() => getProductionProductOptions(), []);
+  const productOptions = useMemo(() => listProductionProductOptions(), []);
   const [productName, setProductName] = useState(initialValues.product_name || "");
   const [dispatchDate, setDispatchDate] = useState(
     initialValues.dispatch_date || ""

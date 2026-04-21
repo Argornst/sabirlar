@@ -1,3 +1,4 @@
+import Button from "../../../../shared/components/ui/Button";
 import { exportToExcel } from "../../../../shared/lib/export/excelExport";
 import { exportToPDF } from "../../../../shared/lib/export/pdfExport";
 import {
@@ -30,25 +31,27 @@ export default function SalesExportActions({ sales = [] }) {
 
   return (
     <div className="sales-export-actions sales-export-actions--inline">
-      <button
+      <Button
         type="button"
+        variant="secondary"
         className="sales-toolbar-button sales-toolbar-button--excel"
         onClick={handleExcel}
         disabled={!hasRows}
       >
         <ExcelIcon />
         <span>Excel'e Aktar</span>
-      </button>
+      </Button>
 
-      <button
+      <Button
         type="button"
+        variant="secondary"
         className="sales-toolbar-button sales-toolbar-button--pdf"
         onClick={handlePDF}
         disabled={!hasRows}
       >
         <PdfIcon />
         <span>PDF'e Aktar</span>
-      </button>
+      </Button>
     </div>
   );
 }

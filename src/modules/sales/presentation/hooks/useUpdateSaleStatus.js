@@ -5,7 +5,8 @@ import {
   AUDIT_ENTITY_TYPES,
 } from "../../../../shared/constants/audit";
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
-import { salesRepository } from "../../infrastructure/repositories/salesRepository";
+import { invalidateSalesRelatedQueries } from "../../application/queryKeys";
+import { updateSaleRecordStatus } from "../../runtime/sales.runtime";
 
 export function useUpdateSaleStatus() {
   const queryClient = useQueryClient();
@@ -13,7 +14,11 @@ export function useUpdateSaleStatus() {
 
   return useMutation({
     mutationFn: async ({ saleId, nextStatus }) =>
-      salesRepository.updateStatus(saleId, nextStatus, user?.id ?? null),
+      updateSaleRecordStatus({
+        saleId,
+        nextStatus,
+        actorUserId: user?.id ?? null,
+      }),
 
     onSuccess: async (updatedSale) => {
       await logActivity({
@@ -29,10 +34,7 @@ export function useUpdateSaleStatus() {
         },
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["sales"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["reports-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      await invalidateSalesRelatedQueries(queryClient);
     },
   });
 }

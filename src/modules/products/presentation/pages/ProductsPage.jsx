@@ -12,6 +12,7 @@ import ProductsSummaryCards from "../components/ProductsSummaryCards";
 import ProductsTable from "../components/ProductsTable";
 import { useProductsListQuery } from "../hooks/useProductsListQuery";
 import { useProductsFilters } from "../hooks/useProductsFilters";
+import "../../products.css";
 
 export default function ProductsPage() {
   const { data, isLoading, isError, error } = useProductsListQuery();

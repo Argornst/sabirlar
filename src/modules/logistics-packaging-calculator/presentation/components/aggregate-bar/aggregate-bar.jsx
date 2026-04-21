@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Sparkles, X } from 'lucide-react';
+import Button from '../../../../../shared/components/ui/Button';
+import IconButton from '../../../../../shared/components/ui/IconButton';
 import './aggregate-bar.css';
 
 function getLevelCounts(messages = []) {
@@ -155,9 +157,10 @@ export function AggregateBar({ aggregate, lots = [] }) {
 
         <div className="lp-aggregate-bar__badges">
           {counts.errors > 0 || counts.warnings > 0 ? (
-            <button
+            <Button
               ref={triggerRef}
               type="button"
+              variant="ghost"
               className={`lp-aggregate-bar__badge lp-aggregate-bar__badge--action ${
                 counts.errors > 0 ? 'is-error' : 'is-warning'
               }`}
@@ -171,7 +174,7 @@ export function AggregateBar({ aggregate, lots = [] }) {
                 {counts.errors > 0 ? `${counts.errors} hata` : `${counts.warnings} uyarı`}
               </span>
               <Sparkles size={13} className="lp-aggregate-bar__badge-hint" />
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>
@@ -201,14 +204,14 @@ export function AggregateBar({ aggregate, lots = [] }) {
               <p>Bu liste senaryo toplamındaki hata ve uyarıları gösterir.</p>
             </div>
 
-            <button
+            <IconButton
               type="button"
               className="lp-aggregate-bar__popover-close"
               onClick={() => setIsIssuesOpen(false)}
               aria-label="Kapat"
             >
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
 
           <div className="lp-aggregate-bar__popover-list">

@@ -1,4 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
+import Button from '../../../../../shared/components/ui/Button';
+import Select from '../../../../../shared/components/ui/Select';
 import { CONTAINER_TYPES } from '../../../domain/types/container-load-plan.type';
 import { useContainerLoadPlan } from '../../../application/hooks/use-container-load-plan';
 import { ContainerLoadPlanScene } from './container-load-plan-scene';
@@ -79,15 +81,16 @@ function downloadBlob(blob, fileName) {
 
 function ActionButton({ onClick, children, variant = 'ghost', title }) {
   return (
-    <button
+    <Button
       type="button"
+      variant={variant === 'primary' ? 'primary' : 'ghost'}
       className={`lp-load-plan__icon-button lp-load-plan__icon-button--${variant}`}
       onClick={onClick}
       title={title}
       aria-label={title}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -248,7 +251,7 @@ export function ContainerLoadPlan({
       <div className="lp-load-plan__toolbar">
         <label className="lp-field">
           <span className="lp-field__label">Konteyner</span>
-          <select
+          <Select
             className="lp-input"
             value={containerType}
             onChange={(event) => setContainerType(event.target.value)}
@@ -258,12 +261,12 @@ export function ContainerLoadPlan({
                 {value.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <label className="lp-field">
           <span className="lp-field__label">Görünüş</span>
-          <select
+          <Select
             className="lp-input"
             value={cameraPreset}
             onChange={(event) => setCameraPreset(event.target.value)}
@@ -271,18 +274,19 @@ export function ContainerLoadPlan({
             <option value="iso">İzometrik</option>
             <option value="front">Ön</option>
             <option value="side">Yan</option>
-          </select>
+          </Select>
         </label>
 
         <div className="lp-field">
           <span className="lp-field__label">Kamera</span>
-          <button
+          <Button
             type="button"
+      variant="ghost"
             className="lp-button lp-button--ghost"
             onClick={handleResetCamera}
           >
             Kamerayı Sıfırla
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -308,13 +312,14 @@ export function ContainerLoadPlan({
       <div className="lp-load-plan__legend">
         <div className="lp-load-plan__legend-header">
           <span className="lp-field__label">Lot filtresi</span>
-          <button
+          <Button
             type="button"
+      variant="ghost"
             className="lp-load-plan__clear-filter"
             onClick={handleResetFilters}
           >
             Filtreyi temizle
-          </button>
+          </Button>
         </div>
 
         <div className="lp-load-plan__legend-items">
@@ -323,9 +328,10 @@ export function ContainerLoadPlan({
               selectedLotIds.length === 0 || selectedLotIds.includes(item.lotId);
 
             return (
-              <button
+              <Button
                 key={item.lotId}
                 type="button"
+      variant="ghost"
                 className={`lp-load-plan__legend-item ${active ? 'is-active' : ''}`}
                 onClick={() => handleToggleLot(item.lotId)}
               >
@@ -334,7 +340,7 @@ export function ContainerLoadPlan({
                   style={{ backgroundColor: item.color }}
                 />
                 <span>{item.label}</span>
-              </button>
+              </Button>
             );
           })}
         </div>

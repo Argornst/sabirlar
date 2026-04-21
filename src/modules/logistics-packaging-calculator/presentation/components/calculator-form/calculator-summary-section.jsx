@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import Button from '../../../../../shared/components/ui/Button';
 import './calculator-summary-section.css';
 
 function translateValidationStatus(status) {
@@ -114,8 +115,9 @@ export function CalculatorSummarySection({ summaryItems, result }) {
               </div>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
               className="lp-summary-modern__toggle"
               onClick={() => setIsExpanded((prev) => !prev)}
             >
@@ -125,7 +127,7 @@ export function CalculatorSummarySection({ summaryItems, result }) {
                 <ChevronDown size={16} className="lp-summary-modern__chevron" />
               )}
               {isExpanded ? 'Detayları Gizle' : 'Detayları Aç'}
-            </button>
+            </Button>
           </div>
 
           {!isExpanded ? (

@@ -1,5 +1,3 @@
-import { productionsRepository } from '../../infrastructure/repositories/productionsRepository';
-
-export const getProductionsList = async (filters = {}) => {
+export const getProductionsList = async ({ productionsRepository, filters = {} }) => {
   return productionsRepository.getList(filters);
 };

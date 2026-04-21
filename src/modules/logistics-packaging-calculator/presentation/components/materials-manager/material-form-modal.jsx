@@ -1,3 +1,7 @@
+import Button from '../../../../../shared/components/ui/Button';
+import Input from '../../../../../shared/components/ui/Input';
+import Select from '../../../../../shared/components/ui/Select';
+
 function normalizeNumber(value) {
   return value === '' ? null : Number(value);
 }
@@ -19,7 +23,7 @@ export function MaterialFormModal({
       <div className="lp-form-grid lp-form-grid--4">
         <label className="lp-field">
           <span className="lp-field__label">Kod</span>
-          <input
+          <Input
             className="lp-input"
             value={value.code}
             onChange={(event) => onChange({ code: event.target.value })}
@@ -28,7 +32,7 @@ export function MaterialFormModal({
 
         <label className="lp-field">
           <span className="lp-field__label">Ad</span>
-          <input
+          <Input
             className="lp-input"
             value={value.name}
             onChange={(event) => onChange({ name: event.target.value })}
@@ -37,7 +41,7 @@ export function MaterialFormModal({
 
         <label className="lp-field">
           <span className="lp-field__label">Tip</span>
-          <select
+          <Select
             className="lp-input"
             value={value.materialType}
             onChange={(event) => onChange({ materialType: event.target.value })}
@@ -46,12 +50,12 @@ export function MaterialFormModal({
             <option value="BOX">Kutu</option>
             <option value="VACUUM_BAG">Vakum Torbası</option>
             <option value="DRUM">Varil</option>
-          </select>
+          </Select>
         </label>
 
         <label className="lp-field">
           <span className="lp-field__label">Dara (kg)</span>
-          <input
+          <Input
             className="lp-input"
             type="number"
             step="0.001"
@@ -66,7 +70,7 @@ export function MaterialFormModal({
 
         <label className="lp-field">
           <span className="lp-field__label">En (cm)</span>
-          <input
+          <Input
             className="lp-input"
             type="number"
             step="0.01"
@@ -79,7 +83,7 @@ export function MaterialFormModal({
 
         <label className="lp-field">
           <span className="lp-field__label">Boy (cm)</span>
-          <input
+          <Input
             className="lp-input"
             type="number"
             step="0.01"
@@ -92,7 +96,7 @@ export function MaterialFormModal({
 
         <label className="lp-field">
           <span className="lp-field__label">Yükseklik (cm)</span>
-          <input
+          <Input
             className="lp-input"
             type="number"
             step="0.01"
@@ -105,9 +109,9 @@ export function MaterialFormModal({
       </div>
 
       <div className="lp-form-actions">
-        <button type="submit" className="lp-button" disabled={isSaving}>
+        <Button type="submit" className="lp-button" disabled={isSaving}>
           {isSaving ? 'Kaydediliyor...' : 'Malzemeyi Kaydet'}
-        </button>
+        </Button>
       </div>
     </form>
   );

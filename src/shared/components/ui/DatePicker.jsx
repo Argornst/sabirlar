@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -280,10 +281,16 @@ export default function DatePicker({
   );
 
   useEffect(() => {
-    if (selectedDate) {
+    if (!selectedDate) return undefined;
+
+    const frameId = window.requestAnimationFrame(() => {
       setViewDate(selectedDate);
       setFocusedDate(selectedDate);
-    }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
   }, [selectedDate]);
 
   function emitChange(nextValue) {
@@ -325,7 +332,7 @@ export default function DatePicker({
     }
   }
 
-  function updateDropdownPosition() {
+  const updateDropdownPosition = useCallback(() => {
     if (!rootRef.current) return;
 
     const rect = rootRef.current.getBoundingClientRect();
@@ -375,12 +382,19 @@ export default function DatePicker({
       left,
       width: maxWidth,
     });
-  }
+  }, [safePlacement, safeSize]);
 
   useLayoutEffect(() => {
-    if (!isOpen) return;
-    updateDropdownPosition();
-  }, [isOpen, viewDate, safeSize, safePlacement]);
+    if (!isOpen) return undefined;
+
+    const frameId = window.requestAnimationFrame(() => {
+      updateDropdownPosition();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [isOpen, viewDate, updateDropdownPosition]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -415,7 +429,7 @@ export default function DatePicker({
       window.removeEventListener("resize", handleWindowChange);
       window.removeEventListener("scroll", handleWindowChange, true);
     };
-  }, [isOpen, safeSize, safePlacement]);
+  }, [isOpen, updateDropdownPosition]);
 
   useEffect(() => {
     if (!isOpen || !focusedDate) return;
@@ -467,14 +481,6 @@ export default function DatePicker({
     setIsOpen(false);
   }
 
-  function handleToday() {
-    if (isDateDisabled(today)) return;
-
-    setViewDate(today);
-    setFocusedDate(today);
-    emitChange(toDateKey(today));
-    setIsOpen(false);
-  }
 
   function goPrevMonth() {
     const nextView = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);

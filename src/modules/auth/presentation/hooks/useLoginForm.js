@@ -4,7 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../../../../shared/constants/audit";
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
 import { loginDefaultValues, loginSchema } from "../../application/loginSchema";
-import { authRepository } from "../../infrastructure/authRepository";
+import {
+  resolveLoginIdentity,
+  signInWithCredentials,
+} from "../../runtime/auth.runtime";
 
 export function useLoginForm() {
   const [formError, setFormError] = useState("");
@@ -25,9 +28,9 @@ export function useLoginForm() {
     setFormError("");
 
     try {
-      const resolved = await authRepository.resolveLogin(values.login);
+      const resolved = await resolveLoginIdentity(values.login);
 
-      const result = await authRepository.signInWithPassword({
+      const result = await signInWithCredentials({
         email: resolved.email,
         password: values.password,
       });

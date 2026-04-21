@@ -1,4 +1,6 @@
 import FilterBar from "../../../../shared/components/ui/FilterBar";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
 
 export default function ProductsFilters({
   search,
@@ -12,7 +14,7 @@ export default function ProductsFilters({
       <div className="products-filters-row">
         <div className="filter-field">
           <label htmlFor="products-search">Ara</label>
-          <input
+          <Input
             id="products-search"
             type="text"
             placeholder="Ürün adı veya birim ara"
@@ -23,22 +25,19 @@ export default function ProductsFilters({
 
         <div className="filter-field">
           <label htmlFor="products-status">Durum</label>
-          <select
+          <Select
             id="products-status"
-            className="form-select"
             value={status}
             onChange={(event) => onStatusChange(event.target.value)}
           >
             <option value="">Tümü</option>
             <option value="active">Aktif</option>
             <option value="inactive">Pasif</option>
-          </select>
+          </Select>
         </div>
 
         {actions ? (
-          <div className="products-filters-row__actions">
-            {actions}
-          </div>
+          <div className="products-filters-row__actions">{actions}</div>
         ) : null}
       </div>
     </FilterBar>

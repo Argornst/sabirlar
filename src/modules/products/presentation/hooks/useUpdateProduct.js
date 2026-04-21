@@ -2,8 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../../app/providers/AppProviders";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../../../../shared/constants/audit";
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
-import { updateProduct } from "../../application/use-cases/updateProduct";
-import { productsRepository } from "../../infrastructure/repositories/productsRepository";
+import { invalidateProductRelatedQueries } from "../../application/queryKeys";
+import { updateProductRecord } from "../../runtime/products.runtime";
 
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
@@ -11,8 +11,7 @@ export function useUpdateProduct() {
 
   return useMutation({
     mutationFn: async ({ productId, values }) =>
-      updateProduct({
-        productsRepository,
+      updateProductRecord({
         productId,
         values,
       }),
@@ -28,10 +27,7 @@ export function useUpdateProduct() {
         },
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["reports-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      await invalidateProductRelatedQueries(queryClient);
     },
   });
 }

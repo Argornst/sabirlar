@@ -1,5 +1,7 @@
 import Button from "../../../../shared/components/ui/Button";
 import Field from "../../../../shared/components/ui/Field";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
 import { useCreateProductForm } from "../hooks/useCreateProductForm";
 
 export default function CreateProductForm() {
@@ -14,11 +16,11 @@ export default function CreateProductForm() {
   return (
     <form className="form-grid form-grid--two-columns" onSubmit={onSubmit}>
       <Field label="Ürün Adı" htmlFor="name" error={errors.name?.message}>
-        <input id="name" type="text" placeholder="Ürün adı" {...register("name")} />
+        <Input id="name" type="text" placeholder="Ürün adı" {...register("name")} />
       </Field>
 
       <Field label="Birim" htmlFor="unit" error={errors.unit?.message}>
-        <input id="unit" type="text" placeholder="adet / kg" {...register("unit")} />
+        <Input id="unit" type="text" placeholder="adet / kg" {...register("unit")} />
       </Field>
 
       <Field
@@ -26,7 +28,7 @@ export default function CreateProductForm() {
         htmlFor="unitPrice"
         error={errors.unitPrice?.message}
       >
-        <input
+        <Input
           id="unitPrice"
           type="number"
           min="0"
@@ -36,14 +38,14 @@ export default function CreateProductForm() {
       </Field>
 
       <Field label="KDV Tipi" htmlFor="vatType" error={errors.vatType?.message}>
-        <select id="vatType" className="form-select" {...register("vatType")}>
+        <Select id="vatType" {...register("vatType")}>
           <option value="HARIC">HARIC</option>
           <option value="DAHIL">DAHIL</option>
-        </select>
+        </Select>
       </Field>
 
       <Field label="KDV Oranı" htmlFor="vatRate" error={errors.vatRate?.message}>
-        <input
+        <Input
           id="vatRate"
           type="number"
           min="0"

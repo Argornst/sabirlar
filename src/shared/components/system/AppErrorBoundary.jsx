@@ -1,4 +1,5 @@
 import React from "react";
+import Button from "../ui/Button";
 
 export default class AppErrorBoundary extends React.Component {
   constructor(props) {
@@ -41,13 +42,13 @@ export default class AppErrorBoundary extends React.Component {
             </div>
 
             <div className="form-actions" style={{ marginTop: 18 }}>
-              <button
+              <Button
                 type="button"
-                className="primary-button"
+                variant="primary"
                 onClick={this.handleReload}
               >
                 Sayfayı Yenile
-              </button>
+              </Button>
             </div>
           </div>
         </div>

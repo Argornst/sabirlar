@@ -1,3 +1,5 @@
+import IconButton from "../../../../shared/components/ui/IconButton";
+
 export function DispatchToastViewport({ toasts, onDismiss }) {
   if (!Array.isArray(toasts) || !toasts.length) return null;
 
@@ -16,14 +18,14 @@ export function DispatchToastViewport({ toasts, onDismiss }) {
             {toast.message ? <p>{toast.message}</p> : null}
           </div>
 
-          <button
+          <IconButton
             type="button"
             className="dispatch-toast__close"
             onClick={() => onDismiss?.(toast.id)}
             aria-label="Bildirimi kapat"
           >
             ×
-          </button>
+          </IconButton>
         </div>
       ))}
     </div>

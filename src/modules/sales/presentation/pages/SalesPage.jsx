@@ -15,6 +15,7 @@ import SalesExportActions from "../components/SalesExportActions";
 import SalesFilters from "../components/SalesFilters";
 import SalesTable from "../components/SalesTable";
 import { useProductsListQuery } from "../../../products/presentation/hooks/useProductsListQuery";
+import "../../sales.css";
 
 export default function SalesPage() {
   const location = useLocation();

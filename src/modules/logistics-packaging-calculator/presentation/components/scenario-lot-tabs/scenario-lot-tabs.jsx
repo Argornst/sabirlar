@@ -1,3 +1,4 @@
+import Button from '../../../../../shared/components/ui/Button';
 import './scenario-lot-tabs.css';
 
 function getStatusLabel(status) {
@@ -25,13 +26,14 @@ export function ScenarioLotTabs({
           <p>Bir lot seç ve detaylarını sağ panelde düzenle.</p>
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
           className="scenario-lot-tabs__add-button"
           onClick={onAddLot}
         >
           + Lot Ekle
-        </button>
+        </Button>
       </div>
 
       <div className="scenario-lot-tabs__grid">
@@ -87,28 +89,31 @@ export function ScenarioLotTabs({
               </div>
 
               <div className="scenario-lot-tab-card__actions">
-                <button
+                <Button
                   type="button"
+          variant="ghost"
                   onClick={(event) => {
                     event.stopPropagation();
                     onMoveLotUp(lot.id);
                   }}
                 >
                   ↑
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+          variant="ghost"
                   onClick={(event) => {
                     event.stopPropagation();
                     onMoveLotDown(lot.id);
                   }}
                 >
                   ↓
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+          variant="ghost"
                   className="danger"
                   disabled={lots.length === 1}
                   onClick={(event) => {
@@ -117,7 +122,7 @@ export function ScenarioLotTabs({
                   }}
                 >
                   Sil
-                </button>
+                </Button>
               </div>
             </article>
           );

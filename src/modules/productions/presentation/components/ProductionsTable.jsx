@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
+import Table, {
+  TableScroll,
+  TableShell,
+} from "../../../../shared/components/ui/Table";
 import {
   formatDispatchDateLabel,
   formatQuantityLabel,
 } from "../../domain/entities/production.entity";
-import { ProductionStatusBadge } from "./ProductionStatusBadge";
-import { ProductionRowActions } from "./ProductionRowActions";
 import EditProductionInlineForm from "./EditProductionInlineForm";
 import ProductionDetailsPanel from "./ProductionDetailsPanel";
+import { ProductionRowActions } from "./ProductionRowActions";
+import { ProductionStatusBadge } from "./ProductionStatusBadge";
 
 export function ProductionsTable({ items }) {
   const [editingId, setEditingId] = useState(null);
@@ -35,9 +39,9 @@ export function ProductionsTable({ items }) {
   }
 
   return (
-    <div className="production-table-shell">
-      <div className="production-table-wrapper">
-        <table className="production-table production-table--premium">
+    <TableShell className="production-table-shell">
+      <TableScroll className="production-table-wrapper">
+        <Table className="production-table production-table--premium">
           <thead>
             <tr>
               <th>Lot</th>
@@ -115,8 +119,8 @@ export function ProductionsTable({ items }) {
               );
             })}
           </tbody>
-        </table>
-      </div>
-    </div>
+        </Table>
+      </TableScroll>
+    </TableShell>
   );
 }

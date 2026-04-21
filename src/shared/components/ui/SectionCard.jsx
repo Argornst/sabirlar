@@ -5,8 +5,10 @@ export default function SectionCard({
   description,
   children,
 }) {
+  const MotionDiv = motion.div;
+
   return (
-    <motion.div
+    <MotionDiv
       className="ui-section-card ui-section-card--premium"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
@@ -25,6 +27,6 @@ export default function SectionCard({
       <div className="ui-section-card__content">
         {children}
       </div>
-    </motion.div>
+    </MotionDiv>
   );
 }

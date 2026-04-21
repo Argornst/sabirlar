@@ -1,3 +1,7 @@
+import Button from '../../../../../shared/components/ui/Button';
+import Field from '../../../../../shared/components/ui/Field';
+import Input from '../../../../../shared/components/ui/Input';
+import Select from '../../../../../shared/components/ui/Select';
 import './pallet-line-editor.css';
 
 function toNumberOrEmpty(value) {
@@ -32,9 +36,8 @@ export function PalletLineEditor({
       }`}
     >
       <div className="lp-pallet-line__grid">
-        <label className="lp-field">
-          <span className="lp-field__label">Palet Tipi</span>
-          <select
+        <Field label="Palet Tipi" className="lp-field">
+          <Select
             className="lp-input"
             value={line.palletMaterialId}
             onChange={(event) =>
@@ -49,12 +52,11 @@ export function PalletLineEditor({
                 {option.code} - {option.name}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Field>
 
-        <label className="lp-field">
-          <span className="lp-field__label">Palet Adedi</span>
-          <input
+        <Field label="Palet Adedi" className="lp-field">
+          <Input
             className="lp-input"
             type="number"
             min="1"
@@ -66,11 +68,10 @@ export function PalletLineEditor({
               })
             }
           />
-        </label>
+        </Field>
 
-        <label className="lp-field">
-          <span className="lp-field__label">Bir Sıradaki Adet</span>
-          <input
+        <Field label="Bir Sıradaki Adet" className="lp-field">
+          <Input
             className="lp-input"
             type="number"
             min="1"
@@ -82,11 +83,10 @@ export function PalletLineEditor({
               })
             }
           />
-        </label>
+        </Field>
 
-        <label className="lp-field">
-          <span className="lp-field__label">Paletteki Toplam Ambalaj</span>
-          <input
+        <Field label="Paletteki Toplam Ambalaj" className="lp-field">
+          <Input
             className="lp-input"
             type="number"
             min="1"
@@ -98,11 +98,10 @@ export function PalletLineEditor({
               })
             }
           />
-        </label>
+        </Field>
 
-        <label className="lp-field">
-          <span className="lp-field__label">İstif Grubu</span>
-          <select
+        <Field label="İstif Grubu" className="lp-field">
+          <Select
             className="lp-input"
             value={selectedStackValue}
             onChange={(event) => {
@@ -127,12 +126,11 @@ export function PalletLineEditor({
               </option>
             ))}
             <option value={NEW_STACK_GROUP_VALUE}>+ Yeni istif oluştur</option>
-          </select>
-        </label>
+          </Select>
+        </Field>
 
-        <label className="lp-field">
-          <span className="lp-field__label">İstif Sırası</span>
-          <select
+        <Field label="İstif Sırası" className="lp-field">
+          <Select
             className="lp-input"
             value={line.stackOrder === '' ? 1 : line.stackOrder}
             onChange={(event) =>
@@ -146,8 +144,8 @@ export function PalletLineEditor({
                 {value}. Kat
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Field>
       </div>
 
       {(hasError || stackHasError) && (
@@ -180,14 +178,15 @@ export function PalletLineEditor({
           </div>
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
           className="lp-button lp-button--ghost"
           onClick={() => onRemove(line.id)}
           disabled={disableRemove}
         >
           Satırı Sil
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -13,8 +13,8 @@ import {
   createProductDefaultValues,
   createProductSchema,
 } from "../../application/dto/createProductSchema";
-import { createProduct } from "../../application/use-cases/createProduct";
-import { productsRepository } from "../../infrastructure/repositories/productsRepository";
+import { invalidateProductRelatedQueries } from "../../application/queryKeys";
+import { createProductRecord } from "../../runtime/products.runtime";
 
 export function useCreateProductForm() {
   const queryClient = useQueryClient();
@@ -37,8 +37,7 @@ export function useCreateProductForm() {
         throw new Error("Organizasyon bilgisi bulunamadı.");
       }
 
-      return createProduct({
-        productsRepository,
+      return createProductRecord({
         values,
         organizationId: organization.id,
       });
@@ -57,10 +56,7 @@ export function useCreateProductForm() {
         },
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["reports-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      await invalidateProductRelatedQueries(queryClient);
     },
   });
 

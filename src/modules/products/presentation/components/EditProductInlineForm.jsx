@@ -3,6 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "../../../../shared/components/ui/Button";
 import Field from "../../../../shared/components/ui/Field";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
 import { updateProductSchema } from "../../application/dto/updateProductSchema";
 import { useUpdateProduct } from "../hooks/useUpdateProduct";
 
@@ -57,19 +59,11 @@ export default function EditProductInlineForm({
   return (
     <form className="form-grid form-grid--two-columns" onSubmit={onSubmit}>
       <Field label="Ürün Adı" htmlFor={`edit-name-${product.id}`} error={errors.name?.message}>
-        <input
-          id={`edit-name-${product.id}`}
-          type="text"
-          {...register("name")}
-        />
+        <Input id={`edit-name-${product.id}`} type="text" {...register("name")} />
       </Field>
 
       <Field label="Birim" htmlFor={`edit-unit-${product.id}`} error={errors.unit?.message}>
-        <input
-          id={`edit-unit-${product.id}`}
-          type="text"
-          {...register("unit")}
-        />
+        <Input id={`edit-unit-${product.id}`} type="text" {...register("unit")} />
       </Field>
 
       <Field
@@ -77,7 +71,7 @@ export default function EditProductInlineForm({
         htmlFor={`edit-unit-price-${product.id}`}
         error={errors.unitPrice?.message}
       >
-        <input
+        <Input
           id={`edit-unit-price-${product.id}`}
           type="number"
           step="0.01"
@@ -91,14 +85,10 @@ export default function EditProductInlineForm({
         htmlFor={`edit-vat-type-${product.id}`}
         error={errors.vatType?.message}
       >
-        <select
-          id={`edit-vat-type-${product.id}`}
-          className="form-select"
-          {...register("vatType")}
-        >
+        <Select id={`edit-vat-type-${product.id}`} {...register("vatType")}>
           <option value="HARIC">HARIC</option>
           <option value="DAHIL">DAHIL</option>
-        </select>
+        </Select>
       </Field>
 
       <Field
@@ -106,7 +96,7 @@ export default function EditProductInlineForm({
         htmlFor={`edit-vat-rate-${product.id}`}
         error={errors.vatRate?.message}
       >
-        <input
+        <Input
           id={`edit-vat-rate-${product.id}`}
           type="number"
           step="0.01"

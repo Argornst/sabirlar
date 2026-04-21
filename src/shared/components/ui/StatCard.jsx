@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from "framer-motion";
 
 export default function StatCard({ label, value, helper = null }) {
   const prefersReducedMotion = useReducedMotion();
+  const MotionDiv = motion.div;
 
   const hoverProps = prefersReducedMotion
     ? {}
@@ -11,10 +12,7 @@ export default function StatCard({ label, value, helper = null }) {
       };
 
   return (
-    <motion.div
-      className="ui-stat-card ui-stat-card--premium"
-      {...hoverProps}
-    >
+    <MotionDiv className="ui-stat-card ui-stat-card--premium" {...hoverProps}>
       <div className="ui-stat-card__glow" />
 
       <div className="ui-stat-card__top">
@@ -24,6 +22,6 @@ export default function StatCard({ label, value, helper = null }) {
       <strong className="ui-stat-card__value">{value}</strong>
 
       {helper ? <span className="ui-stat-card__helper">{helper}</span> : null}
-    </motion.div>
+    </MotionDiv>
   );
 }

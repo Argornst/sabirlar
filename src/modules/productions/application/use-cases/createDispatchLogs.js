@@ -1,6 +1,9 @@
-import { insertDispatchLogs } from "../../infrastructure/repositories/dispatchLogRepository";
-
-export async function createDispatchLogs({ items, fromDateMap, toDate }) {
+export async function createDispatchLogs({
+  dispatchLogRepository,
+  items,
+  fromDateMap,
+  toDate,
+}) {
   const logs = items.map((item) => ({
     production_id: item.id,
     action_type: items.length > 1 ? "bulk_move" : "move",
@@ -13,5 +16,5 @@ export async function createDispatchLogs({ items, fromDateMap, toDate }) {
     },
   }));
 
-  return insertDispatchLogs(logs);
+  return dispatchLogRepository.insert(logs);
 }

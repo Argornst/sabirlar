@@ -13,6 +13,7 @@ import { useUsersListQuery } from "../hooks/useUsersListQuery";
 import { useRolesQuery } from "../hooks/useRolesQuery";
 import { useOrganizationsQuery } from "../hooks/useOrganizationsQuery";
 import { useUsersFilters } from "../hooks/useUsersFilters";
+import "../../users.css";
 
 export default function UsersPage() {
   const { data, isLoading, isError, error } = useUsersListQuery();

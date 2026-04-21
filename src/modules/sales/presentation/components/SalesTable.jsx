@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
+import StatusBadge from "../../../../shared/components/ui/StatusBadge";
+import Table, {
+  TableShell,
+} from "../../../../shared/components/ui/Table";
 import { formatCurrency } from "../../../../shared/utils/currency";
 import { formatDate } from "../../../../shared/utils/date";
-import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 import EditSaleInlineForm from "./EditSaleInlineForm";
 import SaleDetailsPanel from "./SaleDetailsPanel";
 import SaleRowActions from "./SaleRowActions";
@@ -53,43 +56,41 @@ export default function SalesTable({ sales = [], products = [] }) {
   }
 
   return (
-    <div className="sales-table-shell">
-      <div className="sales-table-wrap">
-        <table className="sales-table">
-          <thead>
-            <tr>
-              <th>Müşteri</th>
-              <th>Ürün Bilgisi</th>
-              <th>Tarih</th>
-              <th>Kalem</th>
-              <th>Toplam Adet</th>
-              <th>Genel Toplam</th>
-              <th>Durum</th>
-              <th className="sales-table__actions-col">İşlemler</th>
-            </tr>
-          </thead>
+    <TableShell className="sales-table-shell" scrollClassName="sales-table-wrap">
+      <Table className="sales-table">
+        <thead>
+          <tr>
+            <th>Müşteri</th>
+            <th>Ürün Bilgisi</th>
+            <th>Tarih</th>
+            <th>Kalem</th>
+            <th>Toplam Adet</th>
+            <th>Genel Toplam</th>
+            <th>Durum</th>
+            <th className="sales-table__actions-col">İşlemler</th>
+          </tr>
+        </thead>
 
-          <tbody>
-            {safeSales.map((sale) => {
-              const isExpanded = expandedSaleId === sale.id;
-              const isEditing = editingSaleId === sale.id;
+        <tbody>
+          {safeSales.map((sale) => {
+            const isExpanded = expandedSaleId === sale.id;
+            const isEditing = editingSaleId === sale.id;
 
-              return (
-                <FragmentRow
-                  key={sale.id}
-                  sale={sale}
-                  isExpanded={isExpanded}
-                  isEditing={isEditing}
-                  products={products}
-                  onToggleExpanded={toggleExpanded}
-                  onToggleEditing={toggleEditing}
-                />
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            return (
+              <FragmentRow
+                key={sale.id}
+                sale={sale}
+                isExpanded={isExpanded}
+                isEditing={isEditing}
+                products={products}
+                onToggleExpanded={toggleExpanded}
+                onToggleEditing={toggleEditing}
+              />
+            );
+          })}
+        </tbody>
+      </Table>
+    </TableShell>
   );
 }
 

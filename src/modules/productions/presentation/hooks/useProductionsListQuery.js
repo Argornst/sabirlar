@@ -1,16 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { getProductionsList } from "../../application/use-cases/getProductionsList";
+import { productionQueryKeys } from "../../application/queryKeys";
+import { listProductions } from "../../runtime/productions.runtime";
 
-export const productionQueryKeys = {
-  all: ["productions"],
-  list: (filters) => ["productions", "list", filters],
-  dispatchPlan: (filters) => ["productions", "dispatch-plan", filters],
-};
+export { productionQueryKeys };
 
-export const useProductionsListQuery = (filters) => {
+export const useProductionsListQuery = (filters = {}) => {
   return useQuery({
     queryKey: productionQueryKeys.list(filters),
-    queryFn: () => getProductionsList(filters),
+    queryFn: () => listProductions(filters),
     refetchOnMount: "always",
   });
 };

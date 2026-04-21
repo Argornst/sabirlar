@@ -1,7 +1,10 @@
 import { useMemo } from "react";
+import StatusBadge from "../../../../shared/components/ui/StatusBadge";
+import Table, {
+  TableScroll,
+} from "../../../../shared/components/ui/Table";
 import { formatCurrency } from "../../../../shared/utils/currency";
 import { formatDate } from "../../../../shared/utils/date";
-import StatusBadge from "../../../../shared/components/ui/StatusBadge";
 import {
   getInvoiceStatusMeta,
   getPaymentStatusMeta,
@@ -26,8 +29,8 @@ export default function RecentSalesList({ sales = [] }) {
   }
 
   return (
-    <div className="table-wrap table-wrap--premium table-wrap--ultra">
-      <table className="data-table data-table--premium data-table--ultra">
+    <TableScroll className="table-wrap table-wrap--premium table-wrap--ultra">
+      <Table className="data-table data-table--premium data-table--ultra">
         <thead>
           <tr>
             <th>#</th>
@@ -47,13 +50,9 @@ export default function RecentSalesList({ sales = [] }) {
               <tr key={sale.id}>
                 <td className="data-table__id">#{sale.id}</td>
 
-                <td className="data-table__date">
-                  {formatDate(sale.saleDate)}
-                </td>
+                <td className="data-table__date">{formatDate(sale.saleDate)}</td>
 
-                <td className="data-table__customer">
-                  {sale.customerName}
-                </td>
+                <td className="data-table__customer">{sale.customerName}</td>
 
                 <td className="data-table__amount">
                   {formatCurrency(sale.totalAmount, "TRY")}
@@ -76,7 +75,7 @@ export default function RecentSalesList({ sales = [] }) {
             );
           })}
         </tbody>
-      </table>
-    </div>
+      </Table>
+    </TableScroll>
   );
 }

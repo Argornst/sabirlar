@@ -6,15 +6,15 @@ import {
   usePackagingRulesQuery,
   useUpsertPackagingRulesMutation,
 } from '../../application';
-import { SupabasePackagingMaterialsRepository } from '../../infrastructure/repositories/supabase-packaging-materials.repository.js';
-import { SupabasePackagingProductsRepository } from '../../infrastructure/repositories/supabase-packaging-products.repository.js';
-import { SupabasePackagingRulesRepository } from '../../infrastructure/repositories/supabase-packaging-rules.repository.js';
+import { logisticsPackagingRuntime } from '../../runtime/logistics-packaging.runtime.js';
 import { LogisticsPackagingLayout } from '../components/logistics-packaging-layout/logistics-packaging-layout';
 import { ProductPackagingRulesManager } from '../components/product-packaging-rules-manager/product-packaging-rules-manager';
 
-const productsRepository = new SupabasePackagingProductsRepository();
-const materialsRepository = new SupabasePackagingMaterialsRepository();
-const rulesRepository = new SupabasePackagingRulesRepository();
+const {
+  productsRepository,
+  materialsRepository,
+  rulesRepository,
+} = logisticsPackagingRuntime;
 
 export function LogisticsPackagingRulesPage() {
   const [selectedProductId, setSelectedProductId] = useState('');

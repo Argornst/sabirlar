@@ -6,9 +6,8 @@ import {
 } from "../../../../shared/constants/audit";
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
 import { getReadableErrorMessage } from "../../../../shared/lib/error/getReadableErrorMessage";
-import { updateSale } from "../../application/use-cases/updateSale";
-import { salesRepository } from "../../infrastructure/repositories/salesRepository";
-import { productsRepository } from "../../../products/infrastructure/repositories/productsRepository";
+import { invalidateSalesRelatedQueries } from "../../application/queryKeys";
+import { updateSaleRecord } from "../../runtime/sales.runtime";
 
 export function useUpdateSale() {
   const queryClient = useQueryClient();
@@ -16,9 +15,7 @@ export function useUpdateSale() {
 
   return useMutation({
     mutationFn: async ({ sale, values }) =>
-      updateSale({
-        salesRepository,
-        productsRepository,
+      updateSaleRecord({
         userId: user?.id ?? null,
         sale,
         values,
@@ -40,10 +37,7 @@ export function useUpdateSale() {
         },
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["sales"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["reports-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      await invalidateSalesRelatedQueries(queryClient);
     },
 
     onError: (error) => {

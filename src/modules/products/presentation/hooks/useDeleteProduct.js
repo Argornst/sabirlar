@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../../app/providers/AppProviders";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../../../../shared/constants/audit";
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
-import { productsRepository } from "../../infrastructure/repositories/productsRepository";
+import { invalidateProductRelatedQueries } from "../../application/queryKeys";
+import { deleteProductRecord } from "../../runtime/products.runtime";
 
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
@@ -10,7 +11,7 @@ export function useDeleteProduct() {
 
   return useMutation({
     mutationFn: async ({ productId, productName }) => {
-      await productsRepository.remove(productId);
+      await deleteProductRecord(productId);
       return { productId, productName };
     },
     onSuccess: async ({ productId, productName }) => {
@@ -25,10 +26,7 @@ export function useDeleteProduct() {
         },
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["reports-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      await invalidateProductRelatedQueries(queryClient);
     },
   });
 }

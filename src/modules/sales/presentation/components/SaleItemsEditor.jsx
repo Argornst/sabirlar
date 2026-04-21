@@ -1,5 +1,9 @@
+import { useMemo } from "react";
+import { useWatch } from "react-hook-form";
 import Button from "../../../../shared/components/ui/Button";
 import Field from "../../../../shared/components/ui/Field";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
 import { formatCurrency } from "../../../../shared/utils/currency";
 
 function getProductMeta(product) {
@@ -27,11 +31,21 @@ export default function SaleItemsEditor({
   productsLoading,
   register,
   errors,
-  watch,
+  control,
   append,
   remove,
 }) {
-  const watchedItems = watch("items") ?? [];
+  const watchedItems =
+    useWatch({
+      control,
+      name: "items",
+      defaultValue: [],
+    }) ?? [];
+
+  const productsById = useMemo(
+    () => new Map(products.map((product) => [String(product.id), product])),
+    [products]
+  );
 
   return (
     <div className="sale-items-editor">
@@ -50,11 +64,7 @@ export default function SaleItemsEditor({
       {fields.map((field, index) => {
         const selectedId = watchedItems?.[index]?.productId;
         const quantity = watchedItems?.[index]?.quantity;
-
-        const product = products.find(
-          (p) => String(p.id) === String(selectedId)
-        );
-
+        const product = productsById.get(String(selectedId));
         const line = calculateLine(product, quantity);
 
         return (
@@ -64,24 +74,24 @@ export default function SaleItemsEditor({
                 label="Ürün"
                 error={errors?.items?.[index]?.productId?.message}
               >
-                <select {...register(`items.${index}.productId`)}>
+                <Select {...register(`items.${index}.productId`)}>
                   <option value="">
                     {productsLoading ? "Yükleniyor..." : "Seç"}
                   </option>
 
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
+                  {products.map((productItem) => (
+                    <option key={productItem.id} value={productItem.id}>
+                      {productItem.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
 
               <Field
                 label="Adet"
                 error={errors?.items?.[index]?.quantity?.message}
               >
-                <input
+                <Input
                   type="number"
                   min="0.001"
                   step="0.001"
@@ -107,7 +117,7 @@ export default function SaleItemsEditor({
               </div>
             </div>
 
-            {fields.length > 1 && (
+            {fields.length > 1 ? (
               <Button
                 type="button"
                 variant="ghost"
@@ -115,7 +125,7 @@ export default function SaleItemsEditor({
               >
                 Kaldır
               </Button>
-            )}
+            ) : null}
           </div>
         );
       })}

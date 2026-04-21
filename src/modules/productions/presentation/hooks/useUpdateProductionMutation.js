@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateProduction } from "../../application/use-cases/updateProduction";
-import { productionQueryKeys } from "./useProductionsListQuery";
+import { productionQueryKeys, refreshProductionQueries } from "../../application/queryKeys";
+import { updateProductionRecord } from "../../runtime/productions.runtime";
 
 function normalizePayload(payload) {
   if (payload?.mode === "bulk" && Array.isArray(payload.items)) {
@@ -44,7 +44,7 @@ export const useUpdateProductionMutation = () => {
       if (payload?.mode === "bulk" && Array.isArray(payload.items)) {
         return Promise.all(
           payload.items.map((item) =>
-            updateProduction({
+            updateProductionRecord({
               id: item.id,
               values: item.values,
             })
@@ -52,7 +52,7 @@ export const useUpdateProductionMutation = () => {
         );
       }
 
-      return updateProduction({
+      return updateProductionRecord({
         id: payload.id,
         values: payload.values,
       });
@@ -86,7 +86,7 @@ export const useUpdateProductionMutation = () => {
       };
     },
 
-    onError: (error, payload, context) => {
+    onError: (_error, _payload, context) => {
       if (context?.snapshots?.length) {
         context.snapshots.forEach(([queryKey, previousData]) => {
           queryClient.setQueryData(queryKey, previousData);
@@ -112,11 +112,7 @@ export const useUpdateProductionMutation = () => {
     },
 
     onSettled: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: productionQueryKeys.all }),
-        queryClient.refetchQueries({ queryKey: ["productions", "dispatch-plan"] }),
-        queryClient.refetchQueries({ queryKey: ["productions", "list"] }),
-      ]);
+      await refreshProductionQueries(queryClient);
     },
   });
 

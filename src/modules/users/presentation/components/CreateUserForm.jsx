@@ -1,9 +1,11 @@
 import Button from "../../../../shared/components/ui/Button";
 import Field from "../../../../shared/components/ui/Field";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
+import { formatRoleName } from "../../../../shared/lib/formatters";
+import { useCreateUserForm } from "../hooks/useCreateUserForm";
 import { useOrganizationsQuery } from "../hooks/useOrganizationsQuery";
 import { useRolesQuery } from "../hooks/useRolesQuery";
-import { useCreateUserForm } from "../hooks/useCreateUserForm";
-import { formatRoleName } from "../../../../shared/lib/formatters";
 
 export default function CreateUserForm() {
   const {
@@ -21,7 +23,7 @@ export default function CreateUserForm() {
   return (
     <form className="form-grid form-grid--two-columns" onSubmit={onSubmit}>
       <Field label="E-posta" htmlFor="email" error={errors.email?.message}>
-        <input
+        <Input
           id="email"
           type="email"
           placeholder="ornek@mail.com"
@@ -35,7 +37,7 @@ export default function CreateUserForm() {
         htmlFor="username"
         error={errors.username?.message}
       >
-        <input
+        <Input
           id="username"
           type="text"
           placeholder="kullaniciadi"
@@ -45,7 +47,7 @@ export default function CreateUserForm() {
       </Field>
 
       <Field label="Ad Soyad" htmlFor="fullName" error={errors.fullName?.message}>
-        <input
+        <Input
           id="fullName"
           type="text"
           placeholder="Ad Soyad"
@@ -55,7 +57,7 @@ export default function CreateUserForm() {
       </Field>
 
       <Field label="Şifre" htmlFor="password" error={errors.password?.message}>
-        <input
+        <Input
           id="password"
           type="password"
           placeholder="••••••••"
@@ -65,16 +67,16 @@ export default function CreateUserForm() {
       </Field>
 
       <Field label="Rol" htmlFor="roleId" error={errors.roleId?.message}>
-        <select id="roleId" className="form-select" {...register("roleId")}>
+        <Select id="roleId" {...register("roleId")}>
           <option value="">
             {rolesLoading ? "Roller yükleniyor..." : "Rol seçin"}
           </option>
           {roles.map((role) => (
-  <option key={role.id} value={role.id}>
-    {formatRoleName(role.name)}
-  </option>
-))}
-        </select>
+            <option key={role.id} value={role.id}>
+              {formatRoleName(role.name)}
+            </option>
+          ))}
+        </Select>
       </Field>
 
       <Field
@@ -82,11 +84,7 @@ export default function CreateUserForm() {
         htmlFor="organizationId"
         error={errors.organizationId?.message}
       >
-        <select
-          id="organizationId"
-          className="form-select"
-          {...register("organizationId")}
-        >
+        <Select id="organizationId" {...register("organizationId")}>
           <option value="">
             {organizationsLoading
               ? "Organizasyonlar yükleniyor..."
@@ -97,7 +95,7 @@ export default function CreateUserForm() {
               {organization.name}
             </option>
           ))}
-        </select>
+        </Select>
       </Field>
 
       {submitError ? <div className="error-text">{submitError}</div> : null}

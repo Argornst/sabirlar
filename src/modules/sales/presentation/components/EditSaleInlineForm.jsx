@@ -1,8 +1,10 @@
 import { useEffect, useMemo } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "../../../../shared/components/ui/Button";
 import Field from "../../../../shared/components/ui/Field";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
 import { formatCurrency } from "../../../../shared/utils/currency";
 import { updateSaleSchema } from "../../application/dto/updateSaleSchema";
 import { useUpdateSale } from "../hooks/useUpdateSale";
@@ -61,7 +63,6 @@ export default function EditSaleInlineForm({
   const {
     control,
     register,
-    watch,
     handleSubmit,
     reset,
     formState: { errors },
@@ -83,7 +84,11 @@ export default function EditSaleInlineForm({
     });
   }, [sale, reset]);
 
-  const watchedItems = watch("items") ?? [];
+  const watchedItems = useWatch({
+    control,
+    name: "items",
+    defaultValue: createDefaultItems(sale),
+  });
 
   const totals = useMemo(
     () => calculateTotals(watchedItems, products),
@@ -110,7 +115,7 @@ export default function EditSaleInlineForm({
         htmlFor={`edit-sale-date-${sale.id}`}
         error={errors.saleDate?.message}
       >
-        <input
+        <Input
           id={`edit-sale-date-${sale.id}`}
           type="date"
           {...register("saleDate")}
@@ -122,7 +127,7 @@ export default function EditSaleInlineForm({
         htmlFor={`edit-customer-${sale.id}`}
         error={errors.customerName?.message}
       >
-        <input
+        <Input
           id={`edit-customer-${sale.id}`}
           type="text"
           {...register("customerName")}
@@ -134,14 +139,13 @@ export default function EditSaleInlineForm({
         htmlFor={`edit-payment-status-${sale.id}`}
         error={errors.paymentStatus?.message}
       >
-        <select
+        <Select
           id={`edit-payment-status-${sale.id}`}
-          className="form-select"
           {...register("paymentStatus")}
         >
           <option value="beklemede">Beklemede</option>
           <option value="odendi">Ödendi</option>
-        </select>
+        </Select>
       </Field>
 
       <Field
@@ -149,14 +153,13 @@ export default function EditSaleInlineForm({
         htmlFor={`edit-invoice-status-${sale.id}`}
         error={errors.invoiceStatus?.message}
       >
-        <select
+        <Select
           id={`edit-invoice-status-${sale.id}`}
-          className="form-select"
           {...register("invoiceStatus")}
         >
           <option value="faturalanmadi">Faturalanmadı</option>
           <option value="faturalandi">Faturalandı</option>
-        </select>
+        </Select>
       </Field>
 
       <Field
@@ -165,7 +168,7 @@ export default function EditSaleInlineForm({
         fullWidth
         error={errors.note?.message}
       >
-        <input
+        <Input
           id={`edit-note-${sale.id}`}
           type="text"
           placeholder="Opsiyonel not"
@@ -225,9 +228,8 @@ export default function EditSaleInlineForm({
                     htmlFor={`edit-items.${index}.productId`}
                     error={errors?.items?.[index]?.productId?.message}
                   >
-                    <select
+                    <Select
                       id={`edit-items.${index}.productId`}
-                      className="form-select"
                       {...register(`items.${index}.productId`)}
                     >
                       <option value="">Ürün seçin</option>
@@ -237,7 +239,7 @@ export default function EditSaleInlineForm({
                           {product.name}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </Field>
 
                   <Field
@@ -245,7 +247,7 @@ export default function EditSaleInlineForm({
                     htmlFor={`edit-items.${index}.quantity`}
                     error={errors?.items?.[index]?.quantity?.message}
                   >
-                    <input
+                    <Input
                       id={`edit-items.${index}.quantity`}
                       type="number"
                       min="0.001"

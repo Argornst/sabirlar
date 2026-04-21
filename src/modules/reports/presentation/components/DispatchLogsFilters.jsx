@@ -1,4 +1,7 @@
+import Button from "../../../../shared/components/ui/Button";
 import DatePicker from "../../../../shared/components/ui/DatePicker";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
 
 export default function DispatchLogsFilters({
   filters,
@@ -10,7 +13,7 @@ export default function DispatchLogsFilters({
       <div className="dispatch-log-filters__grid">
         <div className="filter-field">
           <label htmlFor="dispatch-log-search">Ara</label>
-          <input
+          <Input
             id="dispatch-log-search"
             type="text"
             placeholder="Müşteri, ürün, lot, yapan kişi..."
@@ -21,9 +24,8 @@ export default function DispatchLogsFilters({
 
         <div className="filter-field">
           <label htmlFor="dispatch-log-action-type">İşlem Tipi</label>
-          <select
+          <Select
             id="dispatch-log-action-type"
-            className="form-select"
             value={filters.actionType}
             onChange={(event) => onChange("actionType", event.target.value)}
           >
@@ -31,7 +33,7 @@ export default function DispatchLogsFilters({
             <option value="move">Tekli taşıma</option>
             <option value="bulk_move">Toplu taşıma</option>
             <option value="update">Kayıt güncelleme</option>
-          </select>
+          </Select>
         </div>
 
         <div className="filter-field">
@@ -56,13 +58,14 @@ export default function DispatchLogsFilters({
       </div>
 
       <div className="dispatch-log-filters__footer">
-        <button
+        <Button
           type="button"
+          variant="ghost"
           className="dispatch-chip-button dispatch-chip-button--ghost"
           onClick={onReset}
         >
           Filtreleri Temizle
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -1,18 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteProduction } from "../../application/use-cases/deleteProduction";
-import { productionQueryKeys } from "./useProductionsListQuery";
+import { refreshProductionQueries } from "../../application/queryKeys";
+import { deleteProductionRecord } from "../../runtime/productions.runtime";
 
 export const useDeleteProductionMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteProduction,
+    mutationFn: deleteProductionRecord,
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: productionQueryKeys.all }),
-        queryClient.refetchQueries({ queryKey: ["productions", "dispatch-plan"] }),
-        queryClient.refetchQueries({ queryKey: ["productions", "list"] }),
-      ]);
+      await refreshProductionQueries(queryClient);
     },
   });
 };

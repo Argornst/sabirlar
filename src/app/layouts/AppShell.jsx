@@ -14,6 +14,10 @@ import {
 import { getOrganizationDisplayName } from "../../shared/lib/tenant";
 import { formatRoleName } from "../../shared/lib/formatters";
 import { useAuth } from "../providers/AppProviders";
+import Button from "../../shared/components/ui/Button";
+import IconButton from "../../shared/components/ui/IconButton";
+import Input from "../../shared/components/ui/Input";
+import Pressable from "../../shared/components/ui/Pressable";
 import { useCurrentOrganization } from "../../modules/users/presentation/hooks/useCurrentOrganization";
 
 const navigationItems = [
@@ -578,8 +582,7 @@ export default function AppShell() {
         <span className="sidebar__ambient sidebar__ambient--one" />
         <span className="sidebar__ambient sidebar__ambient--two" />
 
-        <button
-          type="button"
+        <IconButton
           className={`sidebar__floating-toggle ${
             isSidebarCollapsed ? "sidebar__floating-toggle--collapsed" : ""
           }`}
@@ -590,7 +593,7 @@ export default function AppShell() {
           title={isSidebarCollapsed ? "Genişlet" : "Daralt"}
         >
           <ChevronIcon collapsed={isSidebarCollapsed} />
-        </button>
+        </IconButton>
 
         <div className="sidebar__inner">
           <div className="sidebar__top">
@@ -655,15 +658,16 @@ export default function AppShell() {
               </NavLink>
             ) : null}
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={handleSignOut}
               className="sidebar__logout-button"
               title="Çıkış Yap"
             >
               <LogoutIcon />
               {!isSidebarCollapsed ? <span>Çıkış Yap</span> : null}
-            </button>
+            </Button>
           </div>
         </div>
       </aside>
@@ -676,8 +680,9 @@ export default function AppShell() {
           </div>
 
           <div className="topbar__right">
-            <button
+            <Button
               type="button"
+              variant="ghost"
               className="command-palette-trigger"
               onClick={() => setIsPaletteOpen(true)}
               title="Komut paleti"
@@ -686,7 +691,7 @@ export default function AppShell() {
               <SearchIcon />
               <span>Hızlı Git</span>
               <kbd>Ctrl K</kbd>
-            </button>
+            </Button>
 
             <div className="topbar__organization-chip">{organizationName}</div>
 
@@ -695,9 +700,10 @@ export default function AppShell() {
               <span>{roleName}</span>
             </div>
 
-            <button
+            <Button
               type="button"
-              className={`ui-button ui-button--ghost theme-toggle ${
+              variant="ghost"
+              className={`theme-toggle ${
                 isThemeAnimating ? "theme-toggle--animating" : ""
               }`}
               onClick={toggleTheme}
@@ -709,7 +715,7 @@ export default function AppShell() {
               <span className="theme-toggle__icon">
                 {theme === "dark" ? "☀️" : "🌙"}
               </span>
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -748,7 +754,7 @@ export default function AppShell() {
               >
                 <div className="command-palette__header">
                   <SearchIcon />
-                  <input
+                  <Input
                     ref={paletteInputRef}
                     type="text"
                     value={paletteQuery}
@@ -756,14 +762,15 @@ export default function AppShell() {
                     placeholder="Sayfa veya işlem ara..."
                     className="command-palette__input"
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     className="command-palette__close"
                     onClick={closePalette}
                     aria-label="Komut paletini kapat"
                   >
                     ESC
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="command-palette__results">
@@ -786,7 +793,7 @@ export default function AppShell() {
                                 : item.id || `${item.label}-${currentIndex}`;
 
                             return (
-                              <button
+                              <Pressable
                                 key={itemKey}
                                 type="button"
                                 className={`command-palette__item${
@@ -809,7 +816,7 @@ export default function AppShell() {
                                 <span className="command-palette__item-hint">
                                   {item.type === "action" ? "Çalıştır" : "Git"}
                                 </span>
-                              </button>
+                              </Pressable>
                             );
                           })}
                         </div>

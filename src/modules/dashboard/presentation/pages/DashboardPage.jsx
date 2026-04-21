@@ -6,6 +6,7 @@ import SectionCard from "../../../../shared/components/ui/SectionCard";
 import EmptyState from "../../../../shared/components/ui/EmptyState";
 import ErrorState from "../../../../shared/components/ui/ErrorState";
 import LoadingState from "../../../../shared/components/ui/LoadingState";
+import "../../dashboard.css";
 
 import DashboardStats from "../components/DashboardStats";
 import DashboardQuickActions from "../components/DashboardQuickActions";

@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import Button from '../../../../../shared/components/ui/Button';
+import Input from '../../../../../shared/components/ui/Input';
+import Select from '../../../../../shared/components/ui/Select';
 import './product-packaging-rules-manager.css';
 
 const MATERIAL_TABS = [
@@ -187,7 +190,7 @@ export function ProductPackagingRulesManager({
         <div className="lp-form-grid lp-form-grid--3">
           <label className="lp-field">
             <span className="lp-field__label">Ürün</span>
-            <select
+            <Select
               className="lp-input"
               value={selectedProductId}
               onChange={(event) => onSelectProduct(event.target.value)}
@@ -198,12 +201,12 @@ export function ProductPackagingRulesManager({
                   {product.code} - {product.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="lp-field">
             <span className="lp-field__label">Ara</span>
-            <input
+            <Input
               className="lp-input"
               type="text"
               placeholder="Kod veya ad ile filtrele"
@@ -251,26 +254,28 @@ export function ProductPackagingRulesManager({
                     <span className="lp-selected-chip-card__type">
                       {getMaterialTypeLabel(material.materialType)}
                     </span>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       className="lp-chip-remove-button"
                       onClick={() => handleToggleMaterial(material.id, false)}
                     >
                       Kaldır
-                    </button>
+                    </Button>
                   </div>
 
                   <div className="lp-selected-chip-card__code">{material.code}</div>
                   <div className="lp-selected-chip-card__name">{material.name}</div>
 
                   <div className="lp-selected-chip-card__footer">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       className={`lp-required-toggle ${state?.isRequired ? 'is-active' : ''}`}
                       onClick={() => handleToggleRequired(material.id)}
                     >
                       {state?.isRequired ? 'Zorunlu' : 'Opsiyonel'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
@@ -291,15 +296,16 @@ export function ProductPackagingRulesManager({
 
         <div className="lp-rules-tabs">
           {MATERIAL_TABS.map((tab) => (
-            <button
+            <Button
               key={tab.key}
               type="button"
+                      variant="ghost"
               className={`lp-rules-tab ${activeTab === tab.key ? 'is-active' : ''}`}
               onClick={() => setActiveTab(tab.key)}
               disabled={!isProductSelected}
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -340,22 +346,24 @@ export function ProductPackagingRulesManager({
                   </div>
 
                   <div className="lp-material-rule-card__actions">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       className={`lp-select-toggle ${state.selected ? 'is-selected' : ''}`}
                       onClick={() => handleToggleMaterial(material.id, !state.selected)}
                     >
                       {state.selected ? 'Seçildi' : 'Seç'}
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       className={`lp-required-toggle ${state.isRequired ? 'is-active' : ''}`}
                       disabled={!state.selected}
                       onClick={() => handleToggleRequired(material.id)}
                     >
                       {state.isRequired ? 'Zorunlu' : 'Opsiyonel'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
@@ -364,23 +372,25 @@ export function ProductPackagingRulesManager({
         )}
 
         <div className="lp-form-actions">
-          <button
+          <Button
             type="button"
+                      variant="ghost"
             className="lp-button lp-button--ghost"
             disabled={!isProductSelected || !hasChanges || isSaving}
             onClick={() => setSelection(buildInitialSelection(materials, rules))}
           >
             Değişiklikleri Geri Al
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+                      variant="ghost"
             className="lp-button"
             onClick={handleSubmit}
             disabled={!isProductSelected || !hasChanges || isSaving}
           >
             {isSaving ? 'Kaydediliyor...' : 'Kuralları Kaydet'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

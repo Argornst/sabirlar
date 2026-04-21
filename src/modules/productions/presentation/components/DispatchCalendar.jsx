@@ -8,8 +8,14 @@ import { ProductionStatusBadge } from "./ProductionStatusBadge";
 import { useUpdateProductionMutation } from "../hooks/useUpdateProductionMutation";
 import { useDispatchFeedback } from "../hooks/useDispatchFeedback";
 import { DispatchToastViewport } from "./DispatchToastViewport";
+import Button from "../../../../shared/components/ui/Button";
 import DatePicker from "../../../../shared/components/ui/DatePicker";
-import { createDispatchLogs } from "../../application/use-cases/createDispatchLogs";
+import Input from "../../../../shared/components/ui/Input";
+import Modal from "../../../../shared/components/ui/Modal";
+import Pressable from "../../../../shared/components/ui/Pressable";
+import Select from "../../../../shared/components/ui/Select";
+import Textarea from "../../../../shared/components/ui/Textarea";
+import { createProductionDispatchLogs } from "../../runtime/productions.runtime";
 import { dispatchLogKeys } from "../hooks/useDispatchLogsQuery";
 
 function formatDateKey(date) {
@@ -117,137 +123,141 @@ function DispatchEventModal({
   if (!open || !item) return null;
 
   return (
-    <div className="dispatch-modal-backdrop" onClick={onClose}>
-      <div
-        className="dispatch-modal dispatch-modal--premium"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="dispatch-modal__header">
-          <div className="dispatch-modal__header-main">
-            <div className="dispatch-modal__title-group">
-              <h3 className="dispatch-modal__title">{item.customer_name}</h3>
-              <p className="dispatch-modal__subtitle">{item.product_name}</p>
-            </div>
-
-            <button
-              type="button"
-              className="dispatch-modal__close"
-              onClick={onClose}
-              aria-label="Kapat"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        <div className="dispatch-modal__summary-grid">
-          <div className="dispatch-modal__summary-card">
-            <span>Lot</span>
-            <strong>{item.lot_no}</strong>
+    <Modal
+      open={open}
+      onClose={onClose}
+      className="dispatch-modal-backdrop"
+      panelClassName="dispatch-modal dispatch-modal--premium"
+      bodyClassName="dispatch-modal__body"
+      size="lg"
+    >
+      <div className="dispatch-modal__header">
+        <div className="dispatch-modal__header-main">
+          <div className="dispatch-modal__title-group">
+            <h3 className="dispatch-modal__title">{item.customer_name}</h3>
+            <p className="dispatch-modal__subtitle">{item.product_name}</p>
           </div>
 
-          <div className="dispatch-modal__summary-card">
-            <span>Miktar</span>
-            <strong>{formatQuantityLabel(item.quantity, item.quantity_unit)}</strong>
-          </div>
-
-          <div className="dispatch-modal__summary-card">
-            <span>Durum</span>
-            <ProductionStatusBadge status={formState.status} />
-          </div>
-        </div>
-
-        <div className="dispatch-modal__form-grid">
-          <div className="dispatch-modal__field">
-            <label className="dispatch-modal__label">Durum</label>
-            <select
-              className="dispatch-modal__input dispatch-modal__input--select"
-              value={formState.status}
-              onChange={(e) => onChange("status", e.target.value)}
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="dispatch-modal__field">
-            <label className="dispatch-modal__label">Çıkış Tarihi</label>
-            <DatePicker
-              value={formState.dispatch_date}
-              onChange={(event) => onChange("dispatch_date", event.target.value)}
-              placeholder="gg.aa.yyyy"
-            />
-          </div>
-
-          <div className="dispatch-modal__field">
-            <label className="dispatch-modal__label">Paketleme Bilgisi</label>
-            <input
-              className="dispatch-modal__input"
-              type="text"
-              value={formState.packaging_info}
-              onChange={(e) => onChange("packaging_info", e.target.value)}
-              placeholder="Örn: 1000 KUTU"
-            />
-          </div>
-
-          <div className="dispatch-modal__field">
-            <label className="dispatch-modal__label">Palet Bilgisi</label>
-            <input
-              className="dispatch-modal__input"
-              type="text"
-              value={formState.pallet_info}
-              onChange={(e) => onChange("pallet_info", e.target.value)}
-              placeholder="Örn: 25"
-            />
-          </div>
-
-          <div className="dispatch-modal__field dispatch-modal__field--full">
-            <label className="dispatch-modal__label">Araç Bilgisi</label>
-            <input
-              className="dispatch-modal__input"
-              type="text"
-              value={formState.vehicle_info}
-              onChange={(e) => onChange("vehicle_info", e.target.value)}
-              placeholder="Örn: TIR 1"
-            />
-          </div>
-
-          <div className="dispatch-modal__field dispatch-modal__field--full">
-            <label className="dispatch-modal__label">Not</label>
-            <textarea
-              className="dispatch-modal__textarea"
-              rows="4"
-              value={formState.notes}
-              onChange={(e) => onChange("notes", e.target.value)}
-              placeholder="Operasyon notları..."
-            />
-          </div>
-        </div>
-
-        <div className="dispatch-modal__footer">
-          <button
+          <Button
             type="button"
-            className="dispatch-chip-button dispatch-chip-button--ghost"
+            variant="ghost"
+            className="dispatch-modal__close"
             onClick={onClose}
-            disabled={isSaving}
+            aria-label="Kapat"
           >
-            İptal
-          </button>
-
-          <button
-            type="button"
-            className="dispatch-chip-button dispatch-chip-button--primary"
-            onClick={onSave}
-            disabled={isSaving}
-          >
-            {isSaving ? "Kaydediliyor..." : "Kaydet"}
-          </button>
+            ×
+          </Button>
         </div>
       </div>
-    </div>
+
+      <div className="dispatch-modal__summary-grid">
+        <div className="dispatch-modal__summary-card">
+          <span>Lot</span>
+          <strong>{item.lot_no}</strong>
+        </div>
+
+        <div className="dispatch-modal__summary-card">
+          <span>Miktar</span>
+          <strong>{formatQuantityLabel(item.quantity, item.quantity_unit)}</strong>
+        </div>
+
+        <div className="dispatch-modal__summary-card">
+          <span>Durum</span>
+          <ProductionStatusBadge status={formState.status} />
+        </div>
+      </div>
+
+      <div className="dispatch-modal__form-grid">
+        <div className="dispatch-modal__field">
+          <label className="dispatch-modal__label">Durum</label>
+          <Select
+            className="dispatch-modal__input dispatch-modal__input--select"
+            value={formState.status}
+            onChange={(event) => onChange("status", event.target.value)}
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="dispatch-modal__field">
+          <label className="dispatch-modal__label">Çıkış Tarihi</label>
+          <DatePicker
+            value={formState.dispatch_date}
+            onChange={(event) => onChange("dispatch_date", event.target.value)}
+            placeholder="gg.aa.yyyy"
+          />
+        </div>
+
+        <div className="dispatch-modal__field">
+          <label className="dispatch-modal__label">Paketleme Bilgisi</label>
+          <Input
+            className="dispatch-modal__input"
+            type="text"
+            value={formState.packaging_info}
+            onChange={(event) => onChange("packaging_info", event.target.value)}
+            placeholder="Örn: 1000 KUTU"
+          />
+        </div>
+
+        <div className="dispatch-modal__field">
+          <label className="dispatch-modal__label">Palet Bilgisi</label>
+          <Input
+            className="dispatch-modal__input"
+            type="text"
+            value={formState.pallet_info}
+            onChange={(event) => onChange("pallet_info", event.target.value)}
+            placeholder="Örn: 25"
+          />
+        </div>
+
+        <div className="dispatch-modal__field dispatch-modal__field--full">
+          <label className="dispatch-modal__label">Araç Bilgisi</label>
+          <Input
+            className="dispatch-modal__input"
+            type="text"
+            value={formState.vehicle_info}
+            onChange={(event) => onChange("vehicle_info", event.target.value)}
+            placeholder="Örn: TIR 1"
+          />
+        </div>
+
+        <div className="dispatch-modal__field dispatch-modal__field--full">
+          <label className="dispatch-modal__label">Not</label>
+          <Textarea
+            className="dispatch-modal__textarea"
+            rows={4}
+            value={formState.notes}
+            onChange={(event) => onChange("notes", event.target.value)}
+            placeholder="Operasyon notları..."
+          />
+        </div>
+      </div>
+
+      <div className="dispatch-modal__footer">
+        <Button
+          type="button"
+          variant="ghost"
+          className="dispatch-chip-button dispatch-chip-button--ghost"
+          onClick={onClose}
+          disabled={isSaving}
+        >
+          İptal
+        </Button>
+
+        <Button
+          type="button"
+          className="dispatch-chip-button dispatch-chip-button--primary"
+          onClick={onSave}
+          disabled={isSaving}
+        >
+          {isSaving ? "Kaydediliyor..." : "Kaydet"}
+        </Button>
+      </div>
+    </Modal>
   );
 }
 
@@ -400,7 +410,7 @@ export function DispatchCalendar({ items }) {
         });
       }
 
-      await createDispatchLogs({
+      await createProductionDispatchLogs({
         items: changedItems,
         fromDateMap,
         toDate: targetDate,
@@ -589,7 +599,7 @@ export function DispatchCalendar({ items }) {
             </div>
 
             <div className="dispatch-calendar-toolbar__actions">
-              <button
+              <Pressable
                 type="button"
                 className={[
                   "dispatch-chip-button",
@@ -612,17 +622,17 @@ export function DispatchCalendar({ items }) {
                 }}
               >
                 Önceki Ay
-              </button>
+              </Pressable>
 
-              <button
+              <Pressable
                 type="button"
                 className="dispatch-chip-button dispatch-chip-button--primary"
                 onClick={goToToday}
               >
                 Bugün
-              </button>
+              </Pressable>
 
-              <button
+              <Pressable
                 type="button"
                 className={[
                   "dispatch-chip-button",
@@ -645,7 +655,7 @@ export function DispatchCalendar({ items }) {
                 }}
               >
                 Sonraki Ay
-              </button>
+              </Pressable>
             </div>
           </div>
 
@@ -671,7 +681,7 @@ export function DispatchCalendar({ items }) {
                 ]}
               />
 
-              <button
+              <Pressable
                 type="button"
                 className="dispatch-chip-button dispatch-chip-button--primary"
                 disabled={
@@ -680,16 +690,16 @@ export function DispatchCalendar({ items }) {
                 onClick={handleBulkMove}
               >
                 Seçilenleri Taşı
-              </button>
+              </Pressable>
 
-              <button
+              <Pressable
                 type="button"
                 className="dispatch-chip-button dispatch-chip-button--ghost"
                 disabled={!selectedIds.length}
                 onClick={clearSelection}
               >
                 Seçimi Temizle
-              </button>
+              </Pressable>
             </div>
           </div>
 
@@ -776,7 +786,7 @@ export function DispatchCalendar({ items }) {
                               openDetailModal(item);
                             }}
                           >
-                            <button
+                            <Pressable
                               type="button"
                               className="dispatch-card-select"
                               onClick={(event) => {
@@ -786,7 +796,7 @@ export function DispatchCalendar({ items }) {
                               aria-label="Kaydı seç"
                             >
                               {isSelectedItem ? "✓" : ""}
-                            </button>
+                            </Pressable>
 
                             <strong>{item.customer_name}</strong>
                             <span>{item.lot_no}</span>
@@ -836,7 +846,7 @@ export function DispatchCalendar({ items }) {
                     <div className="dispatch-plan-item__top">
                       <strong>{item.customer_name}</strong>
                       <div className="dispatch-plan-item__top-right">
-                        <button
+                        <Pressable
                           type="button"
                           className={[
                             "dispatch-card-select",
@@ -852,7 +862,7 @@ export function DispatchCalendar({ items }) {
                           }}
                         >
                           {selectedIds.includes(item.id) ? "✓" : ""}
-                        </button>
+                        </Pressable>
                         <ProductionStatusBadge status={item.status} />
                       </div>
                     </div>

@@ -24,10 +24,9 @@ import {
   usePackagingScenariosQuery,
   useUpdatePackagingScenarioMutation,
 } from '../../application';
-import { SupabasePackagingMaterialsRepository } from '../../infrastructure/repositories/supabase-packaging-materials.repository.js';
-import { SupabasePackagingProductsRepository } from '../../infrastructure/repositories/supabase-packaging-products.repository.js';
-import { SupabasePackagingRulesRepository } from '../../infrastructure/repositories/supabase-packaging-rules.repository.js';
-import { SupabasePackagingScenariosRepository } from '../../infrastructure/repositories/supabase-packaging-scenarios.repository.js';
+import { logisticsPackagingRuntime } from '../../runtime/logistics-packaging.runtime.js';
+import Button from '../../../../shared/components/ui/Button';
+import Input from '../../../../shared/components/ui/Input';
 import { CalculatorForm } from '../components/calculator-form/calculator-form';
 import { LogisticsPackagingLayout } from '../components/logistics-packaging-layout/logistics-packaging-layout';
 import { ScenarioHistory } from '../components/scenario-history/scenario-history';
@@ -37,10 +36,12 @@ import { ContainerLoadPlan } from '../components/container-load-plan/container-l
 import { AggregateBar } from '../components/aggregate-bar/aggregate-bar';
 import './logistics-packaging-calculator-page.css';
 
-const productsRepository = new SupabasePackagingProductsRepository();
-const materialsRepository = new SupabasePackagingMaterialsRepository();
-const rulesRepository = new SupabasePackagingRulesRepository();
-const scenariosRepository = new SupabasePackagingScenariosRepository();
+const {
+  productsRepository,
+  materialsRepository,
+  rulesRepository,
+  scenariosRepository,
+} = logisticsPackagingRuntime;
 
 function pickPreferredMaterial(materials, rules) {
   if (!materials.length) return '';
@@ -680,8 +681,9 @@ export function LogisticsPackagingCalculatorPage() {
       subtitle="Aynı sevkiyat içinde birden fazla lotu hesaplayın, lot bazlı planı yönetin ve toplam durumu üstte görün."
       actions={
         <div className="lp-header-actions">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             className="lp-button lp-button--ghost lp-button--iconic lp-button--sweep lp-button--tooltip"
             onClick={() => runHeaderAction('clear', handleClearScenario)}
             data-tooltip="Formu ve lotları temizle"
@@ -693,10 +695,11 @@ export function LogisticsPackagingCalculatorPage() {
             )}
             <span>Temizle</span>
             <kbd className="lp-shortcut-badge">Alt+C</kbd>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             className="lp-button lp-button--ghost lp-button--iconic lp-button--new lp-button--tooltip"
             onClick={() => runHeaderAction('new', handleStartNewScenario)}
             data-tooltip="Yeni boş senaryo başlat"
@@ -708,10 +711,11 @@ export function LogisticsPackagingCalculatorPage() {
             )}
             <span>Yeni Senaryo</span>
             <kbd className="lp-shortcut-badge">Alt+N</kbd>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             className="lp-button lp-button--iconic lp-button--primary-glow lp-button--tooltip"
             onClick={() => runHeaderAction('add', handleAddLot)}
             data-tooltip="Yeni lot ekle"
@@ -723,7 +727,7 @@ export function LogisticsPackagingCalculatorPage() {
             )}
             <span>Lot Ekle</span>
             <kbd className="lp-shortcut-badge">Alt+L</kbd>
-          </button>
+          </Button>
         </div>
       }
     >
@@ -741,7 +745,7 @@ export function LogisticsPackagingCalculatorPage() {
           <div className="lp-form-grid lp-form-grid--4">
             <label className="lp-field">
               <span className="lp-field__label">Senaryo Adı</span>
-              <input
+              <Input
                 className="lp-input"
                 type="text"
                 value={scenario.values.name}
@@ -842,8 +846,9 @@ export function LogisticsPackagingCalculatorPage() {
                     </div>
 
                     <div className="lp-lot-card-actions">
-                      <button
+                      <Button
                         type="button"
+            variant="ghost"
                         className="lp-button lp-button--ghost lp-button--iconic-sm"
                         onClick={(event) => {
                           event.stopPropagation();
@@ -853,10 +858,11 @@ export function LogisticsPackagingCalculatorPage() {
                         title="Sola taşı"
                       >
                         <ChevronLeft size={16} className="lp-button__icon" />
-                      </button>
+                      </Button>
 
-                      <button
+                      <Button
                         type="button"
+            variant="ghost"
                         className="lp-button lp-button--ghost lp-button--iconic-sm"
                         onClick={(event) => {
                           event.stopPropagation();
@@ -866,10 +872,11 @@ export function LogisticsPackagingCalculatorPage() {
                         title="Sağa taşı"
                       >
                         <ChevronRight size={16} className="lp-button__icon" />
-                      </button>
+                      </Button>
 
-                      <button
+                      <Button
                         type="button"
+            variant="ghost"
                         className="lp-button lp-button--ghost lp-button--iconic-sm"
                         onClick={(event) => {
                           event.stopPropagation();
@@ -880,7 +887,7 @@ export function LogisticsPackagingCalculatorPage() {
                       >
                         <Trash2 size={16} className="lp-button__icon" />
                         <span>Sil</span>
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -915,8 +922,9 @@ export function LogisticsPackagingCalculatorPage() {
                   </div>
 
                   <div className="lp-scenario-lot-tab__footer">
-                    <button
+                    <Button
                       type="button"
+            variant="ghost"
                       className="lp-button lp-button--ghost lp-button--iconic"
                       onClick={(event) => {
                         event.stopPropagation();
@@ -925,10 +933,11 @@ export function LogisticsPackagingCalculatorPage() {
                     >
                       <Sparkles size={16} className="lp-button__icon" />
                       <span>Düzenle</span>
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
                       type="button"
+            variant="ghost"
                       className="lp-button lp-button--iconic"
                       onClick={(event) => {
                         event.stopPropagation();
@@ -938,7 +947,7 @@ export function LogisticsPackagingCalculatorPage() {
                     >
                       <Plus size={16} className="lp-button__icon" />
                       <span>Palet Satırı Ekle</span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
@@ -996,32 +1005,35 @@ export function LogisticsPackagingCalculatorPage() {
 
         <div className="lp-panel lp-bottom-tabs-panel">
           <div className="lp-bottom-tabs">
-            <button
+            <Button
               type="button"
+            variant="ghost"
               className={`lp-bottom-tabs__button ${activeBottomTab === 'stack' ? 'is-active' : ''}`}
               onClick={() => setActiveBottomTab('stack')}
             >
               <Grid2X2 size={16} className="lp-tab-icon" />
               <span>Genel İstif Özeti</span>
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="button"
+            variant="ghost"
               className={`lp-bottom-tabs__button ${activeBottomTab === 'loadPlan' ? 'is-active' : ''}`}
               onClick={() => setActiveBottomTab('loadPlan')}
             >
               <Package2 size={16} className="lp-tab-icon" />
               <span>3D Konteyner Planı</span>
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="button"
+            variant="ghost"
               className={`lp-bottom-tabs__button ${activeBottomTab === 'history' ? 'is-active' : ''}`}
               onClick={() => setActiveBottomTab('history')}
             >
               <History size={16} className="lp-tab-icon" />
               <span>Geçmiş Senaryolar</span>
-            </button>
+            </Button>
           </div>
 
           <div className="lp-bottom-tabs__content">
@@ -1080,8 +1092,9 @@ export function LogisticsPackagingCalculatorPage() {
         </div>
 
         <div className="lp-form-actions lp-form-actions--safe">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             className="lp-button lp-button--iconic lp-button--primary-glow"
             disabled={isSaving}
             onClick={handleSaveScenario}
@@ -1098,7 +1111,7 @@ export function LogisticsPackagingCalculatorPage() {
                   ? 'Senaryoyu Güncelle'
                   : 'Senaryoyu Kaydet'}
             </span>
-          </button>
+          </Button>
         </div>
       </div>
     </LogisticsPackagingLayout>

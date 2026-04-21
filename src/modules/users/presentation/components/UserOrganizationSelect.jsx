@@ -1,3 +1,5 @@
+import Field from "../../../../shared/components/ui/Field";
+import Select from "../../../../shared/components/ui/Select";
 import { useOrganizationsQuery } from "../hooks/useOrganizationsQuery";
 import { useUpdateUserOrganization } from "../hooks/useUpdateUserOrganization";
 
@@ -28,17 +30,15 @@ export default function UserOrganizationSelect({ userItem }) {
   }
 
   return (
-    <div className="user-management-select">
-      <label
-        htmlFor={`organization-select-${userItem.id}`}
-        className="user-management-select__label"
-      >
-        Organizasyon
-      </label>
-
-      <select
+    <Field
+      label="Organizasyon"
+      htmlFor={`organization-select-${userItem.id}`}
+      className="user-management-select"
+      error={mutation.error?.message || undefined}
+    >
+      <Select
         id={`organization-select-${userItem.id}`}
-        className="form-select user-management-select__control"
+        className="user-management-select__control"
         value={userItem.organizationId ?? ""}
         onChange={handleChange}
         disabled={isLoading || mutation.isPending}
@@ -52,13 +52,7 @@ export default function UserOrganizationSelect({ userItem }) {
             {organization.name}
           </option>
         ))}
-      </select>
-
-      {mutation.error ? (
-        <div className="error-text user-management-select__error">
-          {mutation.error.message || "Organizasyon güncellenemedi."}
-        </div>
-      ) : null}
-    </div>
+      </Select>
+    </Field>
   );
 }

@@ -1,12 +1,11 @@
-import { validateCreateProduction } from '../dto/createProductionSchema';
-import { productionsRepository } from '../../infrastructure/repositories/productionsRepository';
+import { validateCreateProduction } from "../dto/createProductionSchema";
 
-export const createProduction = async (values) => {
+export const createProduction = async ({ productionsRepository, values }) => {
   const result = validateCreateProduction(values);
 
   if (!result.isValid) {
-    const error = new Error('Validation error');
-    error.type = 'validation';
+    const error = new Error("Validation error");
+    error.type = "validation";
     error.fields = result.errors;
     throw error;
   }

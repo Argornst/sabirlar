@@ -1,3 +1,4 @@
+import IconButton from "../../../../shared/components/ui/IconButton";
 import { useDeleteSale } from "../hooks/useDeleteSale";
 import { useUpdateSaleStatus } from "../hooks/useUpdateSaleStatus";
 
@@ -66,37 +67,32 @@ export default function SaleRowActions({
 
   return (
     <div className="sales-row-actions sales-row-actions--table">
-      <button
-        type="button"
-        className={`sales-icon-button sales-icon-button--glow ${
-          isExpanded ? "sales-icon-button--active" : ""
-        }`}
+      <IconButton
+        className="sales-icon-button sales-icon-button--glow"
+        active={isExpanded}
         onClick={onToggleExpanded}
         disabled={isBusy}
         title={isExpanded ? "Detayı kapat" : "Detayı aç"}
         aria-label={isExpanded ? "Detayı kapat" : "Detayı aç"}
       >
         <DetailsIcon />
-      </button>
+      </IconButton>
 
-      <button
-        type="button"
-        className={`sales-icon-button sales-icon-button--glow ${
-          isEditing ? "sales-icon-button--active" : ""
-        }`}
+      <IconButton
+        className="sales-icon-button sales-icon-button--glow"
+        active={isEditing}
         onClick={onEdit}
         disabled={isBusy}
         title="Düzenle"
         aria-label="Düzenle"
       >
         <EditIcon />
-      </button>
+      </IconButton>
 
-      <button
-        type="button"
-        className={`sales-icon-button sales-icon-button--glow sales-icon-button--success ${
-          sale.paymentStatus === "odendi" ? "sales-icon-button--active" : ""
-        }`}
+      <IconButton
+        tone="success"
+        className="sales-icon-button sales-icon-button--glow sales-icon-button--success"
+        active={sale.paymentStatus === "odendi"}
         onClick={() =>
           handleToggle(
             sale.paymentStatus === "odendi" ? "beklemede" : "odendi",
@@ -116,13 +112,12 @@ export default function SaleRowActions({
         }
       >
         <PaidIcon />
-      </button>
+      </IconButton>
 
-      <button
-        type="button"
-        className={`sales-icon-button sales-icon-button--glow sales-icon-button--info ${
-          sale.invoiceStatus === "faturalandi" ? "sales-icon-button--active" : ""
-        }`}
+      <IconButton
+        tone="info"
+        className="sales-icon-button sales-icon-button--glow sales-icon-button--info"
+        active={sale.invoiceStatus === "faturalandi"}
         onClick={() =>
           handleToggle(
             sale.paymentStatus,
@@ -144,10 +139,10 @@ export default function SaleRowActions({
         }
       >
         <InvoiceIcon />
-      </button>
+      </IconButton>
 
-      <button
-        type="button"
+      <IconButton
+        tone="danger"
         className="sales-icon-button sales-icon-button--glow sales-icon-button--danger"
         onClick={handleDelete}
         disabled={isBusy || !sale?.id}
@@ -155,7 +150,7 @@ export default function SaleRowActions({
         aria-label="Sil"
       >
         <DeleteIcon />
-      </button>
+      </IconButton>
     </div>
   );
 }

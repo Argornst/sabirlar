@@ -1,7 +1,9 @@
-export default function StatusBadge({ children, tone = "default" }) {
+import Badge from "./Badge";
+
+export default function StatusBadge({ children, tone = "default", className = "" }) {
   return (
-    <span className={`ui-status-badge ui-status-badge--${tone}`}>
+    <Badge tone={tone} className={className}>
       {children}
-    </span>
+    </Badge>
   );
 }

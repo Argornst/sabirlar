@@ -1,5 +1,3 @@
-import { productionsRepository } from '../../infrastructure/repositories/productionsRepository';
-
-export const deleteProduction = async (id) => {
+export const deleteProduction = async ({ productionsRepository, id }) => {
   return productionsRepository.remove(id);
 };

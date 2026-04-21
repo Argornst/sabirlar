@@ -95,3 +95,8 @@ export async function fetchDispatchLogs({
     totalPages: Math.max(1, Math.ceil(Number(count || 0) / safePageSize)),
   };
 }
+
+export const dispatchLogRepository = {
+  insert: insertDispatchLogs,
+  getList: fetchDispatchLogs,
+};

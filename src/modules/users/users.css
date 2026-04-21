@@ -1,0 +1,206 @@
+.user-management-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow:
+    0 16px 30px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease,
+    background 0.22s ease;
+}
+
+.user-management-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.user-management-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(96, 165, 250, 0.22);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.28),
+    0 0 40px rgba(59, 130, 246, 0.06);
+}
+
+.user-management-card:hover::after {
+  opacity: 1;
+}
+
+.user-management-card {
+  padding: 22px;
+  border-radius: 22px;
+  display: grid;
+  gap: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.025)),
+    rgba(8, 16, 30, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.user-management-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.user-management-card__identity h4 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.user-management-card__identity p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.user-management-card__badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.user-management-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.user-management-card__actions-block h5,
+.user-management-card__permissions h5 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.user-management-actions,
+.permissions-editor {
+  display: grid;
+  gap: 12px;
+}
+
+.permissions-editor__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.permissions-editor__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.permissions-editor__meta span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.users-table-stack {
+  display: grid;
+  gap: 18px;
+}
+
+@media (max-width: 960px) {
+  .user-management-card__header,
+  .permissions-editor__item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+:root[data-theme="light"] .user-management-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92)),
+    rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 14px 34px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:root[data-theme="light"] .user-management-card__badges .status-badge,
+:root[data-theme="light"] .user-management-card__badges .ui-status-badge {
+  backdrop-filter: none;
+}
+
+.user-management-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.user-management-actions__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: end;
+}
+
+.user-management-actions__buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.user-management-actions__button {
+  width: 100%;
+  justify-content: center;
+}
+
+.user-management-actions__error {
+  margin-top: -8px;
+}
+
+.user-management-select {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.user-management-select__label {
+  min-height: 18px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0.95;
+}
+
+.user-management-select__control {
+  width: 100%;
+}
+
+.user-management-select__error {
+  margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .user-management-actions__grid,
+  .user-management-actions__buttons {
+    grid-template-columns: 1fr;
+  }
+}
+

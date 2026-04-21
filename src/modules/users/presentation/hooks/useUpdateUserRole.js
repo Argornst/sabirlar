@@ -1,16 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { usersRepository } from "../../infrastructure/repositories/usersRepository";
+import { invalidateUserAccessQueries } from "../../application/queryKeys";
+import { updateUserRoleRecord } from "../../runtime/users.runtime";
 
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ userId, roleId }) =>
-      usersRepository.updateRole(userId, roleId),
+      updateUserRoleRecord({
+        userId,
+        roleId,
+      }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-  predicate: (query) => query.queryKey.includes("users"),
-});
+      await invalidateUserAccessQueries(queryClient);
     },
   });
 }

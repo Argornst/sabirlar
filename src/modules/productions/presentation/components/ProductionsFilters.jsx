@@ -1,5 +1,10 @@
-import FilterBar from "../../../../shared/components/ui/FilterBar";
+import Button from "../../../../shared/components/ui/Button";
+import Checkbox from "../../../../shared/components/ui/Checkbox";
 import DatePicker from "../../../../shared/components/ui/DatePicker";
+import Field from "../../../../shared/components/ui/Field";
+import FilterBar from "../../../../shared/components/ui/FilterBar";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
 import { PRODUCTION_STATUSES } from "../../domain/entities/production.entity";
 
 const STATUS_LABELS = {
@@ -24,22 +29,19 @@ export function ProductionsFilters({
     <FilterBar>
       <div className="productions-filters">
         <div className="productions-filters__fields">
-          <div className="filter-field">
-            <label htmlFor="productions-search">Ara</label>
-            <input
+          <Field label="Ara" htmlFor="productions-search" className="filter-field">
+            <Input
               id="productions-search"
               type="text"
               placeholder="Lot, müşteri, ürün ara"
               value={filters.search}
               onChange={(event) => onChange("search", event.target.value)}
             />
-          </div>
+          </Field>
 
-          <div className="filter-field">
-            <label htmlFor="productions-status">Durum</label>
-            <select
+          <Field label="Durum" htmlFor="productions-status" className="filter-field">
+            <Select
               id="productions-status"
-              className="form-select"
               value={filters.status}
               onChange={(event) => onChange("status", event.target.value)}
             >
@@ -49,11 +51,10 @@ export function ProductionsFilters({
                   {STATUS_LABELS[status] || status}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </Field>
 
-          <div className="filter-field">
-            <label htmlFor="productions-date-from">Başlangıç Tarihi</label>
+          <Field label="Başlangıç Tarihi" htmlFor="productions-date-from" className="filter-field">
             <DatePicker
               name="productions-date-from"
               value={filters.dateFrom}
@@ -63,10 +64,9 @@ export function ProductionsFilters({
               placement="auto"
               presets={FILTER_DATE_PRESETS}
             />
-          </div>
+          </Field>
 
-          <div className="filter-field">
-            <label htmlFor="productions-date-to">Bitiş Tarihi</label>
+          <Field label="Bitiş Tarihi" htmlFor="productions-date-to" className="filter-field">
             <DatePicker
               name="productions-date-to"
               value={filters.dateTo}
@@ -76,30 +76,27 @@ export function ProductionsFilters({
               placement="auto"
               presets={FILTER_DATE_PRESETS}
             />
-          </div>
+          </Field>
         </div>
 
         <div className="productions-filters__actions">
-          <label className="productions-filters__checkbox">
-            <input
-              type="checkbox"
-              checked={filters.hasDispatchDate}
-              onChange={(event) =>
-                onChange("hasDispatchDate", event.target.checked)
-              }
-            />
-            <span>Sadece çıkış tarihi olanlar</span>
-          </label>
+          <Checkbox
+            checked={filters.hasDispatchDate}
+            onChange={(event) => onChange("hasDispatchDate", event.target.checked)}
+            label="Sadece çıkış tarihi olanlar"
+            className="productions-filters__checkbox"
+          />
 
           <div className="productions-filters__buttons">
             {actions}
-            <button
+            <Button
               type="button"
-              className="ui-button ui-button--ghost productions-filters__reset"
+              variant="ghost"
+              className="productions-filters__reset"
               onClick={onReset}
             >
               Filtreleri Temizle
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -1,4 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import Button from "../../../../shared/components/ui/Button";
+import IconButton from "../../../../shared/components/ui/IconButton";
+import Input from "../../../../shared/components/ui/Input";
 import {
   filterProductionProductOptions,
   normalizeProductOptions,
@@ -252,14 +255,15 @@ export default function ProductAutocomplete({
 
   return (
     <div className={wrapperClassName} ref={rootRef}>
-      <input
+      <Input
         type="hidden"
         name={name}
         value={isControlled ? value || "" : selectedValue || ""}
+        readOnly
       />
 
       <div className="product-autocomplete__control">
-        <input
+        <Input
           ref={inputRef}
           type="text"
           value={inputValue}
@@ -279,8 +283,9 @@ export default function ProductAutocomplete({
           onKeyDown={handleKeyDown}
         />
 
-        <button
+        <IconButton
           type="button"
+          tone="ghost"
           className="product-autocomplete__toggle"
           aria-label="Ürün listesini aç"
           disabled={disabled}
@@ -299,7 +304,7 @@ export default function ProductAutocomplete({
               strokeLinejoin="round"
             />
           </svg>
-        </button>
+        </IconButton>
       </div>
 
       {shouldShowHint ? (
@@ -316,8 +321,9 @@ export default function ProductAutocomplete({
             {allVisibleItems.length ? (
               allVisibleItems.map((item, index) => (
                 <li key={item.key} role="presentation">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     role="option"
                     aria-selected={highlightedIndex === index}
                     className={[
@@ -346,7 +352,7 @@ export default function ProductAutocomplete({
                         ? "Manuel giriş"
                         : item.option.group || "Ürün"}
                     </span>
-                  </button>
+                  </Button>
                 </li>
               ))
             ) : (

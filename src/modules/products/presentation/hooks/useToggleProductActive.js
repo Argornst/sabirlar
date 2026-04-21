@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../../app/providers/AppProviders";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../../../../shared/constants/audit";
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
-import { productsRepository } from "../../infrastructure/repositories/productsRepository";
+import { invalidateProductRelatedQueries } from "../../application/queryKeys";
+import { toggleProductRecordActive } from "../../runtime/products.runtime";
 
 export function useToggleProductActive() {
   const queryClient = useQueryClient();
@@ -10,7 +11,10 @@ export function useToggleProductActive() {
 
   return useMutation({
     mutationFn: async ({ productId, nextIsActive }) =>
-      productsRepository.updateActiveStatus(productId, nextIsActive),
+      toggleProductRecordActive({
+        productId,
+        nextIsActive,
+      }),
     onSuccess: async (updatedProduct) => {
       await logActivity({
         action: AUDIT_ACTIONS.PRODUCT_STATUS_UPDATED,
@@ -23,10 +27,7 @@ export function useToggleProductActive() {
         },
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["reports-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      await invalidateProductRelatedQueries(queryClient);
     },
   });
 }

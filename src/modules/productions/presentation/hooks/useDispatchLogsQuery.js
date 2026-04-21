@@ -1,16 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchDispatchLogs } from "../../infrastructure/repositories/dispatchLogRepository";
+import { dispatchLogQueryKeys } from "../../application/queryKeys";
+import { listDispatchLogs } from "../../runtime/productions.runtime";
 
-export const dispatchLogKeys = {
-  all: ["dispatch-logs"],
-  list: (filters = {}) => ["dispatch-logs", "list", filters],
-};
+export const dispatchLogKeys = dispatchLogQueryKeys;
 
 export function useDispatchLogsQuery(filters = {}) {
   return useQuery({
-    queryKey: dispatchLogKeys.list(filters),
-    queryFn: () => fetchDispatchLogs(filters),
+    queryKey: dispatchLogQueryKeys.list(filters),
+    queryFn: () => listDispatchLogs(filters),
     staleTime: 1000 * 30,
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 }

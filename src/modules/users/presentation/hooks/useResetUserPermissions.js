@@ -1,14 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getDefaultPagePermissionsByRoleName } from "../../../../shared/lib/permissions";
-import { usersRepository } from "../../infrastructure/repositories/usersRepository";
-
-function patchUsersList(oldUsers, userId, patch) {
-  if (!Array.isArray(oldUsers)) return oldUsers;
-
-  return oldUsers.map((user) =>
-    user.id === userId ? { ...user, ...patch } : user
-  );
-}
+import { invalidateUserAccessQueries, usersQueryKeys } from "../../application/queryKeys";
+import { updateUserPagePermissions } from "../../runtime/users.runtime";
+import { patchUsersListEntry } from "./users.cache";
 
 export function useResetUserPermissions() {
   const queryClient = useQueryClient();
@@ -16,18 +10,23 @@ export function useResetUserPermissions() {
   return useMutation({
     mutationFn: async ({ userId, roleName }) => {
       const defaults = getDefaultPagePermissionsByRoleName(roleName);
-      return usersRepository.updatePagePermissions(userId, defaults);
+      return updateUserPagePermissions({
+        userId,
+        pagePermissions: defaults,
+      });
     },
 
     onMutate: async ({ userId, roleName }) => {
       const defaults = getDefaultPagePermissionsByRoleName(roleName);
 
-      await queryClient.cancelQueries({ queryKey: ["users"] });
+      await queryClient.cancelQueries({
+        queryKey: usersQueryKeys.all,
+      });
 
-      const previousUsers = queryClient.getQueryData(["users"]);
+      const previousUsers = queryClient.getQueryData(usersQueryKeys.all);
 
-      queryClient.setQueryData(["users"], (old) =>
-        patchUsersList(old, userId, { pagePermissions: defaults })
+      queryClient.setQueryData(usersQueryKeys.all, (old) =>
+        patchUsersListEntry(old, userId, { pagePermissions: defaults })
       );
 
       return { previousUsers };
@@ -35,13 +34,12 @@ export function useResetUserPermissions() {
 
     onError: (_error, _variables, context) => {
       if (context?.previousUsers) {
-        queryClient.setQueryData(["users"], context.previousUsers);
+        queryClient.setQueryData(usersQueryKeys.all, context.previousUsers);
       }
     },
 
     onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
-      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      await invalidateUserAccessQueries(queryClient);
     },
   });
 }

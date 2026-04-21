@@ -1,15 +1,18 @@
 import { useMemo } from "react";
-import { Controller, useFieldArray } from "react-hook-form";
+import { Controller, useFieldArray, useWatch } from "react-hook-form";
+import Button from "../../../../shared/components/ui/Button";
 import Card from "../../../../shared/components/ui/Card";
+import DatePicker from "../../../../shared/components/ui/DatePicker";
 import Field from "../../../../shared/components/ui/Field";
+import Input from "../../../../shared/components/ui/Input";
 import PageHeader from "../../../../shared/components/ui/PageHeader";
 import SectionCard from "../../../../shared/components/ui/SectionCard";
-import Button from "../../../../shared/components/ui/Button";
-import DatePicker from "../../../../shared/components/ui/DatePicker";
-import { useProductsListQuery } from "../../../products/presentation/hooks/useProductsListQuery";
-import { useCreateSaleForm } from "../hooks/useCreateSaleForm";
+import Select from "../../../../shared/components/ui/Select";
 import { formatCurrency } from "../../../../shared/utils/currency";
+import { useProductsListQuery } from "../../../products/presentation/hooks/useProductsListQuery";
 import SaleItemsEditor from "../components/SaleItemsEditor";
+import { useCreateSaleForm } from "../hooks/useCreateSaleForm";
+import "../../sales.css";
 
 function calculateTotals(items, products) {
   return (items ?? []).reduce(
@@ -39,7 +42,6 @@ export default function NewSalePage() {
     control,
     register,
     onSubmit,
-    watch,
     formState: { errors },
     isSubmitting,
     submitError,
@@ -52,9 +54,21 @@ export default function NewSalePage() {
     name: "items",
   });
 
-  const watchedItems = watch("items") ?? [];
-  const paymentStatus = watch("paymentStatus");
-  const invoiceStatus = watch("invoiceStatus");
+  const watchedItems = useWatch({
+    control,
+    name: "items",
+    defaultValue: [],
+  });
+  const paymentStatus = useWatch({
+    control,
+    name: "paymentStatus",
+    defaultValue: "beklemede",
+  });
+  const invoiceStatus = useWatch({
+    control,
+    name: "invoiceStatus",
+    defaultValue: "faturalanmadi",
+  });
 
   const totals = useMemo(
     () => calculateTotals(watchedItems, products),
@@ -99,7 +113,7 @@ export default function NewSalePage() {
               htmlFor="customerName"
               error={errors.customerName?.message}
             >
-              <input
+              <Input
                 id="customerName"
                 type="text"
                 placeholder="Müşteri adı"
@@ -112,14 +126,10 @@ export default function NewSalePage() {
               htmlFor="paymentStatus"
               error={errors.paymentStatus?.message}
             >
-              <select
-                id="paymentStatus"
-                className="form-select"
-                {...register("paymentStatus")}
-              >
+              <Select id="paymentStatus" {...register("paymentStatus")}>
                 <option value="beklemede">Beklemede</option>
                 <option value="odendi">Ödendi</option>
-              </select>
+              </Select>
             </Field>
 
             <Field
@@ -127,18 +137,14 @@ export default function NewSalePage() {
               htmlFor="invoiceStatus"
               error={errors.invoiceStatus?.message}
             >
-              <select
-                id="invoiceStatus"
-                className="form-select"
-                {...register("invoiceStatus")}
-              >
+              <Select id="invoiceStatus" {...register("invoiceStatus")}>
                 <option value="faturalanmadi">Faturalanmadı</option>
                 <option value="faturalandi">Faturalandı</option>
-              </select>
+              </Select>
             </Field>
 
             <Field label="Not" htmlFor="note" fullWidth>
-              <input
+              <Input
                 id="note"
                 type="text"
                 placeholder="Opsiyonel not"
@@ -153,7 +159,7 @@ export default function NewSalePage() {
                 productsLoading={productsLoading}
                 register={register}
                 errors={errors}
-                watch={watch}
+                control={control}
                 append={append}
                 remove={remove}
               />

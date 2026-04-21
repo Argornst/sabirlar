@@ -3,6 +3,7 @@ import {
   formatDispatchDateLabel,
   formatQuantityLabel,
 } from "../../domain/entities/production.entity";
+import Table from "../../../../shared/components/ui/Table";
 
 function formatCreatedAt(value) {
   if (!value) return "-";
@@ -140,7 +141,7 @@ const DispatchPrintDocument = forwardRef(function DispatchPrintDocument(
                           </div>
 
                           <div className="print-table-wrap">
-                            <table className="print-table">
+                            <Table className="print-table">
                               <thead>
                                 <tr>
                                   <th>Müşteri</th>
@@ -180,7 +181,7 @@ const DispatchPrintDocument = forwardRef(function DispatchPrintDocument(
                                   </tr>
                                 ))}
                               </tbody>
-                            </table>
+                            </Table>
                           </div>
 
                           {vehicleGroup.items.some((item) => item.notes) ? (

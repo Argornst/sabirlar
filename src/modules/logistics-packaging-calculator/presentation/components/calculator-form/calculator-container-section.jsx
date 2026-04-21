@@ -1,3 +1,7 @@
+import Field from '../../../../../shared/components/ui/Field';
+import Input from '../../../../../shared/components/ui/Input';
+import Select from '../../../../../shared/components/ui/Select';
+
 function preventWheelChange(event) {
   event.currentTarget.blur();
 }
@@ -20,9 +24,8 @@ export function CalculatorContainerSection({
       </div>
 
       <div className="lp-form-grid lp-form-grid--4">
-        <label className="lp-field">
-          <span className="lp-field__label">Taşıyıcı Ambalaj</span>
-          <select
+        <Field label="Taşıyıcı Ambalaj" className="lp-field">
+          <Select
             className="lp-input"
             value={values.containerMaterialId}
             onChange={(event) => onChange({ containerMaterialId: event.target.value })}
@@ -33,12 +36,11 @@ export function CalculatorContainerSection({
                 {material.code} - {material.name}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Field>
 
-        <label className="lp-field">
-          <span className="lp-field__label">Vakum Torbası</span>
-          <select
+        <Field label="Vakum Torbası" className="lp-field">
+          <Select
             className="lp-input"
             value={values.vacuumBagMaterialId ?? ''}
             onChange={(event) =>
@@ -53,12 +55,11 @@ export function CalculatorContainerSection({
                 {material.code} - {material.name}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Field>
 
-        <label className="lp-field">
-          <span className="lp-field__label">Birim Net Ağırlık (kg)</span>
-          <input
+        <Field label="Birim Net Ağırlık (kg)" className="lp-field">
+          <Input
             className="lp-input"
             type="number"
             min="0"
@@ -71,18 +72,17 @@ export function CalculatorContainerSection({
               })
             }
           />
-        </label>
+        </Field>
 
-        <label className="lp-field">
-          <span className="lp-field__label">Not</span>
-          <input
+        <Field label="Not" className="lp-field">
+          <Input
             className="lp-input"
             type="text"
             value={values.notes}
             onChange={(event) => onChange({ notes: event.target.value })}
             placeholder="Opsiyonel not"
           />
-        </label>
+        </Field>
       </div>
     </div>
   );

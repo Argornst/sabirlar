@@ -1,4 +1,6 @@
 import FilterBar from "../../../../shared/components/ui/FilterBar";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
 
 export default function SalesFilters({
   search,
@@ -13,7 +15,7 @@ export default function SalesFilters({
         <div className="sales-filters__fields">
           <div className="filter-field">
             <label htmlFor="sales-search">Ara</label>
-            <input
+            <Input
               id="sales-search"
               type="text"
               placeholder="Müşteri veya ürün ara"
@@ -24,9 +26,8 @@ export default function SalesFilters({
 
           <div className="filter-field">
             <label htmlFor="sales-status">Durum</label>
-            <select
+            <Select
               id="sales-status"
-              className="form-select"
               value={status}
               onChange={(event) => onStatusChange(event.target.value)}
             >
@@ -35,7 +36,7 @@ export default function SalesFilters({
               <option value="odendi">Ödendi</option>
               <option value="faturalandi">Faturalandı</option>
               <option value="odendi_faturalandi">Tamamlandı</option>
-            </select>
+            </Select>
           </div>
         </div>
 

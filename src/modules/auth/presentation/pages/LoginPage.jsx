@@ -1,8 +1,12 @@
 import { Navigate } from "react-router-dom";
-import { ROUTES } from "../../../../shared/constants/routes";
 import { useAuth } from "../../../../app/providers/AppProviders";
-import { useLoginForm } from "../hooks/useLoginForm";
+import Button from "../../../../shared/components/ui/Button";
+import Field from "../../../../shared/components/ui/Field";
+import Input from "../../../../shared/components/ui/Input";
+import { ROUTES } from "../../../../shared/constants/routes";
 import AuthPageHeader from "../components/AuthPageHeader";
+import { useLoginForm } from "../hooks/useLoginForm";
+import "../../auth.css";
 
 export default function LoginPage() {
   const { isAuthenticated, isAuthLoading } = useAuth();
@@ -29,39 +33,35 @@ export default function LoginPage() {
         <AuthPageHeader />
 
         <form className="form-grid" onSubmit={onSubmit} noValidate>
-          <div className="form-field">
-            <label htmlFor="login">Kullanıcı Adı veya E-posta</label>
-            <input
+          <Field
+            label="Kullanıcı Adı veya E-posta"
+            htmlFor="login"
+            error={errors.login?.message}
+          >
+            <Input
               id="login"
               type="text"
               placeholder="kullaniciadi veya ornek@mail.com"
               autoComplete="username"
               {...register("login")}
             />
-            {errors.login ? (
-              <div className="error-text">{errors.login.message}</div>
-            ) : null}
-          </div>
+          </Field>
 
-          <div className="form-field">
-            <label htmlFor="password">Şifre</label>
-            <input
+          <Field label="Şifre" htmlFor="password" error={errors.password?.message}>
+            <Input
               id="password"
               type="password"
               placeholder="••••••••"
               autoComplete="current-password"
               {...register("password")}
             />
-            {errors.password ? (
-              <div className="error-text">{errors.password.message}</div>
-            ) : null}
-          </div>
+          </Field>
 
           {formError ? <div className="error-text">{formError}</div> : null}
 
-          <button type="submit" className="primary-button" disabled={isSubmitting}>
-            {isSubmitting ? "Giriş yapılıyor..." : "Giriş Yap"}
-          </button>
+          <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
+            Giriş Yap
+          </Button>
         </form>
       </div>
     </div>

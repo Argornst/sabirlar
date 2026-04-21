@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import IconButton from '../../../../../shared/components/ui/IconButton';
+import Input from '../../../../../shared/components/ui/Input';
+import Select from '../../../../../shared/components/ui/Select';
 import './scenario-history.css';
 
 function formatDate(value) {
@@ -144,7 +147,7 @@ function ActionIconButton({
   disabled = false,
 }) {
   return (
-    <button
+    <IconButton
       type="button"
       className={`lp-icon-button lp-icon-button--${variant}`}
       onClick={onClick}
@@ -154,7 +157,7 @@ function ActionIconButton({
       title={label}
     >
       {icon}
-    </button>
+    </IconButton>
   );
 }
 
@@ -327,7 +330,7 @@ export function ScenarioHistory({
       <div className="lp-scenario-history__toolbar">
         <label className="lp-field">
           <span className="lp-field__label">Ara</span>
-          <input
+          <Input
             className="lp-input"
             type="text"
             value={search}
@@ -338,7 +341,7 @@ export function ScenarioHistory({
 
         <label className="lp-field lp-scenario-history__sort">
           <span className="lp-field__label">Sırala</span>
-          <select
+          <Select
             className="lp-input"
             value={sort}
             onChange={(event) => onSortChange?.(event.target.value)}
@@ -347,7 +350,7 @@ export function ScenarioHistory({
             <option value="updated_asc">Eskiden yeniye</option>
             <option value="name_asc">Ada göre A-Z</option>
             <option value="name_desc">Ada göre Z-A</option>
-          </select>
+          </Select>
         </label>
       </div>
 

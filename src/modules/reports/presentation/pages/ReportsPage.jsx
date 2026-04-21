@@ -5,11 +5,12 @@ import PageHeader from "../../../../shared/components/ui/PageHeader";
 import EmptyState from "../../../../shared/components/ui/EmptyState";
 import ErrorState from "../../../../shared/components/ui/ErrorState";
 import LoadingState from "../../../../shared/components/ui/LoadingState";
-import { useDispatchLogsQuery } from "../../../../modules/productions/presentation/hooks/useDispatchLogsQuery";
 import ReportsSection from "../components/ReportsSection";
 import DispatchLogsFilters from "../components/DispatchLogsFilters";
 import DispatchLogsSummaryCards from "../components/DispatchLogsSummaryCards";
 import DispatchLogsTable from "../components/DispatchLogsTable";
+import { useReportsDispatchLogsQuery } from "../hooks/useReportsDispatchLogsQuery";
+import "../../reports.css";
 
 const INITIAL_FILTERS = {
   search: "",
@@ -22,7 +23,7 @@ const INITIAL_FILTERS = {
 
 export default function ReportsPage() {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const { data, isLoading, isError, error } = useDispatchLogsQuery(filters);
+  const { data, isLoading, isError, error } = useReportsDispatchLogsQuery(filters);
 
   const pagination = useMemo(
     () => ({

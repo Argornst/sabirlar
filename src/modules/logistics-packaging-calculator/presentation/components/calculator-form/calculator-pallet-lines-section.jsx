@@ -1,3 +1,4 @@
+import Button from '../../../../../shared/components/ui/Button';
 import { PalletLineEditor } from '../pallet-line-editor/pallet-line-editor';
 
 export function CalculatorPalletLinesSection({
@@ -30,9 +31,9 @@ export function CalculatorPalletLinesSection({
           </p>
         </div>
 
-        <button type="button" className="lp-button" onClick={onAddLine}>
+        <Button type="button" className="lp-button" onClick={onAddLine}>
           Palet Satırı Ekle
-        </button>
+        </Button>
       </div>
 
       <div className="lp-form-stack">

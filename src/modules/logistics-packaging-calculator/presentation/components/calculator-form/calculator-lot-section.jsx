@@ -1,3 +1,7 @@
+import Field from '../../../../../shared/components/ui/Field';
+import Input from '../../../../../shared/components/ui/Input';
+import Select from '../../../../../shared/components/ui/Select';
+
 function preventWheelChange(event) {
   event.currentTarget.blur();
 }
@@ -15,20 +19,18 @@ export function CalculatorLotSection({ values, products, onChange }) {
       </div>
 
       <div className="lp-form-grid lp-form-grid--3">
-        <label className="lp-field">
-          <span className="lp-field__label">Lot Numarası</span>
-          <input
+        <Field label="Lot Numarası" className="lp-field">
+          <Input
             className="lp-input"
             type="text"
             value={values.lotNumber}
             onChange={(event) => onChange({ lotNumber: event.target.value })}
             placeholder="Örn: LT-2026-001"
           />
-        </label>
+        </Field>
 
-        <label className="lp-field">
-          <span className="lp-field__label">Ürün</span>
-          <select
+        <Field label="Ürün" className="lp-field">
+          <Select
             className="lp-input"
             value={values.productId}
             onChange={(event) => onChange({ productId: event.target.value })}
@@ -39,12 +41,11 @@ export function CalculatorLotSection({ values, products, onChange }) {
                 {product.code} - {product.name}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Field>
 
-        <label className="lp-field">
-          <span className="lp-field__label">Toplam Miktar (kg)</span>
-          <input
+        <Field label="Toplam Miktar (kg)" className="lp-field">
+          <Input
             className="lp-input"
             type="number"
             min="0"
@@ -57,7 +58,7 @@ export function CalculatorLotSection({ values, products, onChange }) {
               })
             }
           />
-        </label>
+        </Field>
       </div>
     </div>
   );

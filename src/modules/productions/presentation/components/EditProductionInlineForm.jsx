@@ -4,7 +4,7 @@ import {
   QUANTITY_UNITS,
 } from "../../domain/entities/production.entity";
 import { useUpdateProductionMutation } from "../hooks/useUpdateProductionMutation";
-import { getProductionProductOptions } from "../../application/use-cases/getProductionProductOptions";
+import { listProductionProductOptions } from "../../runtime/productions.runtime";
 
 import Field from "../../../../shared/components/ui/Field";
 import Input from "../../../../shared/components/ui/Input";
@@ -27,7 +27,7 @@ export default function EditProductionInlineForm({
   onSuccess,
 }) {
   const updateMutation = useUpdateProductionMutation();
-  const productOptions = useMemo(() => getProductionProductOptions(), []);
+  const productOptions = useMemo(() => listProductionProductOptions(), []);
   const [formState, setFormState] = useState({
     lot_no: "",
     customer_name: "",

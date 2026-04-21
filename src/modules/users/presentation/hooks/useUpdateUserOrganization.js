@@ -5,15 +5,9 @@ import {
   AUDIT_ENTITY_TYPES,
 } from "../../../../shared/constants/audit";
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
-import { usersRepository } from "../../infrastructure/repositories/usersRepository";
-
-function patchUsersList(oldUsers, userId, patch) {
-  if (!Array.isArray(oldUsers)) return oldUsers;
-
-  return oldUsers.map((user) =>
-    user.id === userId ? { ...user, ...patch } : user
-  );
-}
+import { invalidateUserManagementQueries, usersQueryKeys } from "../../application/queryKeys";
+import { updateUserOrganizationRecord } from "../../runtime/users.runtime";
+import { patchUsersListEntry } from "./users.cache";
 
 export function useUpdateUserOrganization() {
   const queryClient = useQueryClient();
@@ -21,15 +15,20 @@ export function useUpdateUserOrganization() {
 
   return useMutation({
     mutationFn: async ({ userId, organizationId }) =>
-      usersRepository.updateOrganization(userId, organizationId),
+      updateUserOrganizationRecord({
+        userId,
+        organizationId,
+      }),
 
     onMutate: async ({ userId, organizationId }) => {
-      await queryClient.cancelQueries({ queryKey: ["users"] });
+      await queryClient.cancelQueries({
+        queryKey: usersQueryKeys.all,
+      });
 
-      const previousUsers = queryClient.getQueryData(["users"]);
+      const previousUsers = queryClient.getQueryData(usersQueryKeys.all);
 
-      queryClient.setQueryData(["users"], (old) =>
-        patchUsersList(old, userId, { organizationId })
+      queryClient.setQueryData(usersQueryKeys.all, (old) =>
+        patchUsersListEntry(old, userId, { organizationId })
       );
 
       return { previousUsers };
@@ -51,15 +50,15 @@ export function useUpdateUserOrganization() {
 
     onError: (_error, _variables, context) => {
       if (context?.previousUsers) {
-        queryClient.setQueryData(["users"], context.previousUsers);
+        queryClient.setQueryData(usersQueryKeys.all, context.previousUsers);
       }
     },
 
     onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
-      await queryClient.invalidateQueries({ queryKey: ["organizations"] });
-      await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
-      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      await invalidateUserManagementQueries(queryClient, {
+        includeOrganizations: true,
+        includeAudit: true,
+      });
     },
   });
 }

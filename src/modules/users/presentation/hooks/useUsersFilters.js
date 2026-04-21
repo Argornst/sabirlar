@@ -19,7 +19,6 @@ export function useUsersFilters(users = []) {
       const matchesRole =
         !role || String(user.roleName || "").toLowerCase() === role.toLowerCase();
 
-      // 🔥 FIX BURASI
       const matchesOrganization =
         !organization ||
         String(user.organizationId ?? "") === String(organization);

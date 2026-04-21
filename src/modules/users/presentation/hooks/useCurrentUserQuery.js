@@ -1,15 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../../app/providers/AppProviders";
-import { usersRepository } from "../../infrastructure/repositories/usersRepository";
+import { usersQueryKeys } from "../../application/queryKeys";
+import { getCurrentUserProfile } from "../../runtime/users.runtime";
 
 export function useCurrentUserQuery() {
   const { user, isAuthenticated, isAuthLoading } = useAuth();
 
   return useQuery({
-    queryKey: ["current-user", user?.id],
+    queryKey: usersQueryKeys.current(user?.id),
     queryFn: async () => {
       if (!user?.id) return null;
-      return usersRepository.getProfileByUserId(user.id);
+      return getCurrentUserProfile(user.id);
     },
     enabled: !isAuthLoading && isAuthenticated && Boolean(user?.id),
     staleTime: 1000 * 60 * 3,

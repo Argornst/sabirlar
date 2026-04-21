@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../../app/providers/AppProviders";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../../../../shared/constants/audit";
 import { logActivity } from "../../../../shared/lib/audit/logActivity";
-import { usersRepository } from "../../infrastructure/repositories/usersRepository";
+import { invalidateUserManagementQueries } from "../../../users/application/queryKeys";
+import { updateUserOrganizationRecord } from "../../../users/runtime/users.runtime";
 
 export function useUpdateUserOrganization() {
   const queryClient = useQueryClient();
@@ -10,7 +11,10 @@ export function useUpdateUserOrganization() {
 
   return useMutation({
     mutationFn: async ({ userId, organizationId }) =>
-      usersRepository.updateOrganization(userId, organizationId),
+      updateUserOrganizationRecord({
+        userId,
+        organizationId,
+      }),
     onSuccess: async (updatedUser) => {
       await logActivity({
         action: AUDIT_ACTIONS.USER_UPDATED,
@@ -24,10 +28,9 @@ export function useUpdateUserOrganization() {
         },
       });
 
-      await queryClient.invalidateQueries({
-  predicate: (query) => query.queryKey.includes("users"),
-});
-      await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      await invalidateUserManagementQueries(queryClient, {
+        includeAudit: true,
+      });
     },
   });
 }

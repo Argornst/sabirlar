@@ -1,3 +1,4 @@
+import IconButton from "../../../../shared/components/ui/IconButton";
 import { useDeleteProduct } from "../hooks/useDeleteProduct";
 import { useToggleProductActive } from "../hooks/useToggleProductActive";
 
@@ -41,7 +42,7 @@ export default function ProductRowActions({
 
   return (
     <div className="products-row-actions products-row-actions--table">
-      <button
+      <IconButton
         type="button"
         className={`products-icon-button ${
           isEditing ? "products-icon-button--active" : ""
@@ -52,10 +53,11 @@ export default function ProductRowActions({
         aria-label="Düzenle"
       >
         <EditIcon />
-      </button>
+      </IconButton>
 
-      <button
+      <IconButton
         type="button"
+        variant="success"
         className={`products-icon-button products-icon-button--success ${
           product.isActive ? "products-icon-button--active" : ""
         }`}
@@ -65,10 +67,11 @@ export default function ProductRowActions({
         aria-label={product.isActive ? "Pasifleştir" : "Aktifleştir"}
       >
         <PowerIcon />
-      </button>
+      </IconButton>
 
-      <button
+      <IconButton
         type="button"
+        variant="danger"
         className="products-icon-button products-icon-button--danger"
         onClick={handleDelete}
         disabled={isBusy}
@@ -76,7 +79,7 @@ export default function ProductRowActions({
         aria-label="Sil"
       >
         <DeleteIcon />
-      </button>
+      </IconButton>
     </div>
   );
 }

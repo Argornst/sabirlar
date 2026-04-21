@@ -182,8 +182,9 @@ export default function DispatchPlanPage() {
 
             <div className="dispatch-controls">
               <div className="dispatch-filter-tabs">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   className={`dispatch-filter-tab${
                     activeFilter === DISPATCH_FILTERS.all
                       ? " dispatch-filter-tab--active"
@@ -192,10 +193,11 @@ export default function DispatchPlanPage() {
                   onClick={() => setActiveFilter(DISPATCH_FILTERS.all)}
                 >
                   Tümü
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   className={`dispatch-filter-tab${
                     activeFilter === DISPATCH_FILTERS.week
                       ? " dispatch-filter-tab--active"
@@ -204,10 +206,11 @@ export default function DispatchPlanPage() {
                   onClick={() => setActiveFilter(DISPATCH_FILTERS.week)}
                 >
                   Bu Hafta
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   className={`dispatch-filter-tab${
                     activeFilter === DISPATCH_FILTERS.month
                       ? " dispatch-filter-tab--active"
@@ -216,12 +219,13 @@ export default function DispatchPlanPage() {
                   onClick={() => setActiveFilter(DISPATCH_FILTERS.month)}
                 >
                   Bu Ay
-                </button>
+                </Button>
               </div>
 
               <div className="dispatch-view-tabs">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   className={`dispatch-view-tab${
                     activeView === DISPATCH_VIEWS.calendar
                       ? " dispatch-view-tab--active"
@@ -230,10 +234,11 @@ export default function DispatchPlanPage() {
                   onClick={() => setActiveView(DISPATCH_VIEWS.calendar)}
                 >
                   Takvim
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   className={`dispatch-view-tab${
                     activeView === DISPATCH_VIEWS.week
                       ? " dispatch-view-tab--active"
@@ -242,10 +247,11 @@ export default function DispatchPlanPage() {
                   onClick={() => setActiveView(DISPATCH_VIEWS.week)}
                 >
                   Haftalık Board
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   className={`dispatch-view-tab${
                     activeView === DISPATCH_VIEWS.list
                       ? " dispatch-view-tab--active"
@@ -254,7 +260,7 @@ export default function DispatchPlanPage() {
                   onClick={() => setActiveView(DISPATCH_VIEWS.list)}
                 >
                   Liste
-                </button>
+                </Button>
               </div>
             </div>
           </div>

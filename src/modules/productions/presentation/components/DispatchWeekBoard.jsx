@@ -9,7 +9,8 @@ import { useUpdateProductionMutation } from "../hooks/useUpdateProductionMutatio
 import { useDispatchFeedback } from "../hooks/useDispatchFeedback";
 import { DispatchToastViewport } from "./DispatchToastViewport";
 import DatePicker from "../../../../shared/components/ui/DatePicker";
-import { createDispatchLogs } from "../../application/use-cases/createDispatchLogs";
+import Button from "../../../../shared/components/ui/Button";
+import { createProductionDispatchLogs } from "../../runtime/productions.runtime";
 import { dispatchLogKeys } from "../hooks/useDispatchLogsQuery";
 
 const GROUP_BY = {
@@ -211,7 +212,7 @@ export function DispatchWeekBoard({ items }) {
         });
       }
 
-      await createDispatchLogs({
+      await createProductionDispatchLogs({
         items: changedItems,
         fromDateMap,
         toDate: targetDate,
@@ -353,8 +354,9 @@ export function DispatchWeekBoard({ items }) {
             </div>
 
             <div className="dispatch-week-board__actions dispatch-week-board__nav">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className={[
                   "dispatch-week-nav-button",
                   "dispatch-week-nav-button--ghost",
@@ -376,10 +378,11 @@ export function DispatchWeekBoard({ items }) {
                 }}
               >
                 Önceki Hafta
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className={`dispatch-week-nav-button ${
                   weekOffset === 0
                     ? "dispatch-week-nav-button--primary"
@@ -388,10 +391,11 @@ export function DispatchWeekBoard({ items }) {
                 onClick={() => setWeekOffset(0)}
               >
                 Bu Hafta
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className={[
                   "dispatch-week-nav-button",
                   "dispatch-week-nav-button--ghost",
@@ -413,31 +417,33 @@ export function DispatchWeekBoard({ items }) {
                 }}
               >
                 Sonraki Hafta
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="dispatch-week-board__toolbar">
             <div className="dispatch-view-tabs">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className={`dispatch-view-tab${
                   groupMode === GROUP_BY.customer ? " dispatch-view-tab--active" : ""
                 }`}
                 onClick={() => setGroupMode(GROUP_BY.customer)}
               >
                 Müşteri Bazlı
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className={`dispatch-view-tab${
                   groupMode === GROUP_BY.vehicle ? " dispatch-view-tab--active" : ""
                 }`}
                 onClick={() => setGroupMode(GROUP_BY.vehicle)}
               >
                 Araç Bazlı
-              </button>
+              </Button>
             </div>
 
             <div className="dispatch-week-board__summary">
@@ -468,8 +474,9 @@ export function DispatchWeekBoard({ items }) {
                 ]}
               />
 
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className="dispatch-chip-button dispatch-chip-button--primary"
                 disabled={
                   !selectedIds.length || !bulkMoveDate || updateMutation.isPending
@@ -477,16 +484,17 @@ export function DispatchWeekBoard({ items }) {
                 onClick={handleBulkMove}
               >
                 Seçilenleri Taşı
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className="dispatch-chip-button dispatch-chip-button--ghost"
                 disabled={!selectedIds.length}
                 onClick={clearSelection}
               >
                 Seçimi Temizle
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -592,8 +600,9 @@ export function DispatchWeekBoard({ items }) {
                                   <div className="dispatch-week-card__top-row">
                                     <strong>{item.customer_name}</strong>
 
-                                    <button
+                                    <Button
                                       type="button"
+                variant="ghost"
                                       className={[
                                         "dispatch-card-select",
                                         isSelectedItem
@@ -608,7 +617,7 @@ export function DispatchWeekBoard({ items }) {
                                       }}
                                     >
                                       {isSelectedItem ? "✓" : ""}
-                                    </button>
+                                    </Button>
                                   </div>
 
                                   <ProductionStatusBadge status={item.status} />

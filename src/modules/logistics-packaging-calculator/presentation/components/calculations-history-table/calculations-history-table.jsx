@@ -1,4 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
+import Table, { TableEmptyRow, TableShell } from '../../../../../shared/components/ui/Table';
+import Button from '../../../../../shared/components/ui/Button';
 import './calculations-history-table.css';
 
 function formatWeight(value) {
@@ -60,7 +62,8 @@ export function CalculationsHistoryTable({
 
   return (
     <div className="lp-history-table-wrapper">
-      <table className="lp-history-table">
+      <TableShell>
+        <Table className="lp-history-table">
         <thead>
           <tr>
             <th>Lot</th>
@@ -77,11 +80,11 @@ export function CalculationsHistoryTable({
 
         <tbody>
           {items.length === 0 ? (
-            <tr>
-              <td colSpan={9}>
-                <div className="lp-empty-state">Kayıtlı hesaplama bulunamadı.</div>
-              </td>
-            </tr>
+            <TableEmptyRow
+              colSpan={9}
+              className="lp-history-table__empty-cell"
+              message="Kayıtlı hesaplama bulunamadı."
+            />
           ) : (
             items.map((item, index) => {
               const calculation = item?.calculation ?? {};
@@ -110,13 +113,14 @@ export function CalculationsHistoryTable({
                     </td>
                     <td>{formatDate(calculation.createdAt)}</td>
                     <td>
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         className="lp-button lp-button--ghost lp-button--sm"
                         onClick={() => toggleRow(calculation.id)}
                       >
                         {isExpanded ? 'Kapat' : 'Detay'}
-                      </button>
+                      </Button>
                     </td>
                   </tr>
 
@@ -154,7 +158,7 @@ export function CalculationsHistoryTable({
                           </div>
 
                           <div className="lp-history-detail-table-wrapper">
-                            <table className="lp-history-detail-table">
+                            <Table className="lp-history-detail-table">
                               <thead>
                                 <tr>
                                   <th>Palet</th>
@@ -170,13 +174,11 @@ export function CalculationsHistoryTable({
                               </thead>
                               <tbody>
                                 {palletLines.length === 0 ? (
-                                  <tr>
-                                    <td colSpan={9}>
-                                      <div className="lp-empty-state">
-                                        Palet satırı bulunamadı.
-                                      </div>
-                                    </td>
-                                  </tr>
+                                  <TableEmptyRow
+                                    colSpan={9}
+                                    className="lp-history-table__empty-cell"
+                                    message="Palet satırı bulunamadı."
+                                  />
                                 ) : (
                                   palletLines.map((line, lineIndex) => {
                                     const palletMaterial = materialMap.get(line.palletMaterialId);
@@ -212,7 +214,7 @@ export function CalculationsHistoryTable({
                                   })
                                 )}
                               </tbody>
-                            </table>
+                            </Table>
                           </div>
 
                           {Array.isArray(calculation.validationMessages) &&
@@ -249,7 +251,8 @@ export function CalculationsHistoryTable({
             })
           )}
         </tbody>
-      </table>
+        </Table>
+      </TableShell>
     </div>
   );
 }

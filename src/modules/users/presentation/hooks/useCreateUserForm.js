@@ -12,8 +12,8 @@ import {
   createUserDefaultValues,
   createUserSchema,
 } from "../../application/dto/createUserSchema";
-import { createUser } from "../../application/use-cases/createUser";
-import { usersRepository } from "../../infrastructure/repositories/usersRepository";
+import { invalidateUserManagementQueries } from "../../application/queryKeys";
+import { createUserRecord } from "../../runtime/users.runtime";
 
 export function useCreateUserForm() {
   const queryClient = useQueryClient();
@@ -25,11 +25,7 @@ export function useCreateUserForm() {
   });
 
   const mutation = useMutation({
-    mutationFn: (values) =>
-      createUser({
-        usersRepository,
-        values,
-      }),
+    mutationFn: (values) => createUserRecord(values),
     onSuccess: async (createdUser) => {
       form.reset(createUserDefaultValues);
 
@@ -46,10 +42,9 @@ export function useCreateUserForm() {
         },
       });
 
-      await queryClient.invalidateQueries({
-  predicate: (query) => query.queryKey.includes("users"),
-});
-      await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+      await invalidateUserManagementQueries(queryClient, {
+        includeAudit: true,
+      });
     },
   });
 

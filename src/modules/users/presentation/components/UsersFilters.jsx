@@ -1,4 +1,6 @@
 import FilterBar from "../../../../shared/components/ui/FilterBar";
+import Input from "../../../../shared/components/ui/Input";
+import Select from "../../../../shared/components/ui/Select";
 
 export default function UsersFilters({
   search,
@@ -16,7 +18,7 @@ export default function UsersFilters({
     <FilterBar>
       <div className="filter-field">
         <label htmlFor="users-search">Ara</label>
-        <input
+        <Input
           id="users-search"
           type="text"
           placeholder="Ad, kullanıcı adı veya e-posta ara"
@@ -27,9 +29,8 @@ export default function UsersFilters({
 
       <div className="filter-field">
         <label htmlFor="users-role">Rol</label>
-        <select
+        <Select
           id="users-role"
-          className="form-select"
           value={role}
           onChange={(event) => onRoleChange(event.target.value)}
         >
@@ -39,14 +40,13 @@ export default function UsersFilters({
               {roleItem.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="filter-field">
         <label htmlFor="users-organization">Organizasyon</label>
-        <select
+        <Select
           id="users-organization"
-          className="form-select"
           value={organization}
           onChange={(event) => onOrganizationChange(event.target.value)}
         >
@@ -56,21 +56,20 @@ export default function UsersFilters({
               {organizationItem.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="filter-field">
         <label htmlFor="users-status">Durum</label>
-        <select
+        <Select
           id="users-status"
-          className="form-select"
           value={status}
           onChange={(event) => onStatusChange(event.target.value)}
         >
           <option value="">Tümü</option>
           <option value="active">Aktif</option>
           <option value="inactive">Pasif</option>
-        </select>
+        </Select>
       </div>
     </FilterBar>
   );
