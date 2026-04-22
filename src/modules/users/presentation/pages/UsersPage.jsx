@@ -38,7 +38,7 @@ export default function UsersPage() {
     <AnimatedPage>
       <Card>
         <PageHeader
-          title="Users"
+          title="Kullanıcılar"
           description="Kullanıcıları oluşturun, filtreleyin ve erişimlerini yönetin."
           badge="Kullanıcı Yönetimi"
         />

@@ -31,7 +31,7 @@ export default function ProductsPage() {
     <AnimatedPage>
       <Card>
         <PageHeader
-          title="Products"
+          title="Ürünler"
           description="Ürün tanımlarını oluşturun, filtreleyin, dışa aktarın ve mevcut ürünleri yönetin."
           badge="Ürün Yönetimi"
         />

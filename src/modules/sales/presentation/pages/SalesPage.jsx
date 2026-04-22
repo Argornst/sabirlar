@@ -56,7 +56,7 @@ export default function SalesPage() {
     <AnimatedPage>
       <Card>
         <PageHeader
-          title="Sales"
+          title="Satışlar"
           description="Satış kayıtlarını filtreleyin, detaylarını görüntüleyin, dışa aktarın ve yönetin."
           badge="Satış Yönetimi"
           actions={
