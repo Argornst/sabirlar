@@ -222,6 +222,7 @@ Bunlar audit dökümanlarında ve incelemede tespit edildi. Yeni iş yaparken bu
 - React Hook Form'da `watch()` yerine `useWatch()` kullan (compiler uyumluluğu).
 - JSDoc ile tip ipuçları yaz (full TS geçişi olana dek).
 - Zod schema'ları `domain/validators/` veya ilgili use-case'in yakınında tut.
+- Import path'lerinde 3 seviyeden derin relative path'ler (`../../../../`) yerine `@/shared/...` alias'ını tercih et. `vite.config.js`'te `@` alias'ı `src/`'e bağlı; derin relative path'ler kırılgan ve seviye sayma hatalarına açık.
 
 **İletişim:**
 
