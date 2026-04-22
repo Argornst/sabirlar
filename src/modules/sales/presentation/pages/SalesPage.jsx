@@ -56,9 +56,10 @@ export default function SalesPage() {
     <AnimatedPage>
       <Card>
         <PageHeader
+          variant="hero"
+          eyebrow="SATIŞ"
           title="Satışlar"
           description="Satış kayıtlarını filtreleyin, detaylarını görüntüleyin, dışa aktarın ve yönetin."
-          badge="Satış Yönetimi"
           actions={
             <Link to={ROUTES.NEW_SALE}>
               <Button className="btn-premium">

@@ -38,9 +38,10 @@ export default function UsersPage() {
     <AnimatedPage>
       <Card>
         <PageHeader
+          variant="hero"
+          eyebrow="KULLANICI"
           title="Kullanıcılar"
           description="Kullanıcıları oluşturun, filtreleyin ve erişimlerini yönetin."
-          badge="Kullanıcı Yönetimi"
         />
 
         <div className="content-stack">

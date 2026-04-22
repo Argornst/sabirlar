@@ -27,9 +27,10 @@ export default function ProductionsPage() {
     <AnimatedPage>
       <Card>
         <PageHeader
+          variant="hero"
+          eyebrow="ÜRETİM"
           title="Üretimler"
           description="Tüm üretim kayıtlarını filtreleyin, detaylarını görüntüleyin, düzenleyin ve sevkiyat planına hazırlayın."
-          badge="Üretim Yönetimi"
           actions={
             <div className="production-header-actions">
               <Link to={ROUTES.DISPATCH_PLAN}>

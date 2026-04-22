@@ -44,9 +44,10 @@ export default function NewProductionPage() {
     <AnimatedPage>
       <Card>
         <PageHeader
+          variant="hero"
+          eyebrow="ÜRETİM"
           title="Yeni Üretim"
           description="Lot, müşteri, ürün, miktar, paketleme, palet ve sevkiyat bilgilerini girerek yeni üretim kaydı oluştur."
-          badge="Üretim Girişi"
           actions={
             <div className="production-header-actions">
               <Link to={ROUTES.PRODUCTIONS}>

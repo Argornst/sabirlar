@@ -137,9 +137,10 @@ export default function DispatchPlanPage() {
       <AnimatedPage>
         <Card>
           <PageHeader
+            variant="hero"
+            eyebrow="ÜRETİM"
             title="Sevkiyat Planı"
             description="Çıkış tarihi atanmış üretimleri takvim, liste ve haftalık board görünümünde takip et."
-            badge="Sevkiyat Yönetimi"
             actions={
               <div className="production-header-actions">
                 <Button

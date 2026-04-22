@@ -78,9 +78,10 @@ export default function NewSalePage() {
   return (
     <Card>
       <PageHeader
+        variant="hero"
+        eyebrow="SATIŞ"
         title="Yeni Sipariş"
         description="Bir sipariş içine birden fazla ürün ekleyin. Tutarlar otomatik hesaplanır."
-        badge="Sipariş Oluştur"
       />
 
       <div className="content-stack">

@@ -6,7 +6,7 @@ export function LogisticsPackagingLayout({ title, description, actions, children
     <div className="lp-layout">
       <PageHeader
         variant="hero"
-        eyebrow="Lojistik"
+        eyebrow="LOJİSTİK"
         title={title}
         description={description}
         actions={actions}

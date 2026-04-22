@@ -54,9 +54,10 @@ export default function DashboardPage() {
     <AnimatedPage>
       <Card>
         <PageHeader
+          variant="hero"
+          eyebrow="PANEL"
           title="Panel"
           description="Temel durum, hızlı aksiyonlar ve son satış kayıtları."
-          badge="Genel Bakış"
         />
 
         {isLoading ? (

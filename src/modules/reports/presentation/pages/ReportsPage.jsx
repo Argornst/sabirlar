@@ -59,9 +59,10 @@ export default function ReportsPage() {
     <AnimatedPage>
       <Card>
         <PageHeader
+          variant="hero"
+          eyebrow="RAPOR"
           title="Raporlar"
           description="Sevkiyat hareket loglarını filtreleyin, inceleyin ve ileride eklenecek diğer rapor modülleriyle birlikte tek merkezden yönetin."
-          badge="Raporlama"
         />
 
         <div className="content-stack">
