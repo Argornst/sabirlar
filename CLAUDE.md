@@ -205,6 +205,8 @@ Bunlar audit dökümanlarında ve incelemede tespit edildi. Yeni iş yaparken bu
 
 ## 9. Çalışma prensipleri (senden beklenenler)
 
+Tasarım ve görsel kararlar için `docs/design-system.md` — yeni sayfa veya bileşen eklerken oraya bak.
+
 **Değişiklik yaparken:**
 
 - Önce `docs/architecture-audit-phase-*.md` dosyalarını oku. Aktif bir faz varsa onun kurallarına uy.
