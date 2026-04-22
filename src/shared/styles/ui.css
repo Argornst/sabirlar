@@ -554,6 +554,46 @@
   gap: 12px;
 }
 
+.ui-page-header__eyebrow {
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a5b4fc;
+  margin-bottom: 4px;
+}
+
+:root[data-theme="light"] .ui-page-header__eyebrow {
+  color: #4f46e5;
+}
+
+.ui-page-header--hero {
+  padding: 1.15rem;
+  border-radius: 20px;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background:
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 32%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.18);
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 1.15rem;
+}
+
+.ui-page-header--hero .ui-page-header__title {
+  font-size: 1.65rem;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme="light"] .ui-page-header--hero {
+  background:
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.14), transparent 32%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  border-color: rgba(99, 102, 241, 0.28);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.07);
+}
+
 .ui-section-card--premium {
   position: relative;
   overflow: hidden;

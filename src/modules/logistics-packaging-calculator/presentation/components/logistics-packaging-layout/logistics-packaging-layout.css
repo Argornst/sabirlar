@@ -1,95 +1,14 @@
 .lp-layout {
+  /* .lp-layout is a hero-driven layout; extra top breathing room compensates
+     for the defined hero card's visual weight against the page padding. */
+  padding-top: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
-}
-
-.lp-layout__hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.15rem;
-  border-radius: 20px;
-  border: 1px solid rgba(99, 102, 241, 0.18);
-  background:
-    radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 32%),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
-  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.18);
-}
-
-:global(.light) .lp-layout__hero,
-:global([data-theme='light']) .lp-layout__hero {
-  background:
-    radial-gradient(circle at top left, rgba(99, 102, 241, 0.14), transparent 32%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
-  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.07);
-}
-
-.lp-layout__hero-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.lp-layout__eyebrow {
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #a5b4fc;
-}
-
-:global(.light) .lp-layout__eyebrow,
-:global([data-theme='light']) .lp-layout__eyebrow {
-  color: #4f46e5;
-}
-
-.lp-layout__title {
-  margin: 0;
-  font-size: 1.65rem;
-  line-height: 1.1;
-  font-weight: 800;
-  color: #f8fafc;
-}
-
-:global(.light) .lp-layout__title,
-:global([data-theme='light']) .lp-layout__title {
-  color: #0f172a;
-}
-
-.lp-layout__subtitle {
-  margin: 0;
-  max-width: 70ch;
-  font-size: 0.9rem;
-  line-height: 1.55;
-  color: #cbd5e1;
-}
-
-:global(.light) .lp-layout__subtitle,
-:global([data-theme='light']) .lp-layout__subtitle {
-  color: #475569;
-}
-
-.lp-layout__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
 }
 
 .lp-layout__content {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-@media (max-width: 960px) {
-  .lp-layout__hero {
-    flex-direction: column;
-  }
-
-  .lp-layout__actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
 }

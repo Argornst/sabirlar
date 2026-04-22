@@ -29,7 +29,7 @@ export function LogisticsPackagingHistoryPage() {
     return (
       <LogisticsPackagingLayout
         title="Paketleme Geçmişi"
-        subtitle="Kayıtlı hesaplamalar yükleniyor."
+        description="Kayıtlı hesaplamalar yükleniyor."
       >
         <div className="lp-panel">Yükleniyor...</div>
       </LogisticsPackagingLayout>
@@ -39,7 +39,7 @@ export function LogisticsPackagingHistoryPage() {
   return (
     <LogisticsPackagingLayout
       title="Paketleme Geçmişi"
-      subtitle="Daha önce kaydedilen lot bazlı paketleme senaryolarını görüntüleyin."
+      description="Daha önce kaydedilen lot bazlı paketleme senaryolarını görüntüleyin."
     >
       <div className="lp-panel lp-page-hero">
         <div className="lp-page-hero__eyebrow">Lojistik</div>

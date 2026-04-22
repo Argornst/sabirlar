@@ -16,7 +16,7 @@ export function LogisticsPackagingMaterialsPage() {
   return (
     <LogisticsPackagingLayout
       title="Paketleme Malzemeleri"
-      subtitle="Palet, kutu, vakum torbası ve varil master verilerini yönetin."
+      description="Palet, kutu, vakum torbası ve varil master verilerini yönetin."
     >
       <MaterialsManager
         materials={materials}

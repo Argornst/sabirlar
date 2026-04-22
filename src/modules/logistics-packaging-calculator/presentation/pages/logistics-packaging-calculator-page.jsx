@@ -668,7 +668,7 @@ export function LogisticsPackagingCalculatorPage() {
     return (
       <LogisticsPackagingLayout
         title="Paketleme Hesaplayıcı"
-        subtitle="Paketleme verileri yükleniyor."
+        description="Paketleme verileri yükleniyor."
       >
         <div className="lp-panel">Yükleniyor...</div>
       </LogisticsPackagingLayout>
@@ -678,7 +678,7 @@ export function LogisticsPackagingCalculatorPage() {
   return (
     <LogisticsPackagingLayout
       title="Paketleme Hesaplayıcı"
-      subtitle="Aynı sevkiyat içinde birden fazla lotu hesaplayın, lot bazlı planı yönetin ve toplam durumu üstte görün."
+      description="Aynı sevkiyat içinde birden fazla lotu hesaplayın, lot bazlı planı yönetin ve toplam durumu üstte görün."
       actions={
         <div className="lp-header-actions">
           <Button

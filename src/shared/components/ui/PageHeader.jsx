@@ -3,13 +3,29 @@ export default function PageHeader({
   description,
   actions = null,
   badge = null,
+  eyebrow = null,
+  variant = "default",
 }) {
+  // eyebrow takes precedence: if both are passed, badge is suppressed
+  const visibleBadge = eyebrow ? null : badge;
+
   return (
-    <div className="ui-page-header ui-page-header--ultra ui-page-header--premium">
+    <div className={[
+      "ui-page-header",
+      "ui-page-header--ultra",
+      "ui-page-header--premium",
+      variant === "hero" ? "ui-page-header--hero" : "",
+    ].filter(Boolean).join(" ")}>
       <div className="ui-page-header__content">
-        {badge ? (
+        {eyebrow ? (
+          <div className="ui-page-header__eyebrow">
+            {eyebrow}
+          </div>
+        ) : null}
+
+        {visibleBadge ? (
           <div className="ui-page-header__badge ui-page-header__badge--premium">
-            {badge}
+            {visibleBadge}
           </div>
         ) : null}
 

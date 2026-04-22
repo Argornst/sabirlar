@@ -196,8 +196,10 @@ Bunlar audit dökümanlarında ve incelemede tespit edildi. Yeni iş yaparken bu
 6. **README hâlâ Vite template.** Gerçek bir README yazılmalı.
 7. **`shared/types/index.d.ts` boş dosya.** Ya dolsun ya silinsin.
 8. **Sales tablosu legacy kolonlar içeriyor.** `createSale` use-case'i `primaryItem` bilgisini legacy single-item kolonlarına da yazıyor (`product_id`, `quantity`, `unit_price`, vs.). Bu geçici — eski UI / raporlarla uyum için. Yeni kod bu legacy alanlara yazmak **zorunda kalmadıkça** `sale_items` tablosunu kullanmalı.
-9. **Build'de `:global(...)` uyarıları** logistics CSS'inde açık (Phase 05 notu). CSS temizliği en sona bırakılmıştı.
+9. **Build'de `:global(...)` uyarıları** logistics modülünün bazı CSS dosyalarında (örnek: compact-stack-preview, card-metrics) devam ediyor. `lp-layout.css` Phase 05 temizliği kapsamında (phase-05 sonrası düzeltmede) kapandı; kalan dosyalar ayrı bir temizlik pass'i bekliyor.
 10. **ESLint hataları** hâlâ var: `AppShell.jsx`, logistics modülü, productions modülü, reports'un bir kısmı. CSS fazı değil, kod kalitesi sorunu.
+11. **Light tema yarım uygulanmış.** AppShell ve shared UI primitives (PageHeader hero dahil) light token'larına tepki veriyor, ama modül sayfalarının gövdesindeki kartlar ve paneller hâlâ hardcoded koyu renkler kullanıyor — light temada okunaksızlaşıyor (beyaz metin açık arka plan üzerinde). Tespit edilen sayfa örnekleri: logistics modülünün hepsi (Paketleme Hesaplayıcı alt kartları, Malzemeler tablosu, Geçmiş paneli, Ürün Ambalaj Kuralları panelleri). Muhtemelen diğer modüllerde de var. Çözüm: tüm kart/panel CSS'lerinin shared theme token'ları (`var(--surface)`, `var(--border)`, `var(--text)`, `var(--muted)`) üzerinden geçmesi. Bağımsız bir faz olarak ele alınmalı — önerilen adı: **phase-06-theme-coverage**.
+12. **Bundle size — tek chunk 3.3 MB (gzip 935 KB).** Vite build uyarısı: 500 kB üstü chunk'lar. Tüm modüller tek bundle'da birleştiriliyor; logistics modülünün ağır bağımlılıkları (Three.js, pdfmake, html2canvas, jspdf) her sayfa açılışında indirilmek zorunda kalıyor. Çözüm: React Router sayfalarında `React.lazy` + `Suspense` ile code splitting; özellikle logistics modülünün tamamı ve raporlar (exceljs, pdfmake) ayrı chunk olmalı. Ayrı bir iyileştirme fazı.
 
 ---
 

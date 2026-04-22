@@ -38,7 +38,7 @@ export function LogisticsPackagingRulesPage() {
     return (
       <LogisticsPackagingLayout
         title="Ürün Ambalaj Kuralları"
-        subtitle="Ürün ve malzeme verileri yükleniyor."
+        description="Ürün ve malzeme verileri yükleniyor."
       >
         <div className="lp-panel">Yükleniyor...</div>
       </LogisticsPackagingLayout>
@@ -48,7 +48,7 @@ export function LogisticsPackagingRulesPage() {
   return (
     <LogisticsPackagingLayout
       title="Ürün Ambalaj Kuralları"
-      subtitle="Ürün bazlı ambalaj izinlerini sade, hızlı ve operasyonel bir arayüzle yönetin."
+      description="Ürün bazlı ambalaj izinlerini sade, hızlı ve operasyonel bir arayüzle yönetin."
     >
       <ProductPackagingRulesManager
         products={products}
