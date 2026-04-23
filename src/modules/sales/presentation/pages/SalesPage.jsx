@@ -62,7 +62,7 @@ export default function SalesPage() {
           description="Satış kayıtlarını filtreleyin, detaylarını görüntüleyin, dışa aktarın ve yönetin."
           actions={
             <Link to={ROUTES.NEW_SALE}>
-              <Button className="btn-premium">
+              <Button variant="secondary">
                 <Plus size={18} />
                 Yeni Satış
               </Button>

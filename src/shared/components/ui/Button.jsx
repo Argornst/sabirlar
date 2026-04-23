@@ -11,6 +11,7 @@ const Button = forwardRef(function Button(
     className = "",
     loading = false,
     disabled = false,
+    shortcut,
     ...rest
   },
   ref
@@ -39,7 +40,10 @@ const Button = forwardRef(function Button(
           Yükleniyor...
         </span>
       ) : (
-        children
+        <>
+          {children}
+          {shortcut ? <kbd className="ui-shortcut-badge">{shortcut}</kbd> : null}
+        </>
       )}
     </MotionButton>
   );

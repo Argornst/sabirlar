@@ -687,6 +687,7 @@ export function LogisticsPackagingCalculatorPage() {
             className="lp-button lp-button--ghost lp-button--iconic lp-button--sweep lp-button--tooltip"
             onClick={() => runHeaderAction('clear', handleClearScenario)}
             data-tooltip="Formu ve lotları temizle"
+            shortcut="Alt+C"
           >
             {headerActionLoading === 'clear' ? (
               <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
@@ -694,7 +695,6 @@ export function LogisticsPackagingCalculatorPage() {
               <BrushCleaning size={18} className="lp-button__icon" />
             )}
             <span>Temizle</span>
-            <kbd className="lp-shortcut-badge">Alt+C</kbd>
           </Button>
 
           <Button
@@ -703,6 +703,7 @@ export function LogisticsPackagingCalculatorPage() {
             className="lp-button lp-button--ghost lp-button--iconic lp-button--new lp-button--tooltip"
             onClick={() => runHeaderAction('new', handleStartNewScenario)}
             data-tooltip="Yeni boş senaryo başlat"
+            shortcut="Alt+N"
           >
             {headerActionLoading === 'new' ? (
               <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
@@ -710,15 +711,15 @@ export function LogisticsPackagingCalculatorPage() {
               <FilePlus2 size={18} className="lp-button__icon" />
             )}
             <span>Yeni Senaryo</span>
-            <kbd className="lp-shortcut-badge">Alt+N</kbd>
           </Button>
 
           <Button
             type="button"
             variant="ghost"
-            className="lp-button lp-button--iconic lp-button--primary-glow lp-button--tooltip"
+            className="lp-button lp-button--iconic lp-button--tooltip"
             onClick={() => runHeaderAction('add', handleAddLot)}
             data-tooltip="Yeni lot ekle"
+            shortcut="Alt+L"
           >
             {headerActionLoading === 'add' ? (
               <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
@@ -726,7 +727,6 @@ export function LogisticsPackagingCalculatorPage() {
               <Plus size={18} className="lp-button__icon" />
             )}
             <span>Lot Ekle</span>
-            <kbd className="lp-shortcut-badge">Alt+L</kbd>
           </Button>
         </div>
       }

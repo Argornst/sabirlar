@@ -51,14 +51,14 @@ export default function NewProductionPage() {
           actions={
             <div className="production-header-actions">
               <Link to={ROUTES.PRODUCTIONS}>
-                <Button variant="secondary" className="btn-premium">
+                <Button variant="secondary">
                   <ArrowLeft size={18} />
                   Üretim Listesi
                 </Button>
               </Link>
 
               <Link to={ROUTES.DISPATCH_PLAN}>
-                <Button variant="secondary" className="btn-premium">
+                <Button variant="secondary">
                   <CalendarBlank size={18} />
                   Sevkiyat Planı
                 </Button>

@@ -146,7 +146,6 @@ export default function DispatchPlanPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  className="btn-premium"
                   onClick={handleOpenPrintPreview}
                   disabled={!canOpenPrint}
                 >
@@ -155,14 +154,14 @@ export default function DispatchPlanPage() {
                 </Button>
 
                 <Link to={ROUTES.PRODUCTIONS}>
-                  <Button variant="secondary" className="btn-premium">
+                  <Button variant="secondary">
                     <ListBullets size={18} />
                     Üretim Listesi
                   </Button>
                 </Link>
 
                 <Link to={ROUTES.NEW_PRODUCTION}>
-                  <Button className="btn-premium">
+                  <Button variant="secondary">
                     <Plus size={18} />
                     Yeni Kayıt
                   </Button>
