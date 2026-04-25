@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { CaretDown, CaretUp, Warning } from '@phosphor-icons/react';
 import Button from '../../../../../shared/components/ui/Button';
 import './calculator-summary-section.css';
 
@@ -50,7 +50,7 @@ function IssueList({ items, type }) {
           key={`${message.code}-${index}`}
           className={`lp-summary-modern__list-item is-${type}`}
         >
-          <AlertTriangle size={16} className="lp-summary-modern__icon" />
+          <Warning size={16} weight="fill" className="lp-summary-modern__icon" />
           <span>{sanitizeMessage(message.message)}</span>
         </div>
       ))}
@@ -95,7 +95,7 @@ export function CalculatorSummarySection({ summaryItems, result }) {
           <div className="lp-summary-modern__hero">
             <div className="lp-summary-modern__hero-left">
               <div className="lp-summary-modern__headline">
-                <AlertTriangle size={18} className="lp-summary-modern__icon" />
+                <Warning size={18} weight="fill" className="lp-summary-modern__icon" />
                 <div>
                   <strong>Öncelikli Düzeltilmesi Gereken Noktalar</strong>
                   <p>
@@ -122,9 +122,9 @@ export function CalculatorSummarySection({ summaryItems, result }) {
               onClick={() => setIsExpanded((prev) => !prev)}
             >
               {isExpanded ? (
-                <ChevronUp size={16} className="lp-summary-modern__chevron" />
+                <CaretUp size={16} className="lp-summary-modern__chevron" />
               ) : (
-                <ChevronDown size={16} className="lp-summary-modern__chevron" />
+                <CaretDown size={16} className="lp-summary-modern__chevron" />
               )}
               {isExpanded ? 'Detayları Gizle' : 'Detayları Aç'}
             </Button>

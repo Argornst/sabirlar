@@ -240,8 +240,7 @@ function DispatchEventModal({
       <div className="dispatch-modal__footer">
         <Button
           type="button"
-          variant="ghost"
-          className="dispatch-chip-button dispatch-chip-button--ghost"
+          variant="secondary"
           onClick={onClose}
           disabled={isSaving}
         >
@@ -249,8 +248,8 @@ function DispatchEventModal({
         </Button>
 
         <Button
-          type="button"
-          className="dispatch-chip-button dispatch-chip-button--primary"
+          type="submit"
+          variant="primary"
           onClick={onSave}
           disabled={isSaving}
         >
@@ -599,17 +598,9 @@ export function DispatchCalendar({ items }) {
             </div>
 
             <div className="dispatch-calendar-toolbar__actions">
-              <Pressable
+              <Button
                 type="button"
-                className={[
-                  "dispatch-chip-button",
-                  "dispatch-chip-button--ghost",
-                  dragNavDirection === "prev"
-                    ? "dispatch-chip-button--drag-active"
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
+                variant="ghost"
                 onClick={goToPreviousMonth}
                 onDragOver={(event) => {
                   event.preventDefault();
@@ -622,27 +613,19 @@ export function DispatchCalendar({ items }) {
                 }}
               >
                 Önceki Ay
-              </Pressable>
+              </Button>
 
-              <Pressable
+              <Button
                 type="button"
-                className="dispatch-chip-button dispatch-chip-button--primary"
+                variant="ghost"
                 onClick={goToToday}
               >
                 Bugün
-              </Pressable>
+              </Button>
 
-              <Pressable
+              <Button
                 type="button"
-                className={[
-                  "dispatch-chip-button",
-                  "dispatch-chip-button--ghost",
-                  dragNavDirection === "next"
-                    ? "dispatch-chip-button--drag-active"
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
+                variant="ghost"
                 onClick={goToNextMonth}
                 onDragOver={(event) => {
                   event.preventDefault();
@@ -655,7 +638,7 @@ export function DispatchCalendar({ items }) {
                 }}
               >
                 Sonraki Ay
-              </Pressable>
+              </Button>
             </div>
           </div>
 
@@ -681,25 +664,25 @@ export function DispatchCalendar({ items }) {
                 ]}
               />
 
-              <Pressable
+              <Button
                 type="button"
-                className="dispatch-chip-button dispatch-chip-button--primary"
+                variant="secondary"
                 disabled={
                   !selectedIds.length || !bulkMoveDate || updateMutation.isPending
                 }
                 onClick={handleBulkMove}
               >
                 Seçilenleri Taşı
-              </Pressable>
+              </Button>
 
-              <Pressable
+              <Button
                 type="button"
-                className="dispatch-chip-button dispatch-chip-button--ghost"
+                variant="ghost"
                 disabled={!selectedIds.length}
                 onClick={clearSelection}
               >
                 Seçimi Temizle
-              </Pressable>
+              </Button>
             </div>
           </div>
 

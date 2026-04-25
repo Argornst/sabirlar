@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
-  BrushCleaning,
-  ChevronLeft,
-  ChevronRight,
-  FilePlus2,
-  Grid2X2,
-  History,
-  Loader2,
-  Package2,
+  Broom,
+  CaretLeft,
+  CaretRight,
+  CircleNotch,
+  ClockCounterClockwise,
+  Cube,
+  FilePlus,
+  FloppyDisk,
+  PencilSimple,
   Plus,
-  Save,
-  Sparkles,
-  Trash2,
-} from 'lucide-react';
+  SquaresFour,
+  Trash,
+} from '@phosphor-icons/react';
 import {
   useCreatePackagingScenarioMutation,
   useDeletePackagingScenarioMutation,
@@ -690,9 +690,9 @@ export function LogisticsPackagingCalculatorPage() {
             shortcut="Alt+C"
           >
             {headerActionLoading === 'clear' ? (
-              <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
+              <CircleNotch size={18} className="lp-button__icon lp-button__icon--spin" />
             ) : (
-              <BrushCleaning size={18} className="lp-button__icon" />
+              <Broom size={18} className="lp-button__icon" />
             )}
             <span>Temizle</span>
           </Button>
@@ -706,9 +706,9 @@ export function LogisticsPackagingCalculatorPage() {
             shortcut="Alt+N"
           >
             {headerActionLoading === 'new' ? (
-              <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
+              <CircleNotch size={18} className="lp-button__icon lp-button__icon--spin" />
             ) : (
-              <FilePlus2 size={18} className="lp-button__icon" />
+              <FilePlus size={18} className="lp-button__icon" />
             )}
             <span>Yeni Senaryo</span>
           </Button>
@@ -722,7 +722,7 @@ export function LogisticsPackagingCalculatorPage() {
             shortcut="Alt+L"
           >
             {headerActionLoading === 'add' ? (
-              <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
+              <CircleNotch size={18} className="lp-button__icon lp-button__icon--spin" />
             ) : (
               <Plus size={18} className="lp-button__icon" />
             )}
@@ -857,7 +857,7 @@ export function LogisticsPackagingCalculatorPage() {
                         disabled={index === 0}
                         title="Sola taşı"
                       >
-                        <ChevronLeft size={16} className="lp-button__icon" />
+                        <CaretLeft size={16} className="lp-button__icon" />
                       </Button>
 
                       <Button
@@ -871,7 +871,7 @@ export function LogisticsPackagingCalculatorPage() {
                         disabled={index === scenario.values.lots.length - 1}
                         title="Sağa taşı"
                       >
-                        <ChevronRight size={16} className="lp-button__icon" />
+                        <CaretRight size={16} className="lp-button__icon" />
                       </Button>
 
                       <Button
@@ -885,7 +885,7 @@ export function LogisticsPackagingCalculatorPage() {
                         disabled={scenario.values.lots.length === 1}
                         title="Lotu sil"
                       >
-                        <Trash2 size={16} className="lp-button__icon" />
+                        <Trash size={16} className="lp-button__icon" />
                         <span>Sil</span>
                       </Button>
                     </div>
@@ -931,7 +931,7 @@ export function LogisticsPackagingCalculatorPage() {
                         handleSelectLot(lot.id);
                       }}
                     >
-                      <Sparkles size={16} className="lp-button__icon" />
+                      <PencilSimple size={16} className="lp-button__icon" />
                       <span>Düzenle</span>
                     </Button>
 
@@ -1011,7 +1011,7 @@ export function LogisticsPackagingCalculatorPage() {
               className={`lp-bottom-tabs__button ${activeBottomTab === 'stack' ? 'is-active' : ''}`}
               onClick={() => setActiveBottomTab('stack')}
             >
-              <Grid2X2 size={16} className="lp-tab-icon" />
+              <SquaresFour size={16} weight={activeBottomTab === 'stack' ? 'bold' : 'regular'} className="lp-tab-icon" />
               <span>Genel İstif Özeti</span>
             </Button>
 
@@ -1021,7 +1021,7 @@ export function LogisticsPackagingCalculatorPage() {
               className={`lp-bottom-tabs__button ${activeBottomTab === 'loadPlan' ? 'is-active' : ''}`}
               onClick={() => setActiveBottomTab('loadPlan')}
             >
-              <Package2 size={16} className="lp-tab-icon" />
+              <Cube size={16} weight={activeBottomTab === 'loadPlan' ? 'bold' : 'regular'} className="lp-tab-icon" />
               <span>3D Konteyner Planı</span>
             </Button>
 
@@ -1031,7 +1031,7 @@ export function LogisticsPackagingCalculatorPage() {
               className={`lp-bottom-tabs__button ${activeBottomTab === 'history' ? 'is-active' : ''}`}
               onClick={() => setActiveBottomTab('history')}
             >
-              <History size={16} className="lp-tab-icon" />
+              <ClockCounterClockwise size={16} weight={activeBottomTab === 'history' ? 'bold' : 'regular'} className="lp-tab-icon" />
               <span>Geçmiş Senaryolar</span>
             </Button>
           </div>
@@ -1100,9 +1100,9 @@ export function LogisticsPackagingCalculatorPage() {
             onClick={handleSaveScenario}
           >
             {isSaving ? (
-              <Loader2 size={18} className="lp-button__icon lp-button__icon--spin" />
+              <CircleNotch size={18} className="lp-button__icon lp-button__icon--spin" />
             ) : (
-              <Save size={18} className="lp-button__icon" />
+              <FloppyDisk size={18} className="lp-button__icon" />
             )}
             <span>
               {isSaving

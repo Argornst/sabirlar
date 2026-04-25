@@ -11,6 +11,7 @@ export function getPaymentStatusMeta(paymentStatus) {
       label: "Ödendi",
       tone: "success",
       icon: Check,
+      weight: "fill",
     };
   }
 
@@ -18,6 +19,7 @@ export function getPaymentStatusMeta(paymentStatus) {
     label: "Ödenmedi",
     tone: "default",
     icon: Minus,
+    weight: "regular",
   };
 }
 
@@ -27,12 +29,14 @@ export function getInvoiceStatusMeta(invoiceStatus) {
       label: "Faturalandı",
       tone: "success",
       icon: Receipt,
+      weight: "fill",
     };
   }
 
   return {
     label: "Faturalanmadı",
     tone: "warning",
-    icon: ReceiptX, // 🔥 değişti
+    icon: ReceiptX,
+    weight: "fill",
   };
 }

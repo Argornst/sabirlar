@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Sparkles, X } from 'lucide-react';
+import { Warning, X } from '@phosphor-icons/react';
 import Button from '../../../../../shared/components/ui/Button';
 import IconButton from '../../../../../shared/components/ui/IconButton';
 import './aggregate-bar.css';
@@ -169,11 +169,10 @@ export function AggregateBar({ aggregate, lots = [] }) {
               aria-haspopup="dialog"
               title="Uyarı ve hata detaylarını aç"
             >
-              <AlertTriangle size={14} />
+              <Warning size={14} weight="fill" />
               <span>
                 {counts.errors > 0 ? `${counts.errors} hata` : `${counts.warnings} uyarı`}
               </span>
-              <Sparkles size={13} className="lp-aggregate-bar__badge-hint" />
             </Button>
           ) : null}
         </div>
@@ -222,7 +221,7 @@ export function AggregateBar({ aggregate, lots = [] }) {
                   message.level || '',
                 ).toLowerCase()}`}
               >
-                <AlertTriangle size={16} />
+                <Warning size={16} weight="fill" />
                 <span>{message.sanitized}</span>
               </div>
             ))}

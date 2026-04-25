@@ -133,7 +133,7 @@ Tüm buton tipleri için geçerli — sapmalar gerekçeli olmalı:
 ## 3. Icons
 
 ### Kural
-Tüm ikonlar **Phosphor** ailesinden kullanılır. Lucide kullanılmaz.
+Tüm ikonlar **Phosphor** ailesinden kullanılır. Lucide kullanılmaz; `lucide-react` paketi Faz 4'te sökülmüştür (bkz. §3 İcon Sözlüğü).
 
 ### Import
 ```jsx
@@ -141,15 +141,49 @@ import { IconName } from "@phosphor-icons/react";
 ```
 
 ### Weight konvansiyonu
-- Default state: `regular`
-- Hover state: `fill` (mikro-etkileşim)
-- Active/selected state: `bold`
-- Disabled state: `light`
+- **Default state:** `regular` (action ikonları)
+- **Hover state:** `fill` (mikro-etkileşim — opsiyonel)
+- **Active/selected state:** `bold` (örnek: aktif tab, aktif filter)
+- **Disabled state:** `light`
+- **Status badge:** `fill` (durum bilgisi sabit, hover'a bağlı değil — ör. "Ödendi" Check, "Faturalandı" Receipt)
 
 ### Boyut
-- Header butonlarında: 16-18px
+- Header butonlarında: 18px
+- Satır içi / küçük butonlarda: 16px
 - Sidebar'da: 20px
 - Inline text'te (button dışında): em boyutu
+
+### İcon Sözlüğü
+Yeni icon eklerken önce bu tabloya bak. Burada olmayan bir kavram için icon seçtiğinde tabloyu güncelle — tutarlılık için tek kanon.
+
+| Kavram | Phosphor Icon | Default Weight |
+|---|---|---|
+| Kaydet | `FloppyDisk` | regular |
+| Sil | `Trash` | regular |
+| Düzenle | `PencilSimple` | regular |
+| Kapat | `X` | regular |
+| Hata / Uyarı | `Warning` | fill |
+| Başarı | `Check` | fill |
+| Yeni Ekle | `Plus` | regular |
+| Önceki | `CaretLeft` | regular |
+| Sonraki | `CaretRight` | regular |
+| Yukarı | `CaretUp` | regular |
+| Aşağı | `CaretDown` | regular |
+| Geri (navigation back) | `ArrowLeft` | regular |
+| Spinner / Loading | `CircleNotch` | regular (CSS spin animasyonu ile) |
+| Temizle (form/lot) | `Broom` | regular |
+| Yeni Dosya / Senaryo | `FilePlus` | regular |
+| Takvim | `CalendarBlank` | regular |
+| Yazdır | `Printer` | regular |
+| Liste görünümü | `ListBullets` | regular |
+| 3D / Kutu / Konteyner | `Cube` | regular |
+| Grid / Slot görünümü | `SquaresFour` | regular |
+| Geçmiş | `ClockCounterClockwise` | regular |
+| Fatura | `Receipt` | fill (status) |
+| Bekleme / Boşta | `Minus` | regular |
+
+### Spinner pattern
+Loading state için `<CircleNotch>` kullanılır + CSS animasyonu ile döndürülür. LP modülünde mevcut `.lp-button__icon--spin` class'ı (`@keyframes lp-button-spin 0.8s linear infinite`) örnek pattern. Yeni modülde benzer bir keyframe + spin class tanımı yerine ileride shared bir `.ui-icon--spin` utility'sine taşınabilir.
 
 ## 4. Sonraki Fazlar (Planlanmış)
 

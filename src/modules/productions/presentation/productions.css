@@ -1753,68 +1753,6 @@
     justify-content: center;
   }
 }
-.dispatch-chip-button {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-
-/* Neon base */
-.dispatch-chip-button--primary {
-  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
-  color: #e0f2fe;
-  box-shadow:
-    0 0 0 rgba(6,182,212,0),
-    0 10px 24px rgba(6,182,212,0.25);
-}
-
-/* Glow sweep animation */
-.dispatch-chip-button--primary::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    120deg,
-    transparent,
-    rgba(255,255,255,0.35),
-    transparent
-  );
-  transform: translateX(-120%);
-  transition: transform 0.6s ease;
-  z-index: 0;
-}
-
-.dispatch-chip-button--primary:hover::before {
-  transform: translateX(120%);
-}
-
-/* Hover lift + glow */
-.dispatch-chip-button--primary:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow:
-    0 0 18px rgba(6,182,212,0.35),
-    0 14px 32px rgba(6,182,212,0.35);
-}
-
-/* Click animation */
-.dispatch-chip-button--primary:active {
-  transform: scale(0.96);
-  box-shadow:
-    0 0 10px rgba(6,182,212,0.4) inset;
-}
-.dispatch-chip-button--ghost {
-  background: rgba(15,23,42,0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(148,163,184,0.2);
-}
-
-/* subtle neon edge */
-.dispatch-chip-button--ghost:hover {
-  border-color: rgba(6,182,212,0.4);
-  box-shadow:
-    0 0 12px rgba(6,182,212,0.25),
-    inset 0 0 12px rgba(6,182,212,0.15);
-}
 .dispatch-view-tab,
 .dispatch-filter-tab {
   position: relative;
@@ -1908,7 +1846,6 @@
 }
 
 .production-header-actions .ui-button::before,
-.dispatch-chip-button::before,
 .dispatch-filter-tab::before,
 .dispatch-view-tab::before {
   content: "";
@@ -1927,87 +1864,18 @@
 }
 
 .production-header-actions .ui-button:hover::before,
-.dispatch-chip-button:hover::before,
 .dispatch-filter-tab:hover::before,
 .dispatch-view-tab:hover::before {
   opacity: 1;
 }
 
 .production-header-actions .ui-button > *,
-.dispatch-chip-button > *,
 .dispatch-filter-tab > *,
 .dispatch-view-tab > * {
   position: relative;
   z-index: 1;
 }
 
-
-/* chip buttons: previous / today / next */
-.dispatch-chip-button {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  min-height: 38px;
-  padding: 0 15px;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.22s ease,
-    border-color 0.22s ease,
-    background 0.22s ease,
-    color 0.22s ease;
-}
-
-.dispatch-chip-button:hover {
-  transform: translateY(-1px);
-}
-
-.dispatch-chip-button--primary {
-  background:
-    linear-gradient(135deg, rgba(109, 93, 252, 0.92), rgba(59, 130, 246, 0.94));
-  color: var(--dispatch-accent-text-dark);
-  border-color: rgba(147, 197, 253, 0.16);
-  box-shadow:
-    0 12px 22px rgba(37, 99, 235, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.dispatch-chip-button--primary:hover {
-  box-shadow:
-    0 16px 28px rgba(37, 99, 235, 0.22),
-    0 0 0 1px rgba(34, 211, 238, 0.1);
-}
-
-.dispatch-chip-button--primary:active {
-  transform: translateY(0) scale(0.98);
-}
-
-.dispatch-chip-button--ghost {
-  background:
-    linear-gradient(180deg, rgba(12, 18, 31, 0.84), rgba(15, 23, 42, 0.8));
-  color: var(--dispatch-text-dark);
-  border-color: var(--dispatch-border-dark);
-  box-shadow:
-    0 10px 18px rgba(2, 6, 23, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.dispatch-chip-button--ghost:hover {
-  border-color: rgba(96, 165, 250, 0.24);
-  color: #f8fafc;
-  box-shadow:
-    0 12px 22px rgba(37, 99, 235, 0.1),
-    0 0 0 1px rgba(109, 93, 252, 0.08);
-}
-
-.dispatch-chip-button--ghost:active {
-  transform: translateY(0) scale(0.98);
-}
 
 /* filter/view tabs */
 .dispatch-filter-tab,
@@ -2060,7 +1928,6 @@
 }
 
 /* LIGHT THEME */
-:root[data-theme="light"] .dispatch-chip-button--primary,
 :root[data-theme="light"] .dispatch-filter-tab--active,
 :root[data-theme="light"] .dispatch-view-tab--active {
   background:
@@ -2072,7 +1939,6 @@
     0 0 0 1px rgba(109, 93, 252, 0.06);
 }
 
-:root[data-theme="light"] .dispatch-chip-button--primary:hover,
 :root[data-theme="light"] .dispatch-filter-tab--active:hover,
 :root[data-theme="light"] .dispatch-view-tab--active:hover {
   box-shadow:
@@ -2080,7 +1946,6 @@
     0 0 0 1px rgba(34, 211, 238, 0.08);
 }
 
-:root[data-theme="light"] .dispatch-chip-button--ghost,
 :root[data-theme="light"] .dispatch-filter-tab:not(.dispatch-filter-tab--active),
 :root[data-theme="light"] .dispatch-view-tab:not(.dispatch-view-tab--active) {
   background: linear-gradient(180deg, #ffffff, #f7f9fc);
@@ -2091,7 +1956,6 @@
     0 8px 18px rgba(15, 23, 42, 0.045);
 }
 
-:root[data-theme="light"] .dispatch-chip-button--ghost:hover,
 :root[data-theme="light"] .dispatch-filter-tab:not(.dispatch-filter-tab--active):hover,
 :root[data-theme="light"] .dispatch-view-tab:not(.dispatch-view-tab--active):hover {
   color: #1e3a8a;
@@ -2222,21 +2086,18 @@
 }
 
 /* 5) Buton animasyonu biraz daha belirgin */
-.dispatch-chip-button,
 .dispatch-filter-tab,
 .dispatch-view-tab,
 .production-header-actions .ui-button {
   will-change: transform, box-shadow;
 }
 
-.dispatch-chip-button:hover,
 .dispatch-filter-tab:hover,
 .dispatch-view-tab:hover,
 .production-header-actions .ui-button:hover {
   transform: translateY(-2px) scale(1.02);
 }
 
-.dispatch-chip-button:active,
 .dispatch-filter-tab:active,
 .dispatch-view-tab:active,
 .production-header-actions .ui-button:active {
@@ -2255,28 +2116,6 @@
   flex-wrap: wrap;
 }
 
-/* dispatch chip buttons */
-.dispatch-chip-button {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  min-height: 38px;
-  padding: 0 15px;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.22s ease,
-    border-color 0.22s ease,
-    background 0.22s ease,
-    color 0.22s ease;
-}
-
-.dispatch-chip-button::before,
 .dispatch-filter-tab::before,
 .dispatch-view-tab::before {
   content: "";
@@ -2293,25 +2132,21 @@
   pointer-events: none;
 }
 
-.dispatch-chip-button:hover::before,
 .dispatch-filter-tab:hover::before,
 .dispatch-view-tab:hover::before {
   opacity: 1;
 }
 
-.dispatch-chip-button:hover,
 .dispatch-filter-tab:hover,
 .dispatch-view-tab:hover {
   transform: translateY(-2px) scale(1.02);
 }
 
-.dispatch-chip-button:active,
 .dispatch-filter-tab:active,
 .dispatch-view-tab:active {
   transform: translateY(0) scale(0.97);
 }
 
-.dispatch-chip-button--primary,
 .dispatch-filter-tab--active,
 .dispatch-view-tab--active {
   background: linear-gradient(
@@ -2326,7 +2161,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
-.dispatch-chip-button--ghost,
 .dispatch-filter-tab:not(.dispatch-filter-tab--active),
 .dispatch-view-tab:not(.dispatch-view-tab--active) {
   background: linear-gradient(
@@ -2341,7 +2175,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.dispatch-chip-button--ghost:hover,
 .dispatch-filter-tab:not(.dispatch-filter-tab--active):hover,
 .dispatch-view-tab:not(.dispatch-view-tab--active):hover {
   border-color: rgba(96, 165, 250, 0.24);
@@ -2349,7 +2182,6 @@
 }
 
 /* light theme */
-:root[data-theme="light"] .dispatch-chip-button--primary,
 :root[data-theme="light"] .dispatch-filter-tab--active,
 :root[data-theme="light"] .dispatch-view-tab--active {
   background: linear-gradient(
@@ -2364,7 +2196,6 @@
     0 0 0 1px rgba(109, 93, 252, 0.06);
 }
 
-:root[data-theme="light"] .dispatch-chip-button--ghost,
 :root[data-theme="light"] .dispatch-filter-tab:not(.dispatch-filter-tab--active),
 :root[data-theme="light"] .dispatch-view-tab:not(.dispatch-view-tab--active) {
   background: linear-gradient(180deg, #ffffff, #f7f9fc);
@@ -2375,7 +2206,6 @@
     0 8px 18px rgba(15, 23, 42, 0.05);
 }
 
-:root[data-theme="light"] .dispatch-chip-button--ghost:hover,
 :root[data-theme="light"] .dispatch-filter-tab:not(.dispatch-filter-tab--active):hover,
 :root[data-theme="light"] .dispatch-view-tab:not(.dispatch-view-tab--active):hover {
   color: #1e3a8a;
@@ -2507,118 +2337,6 @@
   flex-wrap: wrap;
 }
 
-.dispatch-week-nav-button {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  min-height: 42px;
-  padding: 0 18px;
-  border-radius: 16px;
-  border: 1px solid transparent;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    transform 0.22s ease,
-    box-shadow 0.22s ease,
-    border-color 0.22s ease,
-    background 0.22s ease,
-    color 0.22s ease;
-}
-
-.dispatch-week-nav-button::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    120px 60px at 50% 50%,
-    rgba(255, 255, 255, 0.18),
-    transparent 72%
-  );
-  opacity: 0;
-  transition: opacity 0.22s ease;
-  pointer-events: none;
-}
-
-.dispatch-week-nav-button:hover::before {
-  opacity: 1;
-}
-
-.dispatch-week-nav-button:hover {
-  transform: translateY(-2px) scale(1.02);
-}
-
-.dispatch-week-nav-button:active {
-  transform: translateY(0) scale(0.97);
-}
-
-.dispatch-week-nav-button--primary {
-  background: linear-gradient(
-    135deg,
-    rgba(109, 93, 252, 0.94),
-    rgba(59, 130, 246, 0.96)
-  );
-  color: #eef2ff;
-  border-color: rgba(147, 197, 253, 0.16);
-  box-shadow:
-    0 12px 22px rgba(37, 99, 235, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.dispatch-week-nav-button--ghost {
-  background: linear-gradient(
-    180deg,
-    rgba(12, 18, 31, 0.84),
-    rgba(15, 23, 42, 0.8)
-  );
-  color: #e2e8f0;
-  border-color: rgba(148, 163, 184, 0.18);
-  box-shadow:
-    0 10px 20px rgba(2, 6, 23, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.dispatch-week-nav-button--ghost:hover {
-  border-color: rgba(96, 165, 250, 0.24);
-  color: #f8fafc;
-}
-
-:root[data-theme="light"] .dispatch-week-nav-button--primary {
-  background: linear-gradient(
-    135deg,
-    rgba(99, 102, 241, 0.96),
-    rgba(59, 130, 246, 0.96)
-  );
-  color: #ffffff;
-  border-color: rgba(99, 102, 241, 0.14);
-  box-shadow:
-    0 10px 18px rgba(59, 130, 246, 0.16),
-    0 0 0 1px rgba(109, 93, 252, 0.06);
-}
-
-:root[data-theme="light"] .dispatch-week-nav-button--ghost {
-  background: linear-gradient(180deg, #ffffff, #f7f9fc);
-  color: #33507a;
-  border-color: rgba(148, 163, 184, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    0 8px 18px rgba(15, 23, 42, 0.05);
-}
-
-:root[data-theme="light"] .dispatch-week-nav-button--ghost:hover {
-  color: #1e3a8a;
-  border-color: rgba(96, 165, 250, 0.24);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.98),
-    0 10px 20px rgba(59, 130, 246, 0.08);
-}
-/* =========================================
-   WEEK BOARD NAV - FINAL HARD OVERRIDE
-   ========================================= */
-
 .dispatch-week-board .dispatch-week-board__nav {
   display: flex;
   align-items: center;
@@ -2626,124 +2344,47 @@
   flex-wrap: wrap;
 }
 
-.dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button {
-  position: relative !important;
-  overflow: hidden !important;
-  isolation: isolate !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
-  min-height: 42px !important;
-  padding: 0 18px !important;
-  border-radius: 16px !important;
-
-  font-size: 14px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.01em !important;
-  white-space: nowrap !important;
-
-  cursor: pointer !important;
-  border: 1px solid transparent !important;
-  outline: none !important;
-
-  transition:
-    transform 0.22s ease,
-    box-shadow 0.22s ease,
-    border-color 0.22s ease,
-    background 0.22s ease,
-    color 0.22s ease !important;
+/* Week board "Bu Hafta" active state — §2.4 flat active modifier */
+.dispatch-week-nav-active {
+  font-weight: 800;
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.55);
+  background: rgba(148, 163, 184, 0.1);
 }
 
-.dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button::before {
-  content: "" !important;
-  position: absolute !important;
-  inset: 0 !important;
-  border-radius: inherit !important;
-  background: radial-gradient(
-    120px 60px at 50% 50%,
-    rgba(255, 255, 255, 0.16),
-    transparent 72%
-  ) !important;
-  opacity: 0 !important;
-  transition: opacity 0.22s ease !important;
-  pointer-events: none !important;
+:root[data-theme="light"] .dispatch-week-nav-active {
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.28);
+  background: rgba(15, 23, 42, 0.05);
 }
 
-.dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button:hover::before {
-  opacity: 1 !important;
+/* Dispatch ghost button light theme color guards
+   Shared .ui-button--ghost:hover (#1e3a8a blue) has higher specificity than
+   .dispatch-view-tab--active and .dispatch-week-nav-active. These compound
+   rules raise specificity to keep dispatch active/nav buttons readable in
+   light theme. See CLAUDE.md §8 borç #13 for the underlying shared bug. */
+:root[data-theme="light"] .ui-button--ghost.dispatch-view-tab--active,
+:root[data-theme="light"] .ui-button--ghost.dispatch-view-tab--active:hover {
+  font-weight: 800;
+  color: #0f172a;
+  background: rgba(15, 23, 42, 0.05);
+  border-color: rgba(15, 23, 42, 0.28);
+  box-shadow: none;
 }
 
-.dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button:hover {
-  transform: translateY(-2px) scale(1.02) !important;
+:root[data-theme="light"] .ui-button--ghost.dispatch-week-nav-active,
+:root[data-theme="light"] .ui-button--ghost.dispatch-week-nav-active:hover {
+  color: #0f172a;
 }
 
-.dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button:active {
-  transform: translateY(0) scale(0.97) !important;
+:root[data-theme="light"] .dispatch-week-board__nav .ui-button--ghost {
+  color: #334155;
 }
 
-/* DARK */
-.dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button--primary {
-  background: linear-gradient(
-    135deg,
-    rgba(109, 93, 252, 0.94),
-    rgba(59, 130, 246, 0.96)
-  ) !important;
-  color: #eef2ff !important;
-  border-color: rgba(147, 197, 253, 0.16) !important;
-  box-shadow:
-    0 12px 22px rgba(37, 99, 235, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+:root[data-theme="light"] .dispatch-week-board__nav .ui-button--ghost:hover {
+  color: #334155;
 }
 
-.dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button--ghost {
-  background: linear-gradient(
-    180deg,
-    rgba(12, 18, 31, 0.84),
-    rgba(15, 23, 42, 0.8)
-  ) !important;
-  color: #e2e8f0 !important;
-  border-color: rgba(148, 163, 184, 0.18) !important;
-  box-shadow:
-    0 10px 20px rgba(2, 6, 23, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
-}
-
-.dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button--ghost:hover {
-  border-color: rgba(96, 165, 250, 0.24) !important;
-  color: #f8fafc !important;
-}
-
-/* LIGHT */
-:root[data-theme="light"] .dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button--primary {
-  background: linear-gradient(
-    135deg,
-    rgba(99, 102, 241, 0.96),
-    rgba(59, 130, 246, 0.96)
-  ) !important;
-  color: #ffffff !important;
-  border-color: rgba(99, 102, 241, 0.14) !important;
-  box-shadow:
-    0 10px 18px rgba(59, 130, 246, 0.16),
-    0 0 0 1px rgba(109, 93, 252, 0.06) !important;
-}
-
-:root[data-theme="light"] .dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button--ghost {
-  background: linear-gradient(180deg, #ffffff, #f7f9fc) !important;
-  color: #33507a !important;
-  border-color: rgba(148, 163, 184, 0.2) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    0 8px 18px rgba(15, 23, 42, 0.05) !important;
-}
-
-:root[data-theme="light"] .dispatch-week-board .dispatch-week-board__nav .dispatch-week-nav-button--ghost:hover {
-  color: #1e3a8a !important;
-  border-color: rgba(96, 165, 250, 0.24) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.98),
-    0 10px 20px rgba(59, 130, 246, 0.08) !important;
-}
 .product-autocomplete {
   position: relative;
   width: 100%;
@@ -3130,6 +2771,7 @@ html.dark .product-autocomplete__empty,
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  margin-top: 18px;
   margin-bottom: 18px;
   padding: 14px 16px;
   border: 1px solid rgba(148, 163, 184, 0.12);
@@ -3160,9 +2802,10 @@ html.dark .product-autocomplete__empty,
 .dispatch-card-select {
   width: 24px;
   height: 24px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.55);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.72);
+  background: rgba(148, 163, 184, 0.2);
+  box-shadow: inset 0 0 0 2px rgba(148, 163, 184, 0.06);
   color: #f8fafc;
   display: inline-flex;
   align-items: center;
@@ -3171,6 +2814,11 @@ html.dark .product-autocomplete__empty,
   font-weight: 800;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+.dispatch-card-select:hover {
+  background: rgba(148, 163, 184, 0.28);
+  border-color: rgba(148, 163, 184, 0.7);
 }
 
 .dispatch-card-select--active,
@@ -3211,14 +2859,6 @@ html.dark .product-autocomplete__empty,
   box-shadow:
     0 0 0 1px rgba(59, 130, 246, 0.28),
     0 10px 22px rgba(37, 99, 235, 0.14);
-}
-
-.dispatch-chip-button--drag-active,
-.dispatch-week-nav-button--drag-active {
-  border-color: rgba(20, 184, 166, 0.34) !important;
-  box-shadow:
-    0 0 0 1px rgba(20, 184, 166, 0.18),
-    0 12px 24px rgba(20, 184, 166, 0.12) !important;
 }
 
 @keyframes dispatch-toast-in {

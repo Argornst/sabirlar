@@ -61,7 +61,6 @@ export default function DispatchLogsFilters({
         <Button
           type="button"
           variant="ghost"
-          className="dispatch-chip-button dispatch-chip-button--ghost"
           onClick={onReset}
         >
           Filtreleri Temizle

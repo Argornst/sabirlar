@@ -61,12 +61,12 @@ export default function RecentSalesList({ sales = [] }) {
                 <td className="data-table__status">
                   <div className="sales-status-stack">
                     <StatusBadge tone={sale.paymentMeta.tone}>
-                      <PaymentIcon size={14} weight="bold" />
+                      <PaymentIcon size={14} weight={sale.paymentMeta.weight} />
                       {sale.paymentMeta.label}
                     </StatusBadge>
 
                     <StatusBadge tone={sale.invoiceMeta.tone}>
-                      <InvoiceIcon size={14} weight="bold" />
+                      <InvoiceIcon size={14} weight={sale.invoiceMeta.weight} />
                       {sale.invoiceMeta.label}
                     </StatusBadge>
                   </div>

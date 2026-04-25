@@ -58,7 +58,7 @@ export function DispatchPrintPreviewModal({
 
           <Button
             type="button"
-            className="dispatch-chip-button dispatch-chip-button--primary"
+            variant="primary"
             onClick={onPrint}
           >
             <Printer size={16} />
@@ -67,8 +67,7 @@ export function DispatchPrintPreviewModal({
 
           <Button
             type="button"
-            variant="ghost"
-            className="dispatch-chip-button dispatch-chip-button--ghost"
+            variant="secondary"
             onClick={onClose}
           >
             <X size={16} />

@@ -357,15 +357,6 @@ export function DispatchWeekBoard({ items }) {
               <Button
                 type="button"
                 variant="ghost"
-                className={[
-                  "dispatch-week-nav-button",
-                  "dispatch-week-nav-button--ghost",
-                  dragNavDirection === "prev"
-                    ? "dispatch-week-nav-button--drag-active"
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
                 onClick={() => setWeekOffset((prev) => prev - 1)}
                 onDragOver={(event) => {
                   event.preventDefault();
@@ -383,11 +374,7 @@ export function DispatchWeekBoard({ items }) {
               <Button
                 type="button"
                 variant="ghost"
-                className={`dispatch-week-nav-button ${
-                  weekOffset === 0
-                    ? "dispatch-week-nav-button--primary"
-                    : "dispatch-week-nav-button--ghost"
-                }`}
+                className={weekOffset === 0 ? "dispatch-week-nav-active" : ""}
                 onClick={() => setWeekOffset(0)}
               >
                 Bu Hafta
@@ -396,15 +383,6 @@ export function DispatchWeekBoard({ items }) {
               <Button
                 type="button"
                 variant="ghost"
-                className={[
-                  "dispatch-week-nav-button",
-                  "dispatch-week-nav-button--ghost",
-                  dragNavDirection === "next"
-                    ? "dispatch-week-nav-button--drag-active"
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
                 onClick={() => setWeekOffset((prev) => prev + 1)}
                 onDragOver={(event) => {
                   event.preventDefault();
@@ -476,8 +454,7 @@ export function DispatchWeekBoard({ items }) {
 
               <Button
                 type="button"
-                variant="ghost"
-                className="dispatch-chip-button dispatch-chip-button--primary"
+                variant="secondary"
                 disabled={
                   !selectedIds.length || !bulkMoveDate || updateMutation.isPending
                 }
@@ -489,7 +466,6 @@ export function DispatchWeekBoard({ items }) {
               <Button
                 type="button"
                 variant="ghost"
-                className="dispatch-chip-button dispatch-chip-button--ghost"
                 disabled={!selectedIds.length}
                 onClick={clearSelection}
               >

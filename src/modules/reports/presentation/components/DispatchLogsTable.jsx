@@ -98,7 +98,6 @@ export default function DispatchLogsTable({
         <Button
           type="button"
           variant="ghost"
-          className="dispatch-chip-button dispatch-chip-button--ghost"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
         >
@@ -112,7 +111,6 @@ export default function DispatchLogsTable({
         <Button
           type="button"
           variant="ghost"
-          className="dispatch-chip-button dispatch-chip-button--ghost"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
         >
