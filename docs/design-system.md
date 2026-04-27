@@ -182,6 +182,8 @@ Yeni icon eklerken önce bu tabloya bak. Burada olmayan bir kavram için icon se
 | Fatura | `Receipt` | fill (status) |
 | Bekleme / Boşta | `Minus` | regular |
 
+**Tema toggle:** `ThemeToggle` bileşeni inline SVG illustrasyonu kullanır (puffy bulutlar + yıldızlar + sun/moon detayları). Phosphor `Sun`/`MoonStars` ikonları kullanılmaz — skeuomorphic karakter için custom SVG.
+
 ### Spinner pattern
 Loading state için `<CircleNotch>` kullanılır + CSS animasyonu ile döndürülür. LP modülünde mevcut `.lp-button__icon--spin` class'ı (`@keyframes lp-button-spin 0.8s linear infinite`) örnek pattern. Yeni modülde benzer bir keyframe + spin class tanımı yerine ileride shared bir `.ui-icon--spin` utility'sine taşınabilir.
 

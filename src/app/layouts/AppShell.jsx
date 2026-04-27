@@ -18,6 +18,7 @@ import Button from "../../shared/components/ui/Button";
 import IconButton from "../../shared/components/ui/IconButton";
 import Input from "../../shared/components/ui/Input";
 import Pressable from "../../shared/components/ui/Pressable";
+import ThemeToggle from "../../shared/components/ui/ThemeToggle";
 import { useCurrentOrganization } from "../../modules/users/presentation/hooks/useCurrentOrganization";
 
 const navigationItems = [
@@ -297,12 +298,25 @@ export default function AppShell() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);
-  const [isThemeAnimating, setIsThemeAnimating] = useState(false);
   const paletteInputRef = useRef(null);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    const html = document.documentElement;
+    html.classList.add("theme-switching");
+    html.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
+
+    let frame2 = 0;
+    const frame1 = window.requestAnimationFrame(() => {
+      frame2 = window.requestAnimationFrame(() => {
+        html.classList.remove("theme-switching");
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame1);
+      if (frame2) window.cancelAnimationFrame(frame2);
+    };
   }, [theme]);
 
   useEffect(() => {
@@ -465,13 +479,7 @@ export default function AppShell() {
   }
 
   function toggleTheme() {
-    setIsThemeAnimating(true);
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-
-    window.clearTimeout(window.__themeAnimTimeout__);
-    window.__themeAnimTimeout__ = window.setTimeout(() => {
-      setIsThemeAnimating(false);
-    }, 520);
   }
 
   function scrollToTop() {
@@ -700,22 +708,7 @@ export default function AppShell() {
               <span>{roleName}</span>
             </div>
 
-            <Button
-              type="button"
-              variant="ghost"
-              className={`theme-toggle ${
-                isThemeAnimating ? "theme-toggle--animating" : ""
-              }`}
-              onClick={toggleTheme}
-              title={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
-              aria-label={
-                theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"
-              }
-            >
-              <span className="theme-toggle__icon">
-                {theme === "dark" ? "☀️" : "🌙"}
-              </span>
-            </Button>
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
         </header>
 
