@@ -47,7 +47,6 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.025)),
     rgba(8, 16, 30, 0.28);
-  backdrop-filter: blur(14px);
 }
 
 .user-management-card__header {

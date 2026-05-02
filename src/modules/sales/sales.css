@@ -49,7 +49,6 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.025)),
     rgba(8, 16, 30, 0.28);
-  backdrop-filter: blur(14px);
 }
 
 .sales-record-card__top,
@@ -169,7 +168,6 @@
   background:
     linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)),
     rgba(8, 16, 30, 0.35);
-  backdrop-filter: blur(16px);
   box-shadow:
     0 18px 40px rgba(0,0,0,0.2),
     inset 0 1px 0 rgba(255,255,255,0.04);
@@ -273,7 +271,6 @@
 }
 
 .sales-record-card {
-  backdrop-filter: blur(10px);
 }
 
 .sales-record-card {
@@ -341,7 +338,6 @@
   box-shadow:
     0 10px 20px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
   transition:
     transform 0.14s ease,
     border-color 0.14s ease,
@@ -713,7 +709,6 @@
   box-shadow:
     0 10px 24px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
   transition:
     transform 0.16s ease,
     border-color 0.16s ease,
@@ -762,7 +757,6 @@
   box-shadow:
     0 16px 30px rgba(0, 0, 0, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(14px);
 }
 
 .sales-table {
@@ -1485,7 +1479,6 @@
 
   border-bottom: none;
 
-  backdrop-filter: blur(12px);
 }
 
 .sales-table thead th::before {

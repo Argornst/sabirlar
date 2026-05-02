@@ -101,7 +101,6 @@
   font-size: 12px;
   font-weight: 800;
   box-shadow: 0 8px 18px rgba(59, 130, 246, 0.12);
-  backdrop-filter: blur(10px);
 }
 
 .dashboard-hero__eyebrow-dot {
@@ -150,7 +149,6 @@
   box-shadow:
     0 16px 28px rgba(0, 0, 0, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(14px);
 }
 
 .dashboard-hero__metric--featured {
@@ -207,7 +205,6 @@
   box-shadow:
     0 16px 26px rgba(0, 0, 0, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(14px);
 }
 
 .dashboard-metrics-strip__item::before {
@@ -275,7 +272,6 @@
     transform 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease;
-  backdrop-filter: blur(14px);
 }
 
 .dashboard-action-card::after {
@@ -355,7 +351,6 @@
   box-shadow:
     0 16px 30px rgba(0, 0, 0, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(14px);
 }
 
 .dashboard-highlight-card::before {
@@ -413,7 +408,6 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.025)),
     rgba(8, 16, 30, 0.28);
-  backdrop-filter: blur(14px);
 }
 
 .dashboard-status-card__top {
@@ -454,7 +448,6 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02)),
     rgba(8, 16, 30, 0.24);
-  backdrop-filter: blur(12px);
 }
 
 .activity-feed__dot {
@@ -623,7 +616,6 @@
 .dashboard-highlight-card,
 .dashboard-status-card,
 .dashboard-metrics-strip__item {
-  backdrop-filter: blur(10px);
 }
 
 .dashboard-highlight-card,
@@ -1221,7 +1213,6 @@
   box-shadow:
     0 16px 28px rgba(0, 0, 0, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(14px);
   display: flex;
   flex-direction: column;
   align-items: flex-start;

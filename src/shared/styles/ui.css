@@ -116,7 +116,6 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.025)),
     linear-gradient(180deg, rgba(10, 18, 34, 0.5), rgba(10, 18, 34, 0.2));
-  backdrop-filter: blur(16px);
 }
 
 .ui-section-card__header {
@@ -149,7 +148,6 @@
   box-shadow:
     0 16px 30px rgba(0, 0, 0, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(14px);
 }
 
 .ui-stat-card__glow {
@@ -219,7 +217,6 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.03),
     0 6px 18px rgba(0, 0, 0, 0.14);
-  backdrop-filter: blur(10px);
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
@@ -332,7 +329,6 @@
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
   border: 1px solid var(--border);
-  backdrop-filter: blur(10px);
 }
 
 .ui-button--secondary:hover,
@@ -374,7 +370,6 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02)),
     rgba(8, 16, 30, 0.3);
-  backdrop-filter: blur(12px);
 }
 
 .ui-loading-state__content,
@@ -444,7 +439,6 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.025)),
     rgba(8, 16, 30, 0.28);
-  backdrop-filter: blur(14px);
 }
 
 .table-wrap,
@@ -455,7 +449,6 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.02)),
     rgba(8, 16, 30, 0.25);
-  backdrop-filter: blur(14px);
 }
 
 .data-table,
@@ -737,7 +730,6 @@
 
 .ui-section-card,
 .ui-stat-card {
-  backdrop-filter: blur(10px);
 }
 
 .ui-card,
@@ -815,13 +807,12 @@
     rgba(255, 255, 255, 0.02)
   );
 
-  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border-color);
 }
 
 .data-table--ultra tbody tr {
   position: relative;
-  transition: all 0.14s ease;
+  transition: background 0.14s ease;
 }
 
 .data-table--ultra tbody tr:nth-child(even) {
@@ -1056,7 +1047,7 @@
   font-size: 14px;
   font-weight: 600;
 
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .ui-select:focus {

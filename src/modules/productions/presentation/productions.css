@@ -1632,12 +1632,6 @@
   border-color: rgba(168, 85, 247, 0.22);
 }
 
-/* Make the badge inside weekly cards/list cards readable */
-:root[data-theme="light"] .dispatch-week-card .production-status-badge,
-:root[data-theme="light"] .dispatch-plan-item .production-status-badge {
-  backdrop-filter: blur(4px);
-}
-
 /* Density cards */
 :root[data-theme="light"] .dispatch-density-card {
   background:
