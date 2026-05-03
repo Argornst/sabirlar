@@ -7,14 +7,12 @@ export default function StatCard({ label, value, helper = null }) {
   const hoverProps = prefersReducedMotion
     ? {}
     : {
-        whileHover: { y: -2, scale: 1.008 },
+        whileHover: { y: -2 },
         transition: { duration: 0.14, ease: "easeOut" },
       };
 
   return (
     <MotionDiv className="ui-stat-card ui-stat-card--premium" {...hoverProps}>
-      <div className="ui-stat-card__glow" />
-
       <div className="ui-stat-card__top">
         <span className="ui-stat-card__label">{label}</span>
       </div>

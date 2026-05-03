@@ -12,31 +12,9 @@
     background 0.22s ease;
 }
 
-.user-management-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    120deg,
-    transparent,
-    rgba(255, 255, 255, 0.05),
-    transparent
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
 .user-management-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(96, 165, 250, 0.22);
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.28),
-    0 0 40px rgba(59, 130, 246, 0.06);
-}
-
-.user-management-card:hover::after {
-  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.16);
 }
 
 .user-management-card {

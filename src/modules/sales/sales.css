@@ -14,31 +14,9 @@
     background 0.22s ease;
 }
 
-.sales-record-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    120deg,
-    transparent,
-    rgba(255, 255, 255, 0.05),
-    transparent
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
 .sales-record-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(96, 165, 250, 0.22);
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.28),
-    0 0 40px rgba(59, 130, 246, 0.06);
-}
-
-.sales-record-card:hover::after {
-  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.16);
 }
 
 .sales-record-card {
@@ -175,26 +153,9 @@
   overflow: hidden;
 }
 
-.sales-record-card__glow {
-  position: absolute;
-  top: -40%;
-  right: -20%;
-  width: 160px;
-  height: 160px;
-  background: radial-gradient(
-    circle,
-    rgba(96,165,250,0.15),
-    transparent 70%
-  );
-  filter: blur(20px);
-  pointer-events: none;
-}
-
 .sales-record-card--premium:hover {
-  border-color: rgba(96,165,250,0.3);
-  box-shadow:
-    0 24px 60px rgba(0,0,0,0.28),
-    0 0 24px rgba(59,130,246,0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.16);
 }
 
 .sales-record-card__summary {
@@ -281,9 +242,7 @@
 
 .sales-record-card:hover {
   transform: translateY(-2px);
-  box-shadow:
-    0 16px 30px rgba(0, 0, 0, 0.18),
-    0 0 18px rgba(59, 130, 246, 0.04);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.16);
 }
 
 :root[data-theme="light"] .sales-record-card {
@@ -295,9 +254,6 @@
 @media (prefers-reduced-motion: reduce) {
   .sales-record-card {
     transform: none !important;
-  }
-  .sales-record-card__glow {
-    filter: none !important;
   }
   .sales-record-card:hover {
     transform: none !important;

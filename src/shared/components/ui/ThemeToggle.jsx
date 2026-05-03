@@ -25,19 +25,19 @@ export default function ThemeToggle({ theme, onToggle }) {
         focusable="false"
       >
         <g className="ui-theme-toggle__clouds">
-          <g transform="translate(38 10)">
+          <g transform="translate(36 8) scale(1.4)">
             <ellipse cx="3" cy="6" rx="3" ry="2.5" fill="#fff" opacity="0.85" />
             <ellipse cx="7" cy="4" rx="4" ry="3" fill="#fff" opacity="0.95" />
             <ellipse cx="12" cy="6" rx="3.5" ry="2.5" fill="#fff" opacity="0.85" />
             <ellipse cx="9" cy="7.5" rx="6" ry="2" fill="#fff" opacity="0.9" />
           </g>
-          <g transform="translate(56 18) scale(0.7)">
+          <g transform="translate(60 14) scale(1.0)">
             <ellipse cx="3" cy="6" rx="3" ry="2.5" fill="#fff" opacity="0.8" />
             <ellipse cx="7" cy="4" rx="4" ry="3" fill="#fff" opacity="0.9" />
             <ellipse cx="12" cy="6" rx="3.5" ry="2.5" fill="#fff" opacity="0.8" />
             <ellipse cx="9" cy="7.5" rx="6" ry="2" fill="#fff" opacity="0.85" />
           </g>
-          <g transform="translate(46 22) scale(0.55)">
+          <g transform="translate(46 22) scale(0.8)">
             <ellipse cx="3" cy="6" rx="3" ry="2.5" fill="#fff" opacity="0.75" />
             <ellipse cx="7" cy="4" rx="4" ry="3" fill="#fff" opacity="0.85" />
             <ellipse cx="12" cy="6" rx="3.5" ry="2.5" fill="#fff" opacity="0.75" />

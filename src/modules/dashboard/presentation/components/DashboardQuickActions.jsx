@@ -51,8 +51,6 @@ export default function DashboardQuickActions() {
               action.primary ? "dashboard-action-card--primary" : ""
             }`}
           >
-            <div className="dashboard-action-card__glow" />
-
             <div className="dashboard-action-card__icon">
               <Icon />
             </div>

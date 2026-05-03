@@ -13,10 +13,8 @@ export default function SectionCard({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, ease: "easeOut" }}
-      whileHover={{ y: -4, scale: 1.01 }}
+      whileHover={{ y: -2 }}
     >
-      <div className="ui-section-card__glow" />
-
       <div className="ui-section-card__header">
         <div className="ui-section-card__header-text">
           <h3>{title}</h3>
